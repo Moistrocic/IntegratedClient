@@ -40,6 +40,10 @@
 | Ranbi 批次 8：AI 自动回复（默认关闭） | RanbiClient / `ai_client.cpp` | `components/ranbi/ai_client.*`、`RANBI_TAB_AI` | 待实机 | ranbi-porter | `0593901`；Token 明文/隐私/规则警告；仅建议测试服务器验证 |
 | R3：`CShowPoints` 并发获取加速 + 并发上限输入框 | RanbiClient `points.cpp` 思路 + 用户需求 | `bestclient/show_points.*`、`menus_bestclient.cpp` | 待实机 | ranbi-porter | `7aa938a`；`bc_show_points_max_concurrency` 默认 5（1–5） |
 | 本地 GitHub Actions 复刻（Linux + Windows） | CI 配额问题 | `scripts/ci-local/` | 已完成 | ci-validator | `35b042c`；act + catthehacker/扩展 runner，Linux/Windows PASS |
+| DeepSeek 翻译后端（OpenAI 兼容 /chat/completions + Model 设置） | 本项目新功能 | `bestclient/translate.*`、`chat.cpp`、`config_variables_tclient.h` | 待验证 | translate-porter | `7b93601`；默认后端仍为 google |
+| 复读上一个玩家（快捷键 + Ranbi GUI） | 本项目新功能 | `components/ranbi/ranbi_repeat.*`、`menus_ranbi.cpp` | 待验证 | ranbi-porter | `6b2d953`；无消息静默 no-op，同频道复读 |
+| 武器辅助线（激光/霰弹/榴弹预测） | 本项目新功能 | `components/ranbi/ranbi_aim_lines.*`、`menus_ranbi.cpp` | 待验证 | ranbi-porter | `6b2d953`；`rc_weapon_aim_lines` 默认 0 |
+| 锁定官方服务器列表地图完成名称（ID 查询） | 本项目新功能 | `engine/client/client.cpp/.h`、`menus_ranbi.cpp` | 待验证 | browser-porter + ranbi-porter | `6b2d953`；`rc_lock_finished_name*`，依赖 `br_indicate_finished` |
 
 ## 整合批次
 

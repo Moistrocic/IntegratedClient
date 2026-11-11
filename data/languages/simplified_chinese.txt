@@ -3036,6 +3036,51 @@ Text files in ranbi/knowledge/*.txt are used as extra context; ddnet_wiki.txt is
 Max concurrent point requests
 == 分数请求最大并发数
 
+Endpoint
+== 端点
+
+API key
+== API 密钥
+
+Official server list
+== 官方服务器列表
+
+Lock map finish name
+== 锁定地图完成名称
+
+Queries the official server list map finishes with a fixed player name, independent of your current in-game name.
+== 使用固定玩家名称查询官方服务器列表的地图完成情况，不受当前游戏内名称影响。
+
+Player name
+== 玩家名称
+
+No locked player name set, falling back to your current player name.
+== 未设置锁定玩家名称，将回退使用当前玩家名称。
+
+Requires 'Indicate map finish' in the server browser filters; the lock has no effect while it is disabled.
+== 需要在服务器列表过滤器中开启“显示地图完成”；未开启时锁定不生效。
+
+Map finishes refresh automatically about one second after changing this setting.
+== 修改该设置后约 1 秒会自动刷新地图完成情况。
+
+Repeat
+== 复读
+
+Repeat last player message
+== 复读上一个玩家的消息
+
+Repeats the most recent message from another player in the same chat channel; does nothing when nobody spoke yet.
+== 复读其他玩家最近一条消息（同一聊天频道）；还没有人发言时不执行任何操作。
+
+Weapon aim lines
+== 武器辅助线
+
+Show weapon aim lines
+== 显示武器辅助线
+
+Draws a predicted laser line, shotgun spread lines or grenade trajectory for your own tee.
+== 为你的 Tee 绘制激光射线、霰弹扩散线或榴弹轨迹预测。
+
 BETA
 == 
 
@@ -3046,12 +3091,6 @@ Yours
 == 
 
 Remove apostrophes
-== 
-
-Endpoint
-== 
-
-API key
 == 
 
 Chat translate settings

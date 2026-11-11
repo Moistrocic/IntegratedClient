@@ -685,6 +685,9 @@ Endpoint
 API key
 == 
 
+Model
+== 
+
 Chat translate settings
 == 
 
@@ -5158,6 +5161,27 @@ Deferred hook collision line
 Renders above water and transparent tiles.
 == 
 
+Official server list
+== 
+
+Lock map finish name
+== 
+
+Queries the official server list map finishes with a fixed player name, independent of your current in-game name.
+== 
+
+Player name
+== 
+
+No locked player name set, falling back to your current player name.
+== 
+
+Requires 'Indicate map finish' in the server browser filters; the lock has no effect while it is disabled.
+== 
+
+Map finishes refresh automatically about one second after changing this setting.
+== 
+
 Risky features
 == 
 
@@ -5275,6 +5299,15 @@ Skip duplicate messages in chat history
 Pressing Up or Down in the chat input skips repeated consecutive messages.
 == 
 
+Repeat
+== 
+
+Repeat last player message
+== 
+
+Repeats the most recent message from another player in the same chat channel; does nothing when nobody spoke yet.
+== 
+
 Show DDNet points in chat
 == 
 
@@ -5356,6 +5389,15 @@ Outer radius
 Note font size
 == 
 
+Weapon aim lines
+== 
+
+Show weapon aim lines
+== 
+
+Draws a predicted laser line, shotgun spread lines or grenade trajectory for your own tee.
+== 
+
 Weapon angle list
 == 
 
@@ -5396,9 +5438,6 @@ API
 == 
 
 Base URL
-== 
-
-Model
 == 
 
 API token (hidden)
