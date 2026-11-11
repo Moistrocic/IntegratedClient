@@ -2720,6 +2720,15 @@ void AdvanceVisualizerLevels(std::array<float, MUSIC_PLAYER_MAX_VISUALIZER_BARS>
 	aLevels = aFinal;
 }
 
+#if defined(__clang__)
+// These BestClient thread classes use std::mutex without thread-safety
+// annotations. DDNet enables -Wthread-safety-negative, which then reports
+// false positives on every lock acquisition in this file. Keep the
+// positive -Wthread-safety analysis for the rest of the codebase.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wthread-safety-negative"
+#endif
+
 class CVisualizerLevelThread
 {
 public:
@@ -2983,6 +2992,9 @@ private:
 	SNowPlayingSnapshot m_LatestSnapshot;
 };
 
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 class CMusicPlayer::CImpl
 {
 public:
