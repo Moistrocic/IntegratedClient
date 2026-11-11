@@ -4,21 +4,21 @@
 
 ## 来源仓库
 
-- **DDNet** — 上游游戏/引擎基础
-- **TClient** — 客户端基础功能
-- **BestClient** — 本项目底座
-- **RanbiClient** — 部分功能来源
+- [**DDNet**](https://github.com/ddnet/ddnet) — 上游游戏/引擎基础
+- [**TClient**](https://github.com/TaterClient/TClient) — 客户端基础功能
+- [**BestClient**](https://github.com/BestProjectTeam/BestClient) — 本项目底座
+- [**RanbiClient**](https://github.com/Moistrocic/RanbiClient) — 部分功能来源
 
-## 新增功能
+## 改动/新增功能
 
-### UI 与品牌
+### UI
 
 - 移除 BestClient 自动更新（含主菜单“检查更新”按钮与整条 updater 链路）
 - 移除主菜单左侧 “Try Light / 使用Light” 按钮
 - 启动页右下角显示四行版本：`DDNet` / `TClient` / `BestClient` / `IntegratedClient`
-- 设置左侧新增 **Ranbi** 顶级页签（General / Nameplates / Chat & Scoreboard / Notify / Weapons / AI）
-- 设置左侧新增 **IntegratedClient** 顶级页签，展示项目信息、版本、来源客户端与仓库/整合台账链接
-- BestClient → Info 保持原有内容，仅移除自动更新相关按钮
+- 设置新增 **Ranbi** 顶级页签（General / Nameplates / Chat & Scoreboard / Notify / Weapons / AI）
+- 设置新增 **IntegratedClient** 顶级页签，展示项目信息、版本、来源客户端与仓库/整合台账链接
+- BestClient 仅移除自动更新相关按钮
 
 ### RanbiClient 功能整合（默认关闭，关闭时与底座行为一致）
 
@@ -27,7 +27,7 @@
 - 武器角度标记 + 最近武器切换（`+switch_recent_weapon`）
 - Nameplates 扩展：DDNet 分数、完成标记、Dummy Copy / Hammer Fly / Dummy Reset 状态、范围隐藏、同 X 位置高亮
 - 聊天历史去重、聊天显示分数、旁观者皮肤名、跳过三格水提示
-- 高风险功能（默认关闭 + UI 风险提示）：碰撞自动换肤、全图玩家信息、计分板“获取名称”
+- 信息获取功能（默认关闭 + UI 风险提示）：碰撞自动换肤、全图玩家信息、计分板“获取名称”
 - AI 自动回复（默认关闭 + Token/隐私/规则警告；支持 0.6/0.7）
 
 ### 本项目新增功能
