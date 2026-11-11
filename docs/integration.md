@@ -47,7 +47,10 @@
 | 本地 GitHub Actions 复刻（Linux + Windows） | CI 配额问题 | `scripts/ci-local/` | 已完成 | ci-validator | `35b042c`；act + catthehacker/扩展 runner，Linux/Windows PASS |
 | DeepSeek 翻译后端（OpenAI 兼容 /chat/completions + Model 设置） | 本项目新功能 | `bestclient/translate.*`、`chat.cpp`、`config_variables_tclient.h` | 待实机 | translate-porter | `7b93601`；默认后端仍为 google |
 | 复读上一个玩家（快捷键 + Ranbi GUI） | 本项目新功能 | `components/ranbi/ranbi_repeat.*`、`menus_ranbi.cpp` | 待实机 | ranbi-porter | `6b2d953`；无消息静默 no-op，同频道复读 |
-| 武器辅助线（激光/霰弹/榴弹预测） | 本项目新功能 | `components/ranbi/ranbi_aim_lines.*`、`menus_ranbi.cpp` | 待实机 | ranbi-porter | `6b2d953`；`rc_weapon_aim_lines` 默认 0 |
+| 武器辅助线（真实 CLaser/CProjectile 物理、复用原版发射后渲染） | 本项目新功能 | `components/ranbi/ranbi_aim_lines.*`、`components/items.cpp/.h`、`menus_ranbi.cpp` | 待实机 | ranbi-porter | `6b2d953` → `c164e20`/`3ce2b8c`/`b7429fd`/`d672604`；移除自定义样式；激光/霰弹复用 `CItems::RenderLaser`、榴弹/vanilla 霰弹复用原版投射物尾迹；预览宽度 0.5×；verifier PASS（task-19/22/24/30/37/41/44） |
+| Fast Practice 虚影坐标（HUD Position/Speed/Angle + TClient statusbar） | 本项目新功能 | `hud.cpp`、`components/tclient/statusbar.cpp`、`config_variables_ranbi.h`、`menus_ranbi.cpp` | 待实机 | ranbi-porter + ui-porter | `475a7b2`/`94d6e35`；`rc_fast_practice_ghost_coords` 默认 0；verifier PASS（task-20/35/40） |
+| Fast Practice 恢复 BC 原始实现（修复开关瞬间误攻击） | 用户 A/B 结论 | `components/bestclient/fast_practice.cpp/.h`、`controls.cpp` | 待实机 | ranbi-porter | `1a7be78` + `85a06fa`；移除自定义诊断/fire guard；verifier PASS（task-42/43） |
+| BC 客户端标识“只接收不发送”用户开关 + ClientVer 中性化 | 用户需求 | `clientindicator/`、`client.cpp/.h`、`gameclient.cpp`、`menus_bestclient.cpp`、`config_variables_bestclient.h` | 待实机 | browser-porter + ui-porter | `38ea0c4`/`2b3a4c3`/`ce844ce`/`c54fa70`；`bc_send_client_identity` 默认 0，关闭时 BC 服务器功能不可用（GUI 警告）；verifier PASS（task-29/42） |
 | 锁定官方服务器列表地图完成名称（ID 查询） | 本项目新功能 | `engine/client/client.cpp/.h`、`menus_ranbi.cpp` | 待实机 | browser-porter + ranbi-porter | `6b2d953`；`rc_lock_finished_name*`，依赖 `br_indicate_finished` |
 
 ## 整合批次
