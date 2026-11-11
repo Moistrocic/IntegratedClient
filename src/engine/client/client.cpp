@@ -238,37 +238,11 @@ int CClient::SendMsgActive(CMsgPacker *pMsg, int Flags)
 	return SendMsg(g_Config.m_ClDummy, pMsg, Flags);
 }
 
-void CClient::SendBClientInfo(int Conn)
-{
-	int64_t ExeSize = -1;
-	if(IOHANDLE CurrentExe = io_current_exe())
-	{
-		ExeSize = io_length(CurrentExe);
-		io_close(CurrentExe);
-	}
-
-	{
-		CMsgPacker Msg(NETMSG_IAMBESTCLIENT, true);
-		Msg.AddString(BESTCLIENT_VERSION " built on " __DATE__ ", " __TIME__);
-		SendMsg(Conn, &Msg, MSGFLAG_VITAL);
-	}
-	{
-		CMsgPacker Msg(NETMSG_IAMTATER, true);
-		Msg.AddString(BESTCLIENT_VERSION " built on " __DATE__ ", " __TIME__);
-		SendMsg(Conn, &Msg, MSGFLAG_VITAL);
-	}
-	{
-		char aBuf[32];
-		str_format(aBuf, sizeof(aBuf), "%" PRId64, ExeSize);
-		CMsgPacker Msg(NETMSG_BESTCLIENT_EXESIZE, true);
-		Msg.AddString(aBuf);
-		SendMsg(Conn, &Msg, MSGFLAG_VITAL);
-	}
-}
-
 void CClient::SendInfo(int Conn)
 {
-	SendBClientInfo(Conn);
+	// integratedclient: the BestClient identity handshake (NETMSG_IAMBESTCLIENT,
+	// NETMSG_IAMTATER and NETMSG_BESTCLIENT_EXESIZE) is intentionally not sent
+	// anymore, mirroring the receive-only BestClient client indicator.
 
 	CMsgPacker MsgVer(NETMSG_CLIENTVER, true);
 	MsgVer.AddRaw(&m_ConnectionId, sizeof(m_ConnectionId));
