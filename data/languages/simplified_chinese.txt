@@ -3903,6 +3903,9 @@ Show current checkpoint in hud
 Show points in tab
 == 
 
+Max concurrent point requests
+== 分数请求最大并发数
+
 Show friend icon in scoreboard
 == 
 

@@ -156,6 +156,7 @@
 	{"Show player below indicator", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcShowhudDummyCoordIndicator, nullptr},
 	{"Show current checkpoint in hud", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcShowCorrectCheckpoint, nullptr},
 	{"Show points in tab", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcShowPointsInTab, nullptr},
+	{"Max concurrent point requests", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcShowPointsMaxConcurrency, &g_Config.m_BcShowPointsInTab},
 	{"Show friend icon in scoreboard", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcScoreboardFriendMark, nullptr},
 	{"Show spectator nicknames", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcShowSpectatorNames, nullptr},
 	{"Show vote percentage", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcShowVotePercentage, nullptr},

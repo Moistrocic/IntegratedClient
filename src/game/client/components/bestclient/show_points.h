@@ -47,7 +47,6 @@ private:
 	enum
 	{
 		PROVIDER_COUNT = 4, // Ddnet, Ego, Legit Gores, Legit DDRace
-		MAX_CONCURRENT = 3,
 		MAX_QUEUE = 64,
 		SUCCESS_TTL_MS = 10 * 60 * 1000,
 		FAILURE_TTL_MS = 30 * 1000,
@@ -82,6 +81,7 @@ private:
 	void ClearPending();
 	void ProcessInFlight();
 	void PumpQueue();
+	int MaxConcurrency() const; // ranbi: bc_show_points_max_concurrency
 	void StartRequest(const std::string &Name, EProvider Provider);
 	void QueueRequest(const char *pName); // ranbi
 };

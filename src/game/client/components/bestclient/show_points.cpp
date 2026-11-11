@@ -13,6 +13,8 @@
 
 #include <game/client/gameclient.h>
 
+#include <algorithm>
+
 namespace
 {
 	bool IsJsonObject(const json_value *pValue)
@@ -375,6 +377,14 @@ void CShowPoints::ProcessInFlight()
 	}
 }
 
+// ranbi: bc_show_points_max_concurrency (R3: configurable in-flight request limit)
+// The config value is clamped to 1..32 so a broken config cannot disable or
+// unboundedly raise the concurrency.
+int CShowPoints::MaxConcurrency() const
+{
+	return std::clamp((int)g_Config.m_BcShowPointsMaxConcurrency, 1, 32);
+}
+
 void CShowPoints::PumpQueue()
 {
 	const EProvider Provider = CurrentProvider();
@@ -389,7 +399,7 @@ void CShowPoints::PumpQueue()
 		ClearPending();
 	m_LastProvider = Provider;
 
-	while((int)m_vInFlight.size() < MAX_CONCURRENT && !m_Queue.empty())
+	while((int)m_vInFlight.size() < MaxConcurrency() && !m_Queue.empty())
 	{
 		const std::string Name = std::move(m_Queue.front());
 		m_Queue.pop_front();

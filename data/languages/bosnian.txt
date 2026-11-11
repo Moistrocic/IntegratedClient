@@ -3546,6 +3546,9 @@ Show current checkpoint in hud
 Show points in tab
 == 
 
+Max concurrent point requests
+== 
+
 Show friend icon in scoreboard
 == 
 
