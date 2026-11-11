@@ -1697,6 +1697,34 @@ CHud::CMovementInformation CHud::GetMovementInformation(int ClientId, int Conn) 
 	return Out;
 }
 
+CHud::CMovementInformation CHud::GetPracticeMovementInformation(const CCharacterCore &Core, const vec2 *pPosOverride) const
+{
+	// ranbi: rc_fast_practice_ghost_coords helper; the formulas match
+	// GetMovementInformation() (snapshot-based) but read the practice prediction core:
+	//   - Core.m_Vel is in world units/tick (snapshot net values are x256);
+	//   - Core.m_Angle is radians x256.
+	CMovementInformation Out;
+	Out.m_Pos = (pPosOverride != nullptr ? *pPosOverride : Core.m_Pos) / 32.0f;
+
+	float VelspeedX = Core.m_Vel.x * Client()->GameTickSpeed();
+	if(Core.m_Vel.x >= -1.0f / 256.0f && Core.m_Vel.x <= 1.0f / 256.0f)
+		VelspeedX = 0.0f;
+	float VelspeedY = Core.m_Vel.y * Client()->GameTickSpeed();
+	if(Core.m_Vel.y >= -128.0f / 256.0f && Core.m_Vel.y <= 128.0f / 256.0f)
+		VelspeedY = 0.0f;
+	Out.m_Speed.x = VelspeedX / 32.0f;
+	const float VelspeedLength = length(Core.m_Vel) * Client()->GameTickSpeed();
+	const float Ramp = VelocityRamp(VelspeedLength, GameClient()->m_aTuning[g_Config.m_ClDummy].m_VelrampStart, GameClient()->m_aTuning[g_Config.m_ClDummy].m_VelrampRange, GameClient()->m_aTuning[g_Config.m_ClDummy].m_VelrampCurvature);
+	Out.m_Speed.x *= Ramp;
+	Out.m_Speed.y = VelspeedY / 32.0f;
+
+	float Angle = Core.m_Angle / 256.0f;
+	if(Angle < 0.0f)
+		Angle += 2.0f * pi;
+	Out.m_Angle = Angle * 180.0f / pi;
+	return Out;
+}
+
 void CHud::RenderMovementInformation(bool ForcePreview)
 {
 	// bestclient
@@ -1790,37 +1818,34 @@ void CHud::RenderMovementInformation(bool ForcePreview)
 		Info = GetMovementInformation(ClientId, g_Config.m_ClDummy);
 	}
 
-	// ranbi: rc_fast_practice_ghost_coords (use the controlled practice ghost's core)
-	// Replaces the whole HUD movement info (position/speed/angle) with the predicted
-	// practice core while fast practice is active; the HUD editor preview keeps its
-	// fixed demo values and all other states keep the original snapshot logic.
+	// ranbi: rc_fast_practice_ghost_coords (use the practice ghost cores for HUD info)
+	// Replaces the main HUD movement info with the controlled practice core, and the
+	// TClient dummy rows with the partner practice core. Only applies outside the HUD
+	// editor preview, while fast practice is active and fast practice ghost coords is
+	// enabled; otherwise the original snapshot-based values are kept unchanged.
 	if(!ForcePreview && g_Config.m_RcFastPracticeGhostCoords && GameClient()->m_FastPractice.Active() && !GameClient()->m_Snap.m_SpecInfo.m_Active)
 	{
+		CGameWorld &PracticeWorld = GameClient()->m_FastPractice.PracticeWorld();
+
 		const int PracticeId = GameClient()->m_FastPractice.ControlledPracticeId();
-		if(PracticeId >= 0 && PracticeId < MAX_CLIENTS && GameClient()->m_aClients[PracticeId].m_Active)
+		const CCharacter *pPracticeChar = PracticeId >= 0 && PracticeId < MAX_CLIENTS ? PracticeWorld.GetCharacterById(PracticeId) : nullptr;
+		if(pPracticeChar != nullptr)
 		{
-			const CCharacterCore &Core = GameClient()->m_aClients[PracticeId].m_Predicted;
-			Info.m_Pos = GameClient()->m_aClients[PracticeId].m_RenderPos / 32.0f;
-
-			// Same formulas as GetMovementInformation(), but from the predicted core.
-			// Core m_Vel is in world units/tick; the snapshot net values are x256.
-			float VelspeedX = Core.m_Vel.x * Client()->GameTickSpeed();
-			if(Core.m_Vel.x >= -1.0f / 256.0f && Core.m_Vel.x <= 1.0f / 256.0f)
-				VelspeedX = 0.0f;
-			float VelspeedY = Core.m_Vel.y * Client()->GameTickSpeed();
-			if(Core.m_Vel.y >= -128.0f / 256.0f && Core.m_Vel.y <= 128.0f / 256.0f)
-				VelspeedY = 0.0f;
-			Info.m_Speed.x = VelspeedX / 32.0f;
-			const float VelspeedLength = length(Core.m_Vel) * Client()->GameTickSpeed();
-			const float Ramp = VelocityRamp(VelspeedLength, GameClient()->m_aTuning[g_Config.m_ClDummy].m_VelrampStart, GameClient()->m_aTuning[g_Config.m_ClDummy].m_VelrampRange, GameClient()->m_aTuning[g_Config.m_ClDummy].m_VelrampCurvature);
-			Info.m_Speed.x *= Ramp;
-			Info.m_Speed.y = VelspeedY / 32.0f;
-
-			float Angle = Core.m_Angle / 256.0f;
-			if(Angle < 0.0f)
-				Angle += 2.0f * pi;
-			Info.m_Angle = Angle * 180.0f / pi;
+			Info = GetPracticeMovementInformation(*pPracticeChar->Core());
 		}
+		else if(PracticeId >= 0 && PracticeId < MAX_CLIENTS && GameClient()->m_aClients[PracticeId].m_Active)
+		{
+			// fallback to the published predicted core if the practice world character is
+			// not available in this frame (keeps the previous task-18 behaviour).
+			const auto &PracticeClient = GameClient()->m_aClients[PracticeId];
+			Info = GetPracticeMovementInformation(PracticeClient.m_Predicted, &PracticeClient.m_RenderPos);
+		}
+
+		// TClient HUD dummy position/speed/angle rows: use the practice partner core.
+		const int PartnerId = GameClient()->m_FastPractice.PartnerPracticeId();
+		const CCharacter *pPartnerChar = PartnerId >= 0 && PartnerId < MAX_CLIENTS ? PracticeWorld.GetCharacterById(PartnerId) : nullptr;
+		if(HasDummyInfo && pPartnerChar != nullptr)
+			DummyInfo = GetPracticeMovementInformation(*pPartnerChar->Core());
 	}
 
 	const float LeftX = Rect.x + 2.0f * Scale;

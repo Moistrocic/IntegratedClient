@@ -212,10 +212,17 @@ namespace
 	}
 
 	// Character.cpp:268: Direction = normalize(vec2(LatestInput.m_TargetX, m_TargetY))
-	bool GetAimDirection(const CGameClient *pGameClient, CCharacter *pLocalChar, const CGameClient::CClientData &LocalClient, int LocalId, vec2 &OutDirection)
+	bool GetAimDirection(const CGameClient *pGameClient, CCharacter *pLocalChar, const CGameClient::CClientData &LocalClient, int LocalId, bool UseCoreInput, vec2 &OutDirection)
 	{
 		if(pLocalChar != nullptr)
 		{
+			// practice character: FireWeapon aims with the core input (character.cpp:268),
+			// which is the live practice input; non-practice keeps LatestInput().
+			if(UseCoreInput && pLocalChar->Core() != nullptr && (pLocalChar->Core()->m_Input.m_TargetX != 0 || pLocalChar->Core()->m_Input.m_TargetY != 0))
+			{
+				OutDirection = normalize(vec2((float)pLocalChar->Core()->m_Input.m_TargetX, (float)pLocalChar->Core()->m_Input.m_TargetY));
+				return true;
+			}
 			const CNetObj_PlayerInput *pInput = pLocalChar->LatestInput();
 			if(pInput != nullptr && (pInput->m_TargetX != 0 || pInput->m_TargetY != 0))
 			{
@@ -234,7 +241,8 @@ namespace
 			}
 		}
 
-		OutDirection = direction(LocalClient.m_Predicted.m_Angle / 256.0f * 2.0f * pi);
+		const int Angle = pLocalChar != nullptr ? pLocalChar->Core()->m_Angle : LocalClient.m_Predicted.m_Angle;
+		OutDirection = direction(Angle / 256.0f * 2.0f * pi);
 		return true;
 	}
 } // namespace
@@ -255,14 +263,38 @@ void CRanbiAimLines::OnRender()
 	if(!LocalClient.m_Active)
 		return;
 
-	CGameWorld &World = GameClient()->m_PredictedWorld;
-	CCharacter *pLocalChar = World.GetCharacterById(LocalId);
+	CGameWorld *pWorld = &GameClient()->m_PredictedWorld;
+	CCharacter *pLocalChar = nullptr;
+	int OwnerId = LocalId;
+	bool UsePracticeCharacter = false;
+	// ranbi: while BestClient Fast Practice is active, the controlled practice ghost
+	// is the shooter: weapon/position/input/tune zone and the collision/hit world must
+	// come from the practice simulation, not from the frozen server body.
+	if(GameClient()->m_FastPractice.Active())
+	{
+		const int PracticeId = GameClient()->m_FastPractice.ControlledPracticeId();
+		if(PracticeId >= 0 && PracticeId < MAX_CLIENTS)
+		{
+			CGameWorld &PracticeWorld = GameClient()->m_FastPractice.PracticeWorld();
+			CCharacter *pPracticeChar = PracticeWorld.GetCharacterById(PracticeId);
+			if(pPracticeChar != nullptr)
+			{
+				pWorld = &PracticeWorld;
+				pLocalChar = pPracticeChar;
+				OwnerId = PracticeId;
+				UsePracticeCharacter = true;
+			}
+		}
+	}
+	CGameWorld &World = *pWorld;
+	if(pLocalChar == nullptr)
+		pLocalChar = World.GetCharacterById(LocalId);
 	const int Weapon = pLocalChar != nullptr ? pLocalChar->Core()->m_ActiveWeapon : LocalClient.m_Predicted.m_ActiveWeapon;
 	if(Weapon != WEAPON_LASER && Weapon != WEAPON_SHOTGUN && Weapon != WEAPON_GRENADE)
 		return;
 
 	vec2 Direction;
-	if(!GetAimDirection(GameClient(), pLocalChar, LocalClient, LocalId, Direction) || length(Direction) < 0.001f)
+	if(!GetAimDirection(GameClient(), pLocalChar, LocalClient, LocalId, UsePracticeCharacter, Direction) || length(Direction) < 0.001f)
 		return;
 
 	// character.cpp:413-467: CProjectile shots (vanilla shotgun, grenade) start at
@@ -275,7 +307,7 @@ void CRanbiAimLines::OnRender()
 		StartPos = LocalClient.m_Predicted.m_Pos + Direction * CCharacterCore::PhysicalSize() * PROJECTILE_START_OFFSET;
 	const vec2 LaserStartPos = pLocalChar != nullptr ? pLocalChar->Core()->m_Pos : LocalClient.m_Predicted.m_Pos;
 
-	CCollision *pCollision = Collision();
+	CCollision *pCollision = World.Collision();
 	IGraphics::CLineItem aLines[MAX_AIM_LINES];
 	SAimDrawBuffer Buf{aLines, MAX_AIM_LINES};
 	ColorRGBA Color;
@@ -288,7 +320,7 @@ void CRanbiAimLines::OnRender()
 		const CTuningParams *pFireTuning = World.GetTuning(FireTuneZone);
 		const CTuningParams *pTuning = World.GetTuning(LaserTuneZone);
 		Color = ColorRGBA(1.0f, 0.25f, 0.25f, 0.6f);
-		SimulateLaser(Buf, World, pCollision, pLocalChar, LocalId, WEAPON_LASER, pTuning, LaserStartPos, Direction, (float)pFireTuning->m_LaserReach);
+		SimulateLaser(Buf, World, pCollision, pLocalChar, OwnerId, WEAPON_LASER, pTuning, LaserStartPos, Direction, (float)pFireTuning->m_LaserReach);
 	}
 	else if(Weapon == WEAPON_SHOTGUN)
 	{
@@ -306,7 +338,7 @@ void CRanbiAimLines::OnRender()
 			{
 				const float V = 1.0f - absolute(i - 2) / 2.0f;
 				const float SpeedFactor = mix((float)pGlobalTuning->m_ShotgunSpeeddiff, 1.0f, V);
-				SimulateProjectile(Buf, World, pCollision, pLocalChar, LocalId, pTuning, StartPos,
+				SimulateProjectile(Buf, World, pCollision, pLocalChar, OwnerId, pTuning, StartPos,
 					direction(Angle + SHOTGUN_SPREAD[i]), SpeedFactor, LifeSpan,
 					(float)pTuning->m_ShotgunCurvature, (float)pTuning->m_ShotgunSpeed, Client()->GameTickSpeed());
 			}
@@ -318,7 +350,7 @@ void CRanbiAimLines::OnRender()
 			const int LaserTuneZone = SpawnTuneZone(World, pCollision, LaserStartPos);
 			const CTuningParams *pFireTuning = World.GetTuning(FireTuneZone);
 			const CTuningParams *pTuning = World.GetTuning(LaserTuneZone);
-			SimulateLaser(Buf, World, pCollision, pLocalChar, LocalId, WEAPON_SHOTGUN, pTuning, LaserStartPos, Direction, (float)pFireTuning->m_LaserReach);
+			SimulateLaser(Buf, World, pCollision, pLocalChar, OwnerId, WEAPON_SHOTGUN, pTuning, LaserStartPos, Direction, (float)pFireTuning->m_LaserReach);
 		}
 		else
 		{
@@ -335,7 +367,7 @@ void CRanbiAimLines::OnRender()
 		const CTuningParams *pFireTuning = World.GetTuning(FireTuneZone);
 		const CTuningParams *pTuning = World.GetTuning(ProjTuneZone);
 		const int LifeSpan = (int)((float)Client()->GameTickSpeed() * (float)pFireTuning->m_GrenadeLifetime);
-		SimulateProjectile(Buf, World, pCollision, pLocalChar, LocalId, pTuning, StartPos, Direction, 1.0f, LifeSpan,
+		SimulateProjectile(Buf, World, pCollision, pLocalChar, OwnerId, pTuning, StartPos, Direction, 1.0f, LifeSpan,
 			(float)pTuning->m_GrenadeCurvature, (float)pTuning->m_GrenadeSpeed, Client()->GameTickSpeed());
 	}
 
@@ -346,7 +378,7 @@ void CRanbiAimLines::OnRender()
 	// world-space renderers, so the lines do not depend on another component's mapping.
 	const vec2 CameraPos = GameClient()->m_Camera.m_Center;
 	const CScreenRect SavedScreen = Graphics()->GetScreen();
-	const CScreenRect WorldScreen = Graphics()->MapScreenToWorld(CameraPos.x, CameraPos.y, 100.0f, 100.0f, 100.0f, 0, 0, Graphics()->ScreenAspect(), 1.0f);
+	const CScreenRect WorldScreen = Graphics()->MapScreenToWorld(CameraPos.x, CameraPos.y, 100.0f, 100.0f, 100.0f, 0, 0, Graphics()->ScreenAspect(), GameClient()->m_Camera.m_Zoom);
 	Graphics()->MapScreen(WorldScreen);
 
 	Graphics()->TextureClear();

@@ -12,6 +12,8 @@
 #include <game/client/render.h>
 #include <game/client/ui_rect.h> // bestclient
 
+class CCharacterCore;
+
 struct SScoreInfo
 {
 	SScoreInfo()
@@ -106,6 +108,8 @@ class CHud : public CComponent
 		float m_Angle = 0.0f;
 	};
 	class CMovementInformation GetMovementInformation(int ClientId, int Conn) const;
+	// ranbi: movement info from a practice character core (Position/Speed/Angle)
+	class CMovementInformation GetPracticeMovementInformation(const CCharacterCore &Core, const vec2 *pPosOverride = nullptr) const;
 
 	void RenderGameTimer();
 	void RenderPauseNotification();
