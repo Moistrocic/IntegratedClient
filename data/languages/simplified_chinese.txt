@@ -3033,9 +3033,6 @@ Knowledge base
 Text files in ranbi/knowledge/*.txt are used as extra context; ddnet_wiki.txt is created on first start.
 == ranbi/knowledge/*.txt 中的文本文件会作为额外上下文；ddnet_wiki.txt 会在首次启动时创建。
 
-Max concurrent point requests
-== 分数请求最大并发数
-
 Endpoint
 == 端点
 
@@ -3116,6 +3113,21 @@ Show indicator in name plates
 
 You will be marked as a fake BC client.
 == 你会被标记为伪 BC 端。
+
+Show player below indicator
+== 显示玩家下方指示器
+
+Show current checkpoint in hud
+== 在 HUD 中显示当前检查点
+
+Show points in tab
+== 在计分板中显示分数
+
+Replace BC point fetching
+== 替换bc的分数获取逻辑
+
+Uses Ranbi/DDNet (ddnet.org) points on all servers instead of the BC provider logic.
+== 在所有服务器上使用 Ranbi/DDNet（ddnet.org）的分数，替换 BC 的 provider 逻辑。
 
 BETA
 == 
@@ -3964,15 +3976,6 @@ Show real hitbox
 == 
 
 Real hitbox dot color
-== 
-
-Show player below indicator
-== 
-
-Show current checkpoint in hud
-== 
-
-Show points in tab
 == 
 
 Show friend icon in scoreboard

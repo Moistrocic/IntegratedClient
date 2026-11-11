@@ -66,11 +66,12 @@
 #include "components/bestclient/gif_bubbles.h" // bestclient
 #include "components/bestclient/hud_editor.h" // bestclient
 #include "components/bestclient/physicball.h" // bestclient
-#include "components/bestclient/show_points.h" // bestclient
+#include "components/bestclient/show_points.h"
 #include "components/bestclient/spec_pause_radio.h" // bestclient
 #include "components/bestclient/twitch_chat.h" // bestclient
 #include "components/bestclient/ui_animations.h" // bestclient
 #include "components/bestclient/voice/voice.h" // bestclient
+#include "components/ranbi/points.h" // ranbi
 // bestclient
 #include "components/bestclient/translate.h" // bestclient
 // bestclient
@@ -245,6 +246,7 @@ public:
 	CEgoTilesPrediction m_EgoTilesPrediction; // bestclient
 	CSpecPauseRadio m_SpecPauseRadio; // bestclient
 	CShowPoints m_ShowPoints; // bestclient
+	CPoints m_RanbiPoints; // ranbi
 	CClientIndicator m_ClientIndicator; // bestclient
 	CVoiceChat m_VoiceChat; // bestclient
 	CAdminPanel m_AdminPanel; // bestclient

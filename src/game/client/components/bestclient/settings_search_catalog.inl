@@ -156,7 +156,6 @@
 	{"Show player below indicator", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcShowhudDummyCoordIndicator, nullptr},
 	{"Show current checkpoint in hud", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcShowCorrectCheckpoint, nullptr},
 	{"Show points in tab", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcShowPointsInTab, nullptr},
-	{"Max concurrent point requests", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcShowPointsMaxConcurrency, &g_Config.m_BcShowPointsInTab},
 	{"Show friend icon in scoreboard", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcScoreboardFriendMark, nullptr},
 	{"Show spectator nicknames", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcShowSpectatorNames, nullptr},
 	{"Show vote percentage", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals QoL", &g_Config.m_BcShowVotePercentage, nullptr},
@@ -365,6 +364,7 @@
 
 	{"Skip duplicate messages in chat history", SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD, "Chat", &g_Config.m_RcChatNoDuplicateHistory, nullptr},
 	{"Show DDNet points in chat", SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD, "Points", &g_Config.m_RcChatShowPoints, nullptr},
+	{"Replace BC point fetching", SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD, "Points", &g_Config.m_RcReplaceBcPoints, nullptr},
 	{"Show spectator skin in Following line", SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD, "Spectator", &g_Config.m_RcShowSpectatorSkin, nullptr},
 	{"Show three-tile water skip hint", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTiles, nullptr},
 	{"Three-tile hint size", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTilesInfoSize, &g_Config.m_RcShowEnableSkipThreeTiles},

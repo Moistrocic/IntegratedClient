@@ -922,12 +922,10 @@ void CMenus::RenderSettingsBestClientVisuals(CUIRect MainView)
 	const float RealHitboxColorLineSize = 25.0f;
 	const float RealHitboxColorLineSpacing = 5.0f;
 	const float RealHitboxColorHeight = g_Config.m_BcShowRealHitbox ? RealHitboxColorLineSize + RealHitboxColorLineSpacing : 0.0f;
-	const float PointsConcurrencyHeight = g_Config.m_BcShowPointsInTab ? LineSize : 0.0f;
 	const float VisualsQoLBlockHeight =
 		LineSize + MarginSmall +
 		11.0f * LineSize +
 		RealHitboxColorHeight +
-		PointsConcurrencyHeight +
 		3.0f * LineSize;
 	CUIRect VisualsQoLBlock;
 	Column.HSplitTop(VisualsQoLBlockHeight, &VisualsQoLBlock, &Column);
@@ -964,11 +962,6 @@ void CMenus::RenderSettingsBestClientVisuals(CUIRect MainView)
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcShowhudDummyCoordIndicator, BcLocalize("Show player below indicator"), &g_Config.m_BcShowhudDummyCoordIndicator, &VisualsQoLBlock, LineSize);
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcShowCorrectCheckpoint, BcLocalize("Show current checkpoint in hud"), &g_Config.m_BcShowCorrectCheckpoint, &VisualsQoLBlock, LineSize);
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcShowPointsInTab, BcLocalize("Show points in tab"), &g_Config.m_BcShowPointsInTab, &VisualsQoLBlock, LineSize);
-	if(g_Config.m_BcShowPointsInTab)
-	{
-		VisualsQoLBlock.HSplitTop(LineSize, &Button, &VisualsQoLBlock);
-		Ui()->DoScrollbarOption(&g_Config.m_BcShowPointsMaxConcurrency, &g_Config.m_BcShowPointsMaxConcurrency, &Button, BcLocalize("Max concurrent point requests"), 1, 5, &CUi::ms_LinearScrollbarScale, CUi::SCROLLBAR_OPTION_DELAYUPDATE);
-	}
 	{
 		CUIRect FriendMarkRow;
 		VisualsQoLBlock.HSplitTop(LineSize, &FriendMarkRow, &VisualsQoLBlock);

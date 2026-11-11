@@ -212,6 +212,7 @@ void CGameClient::OnConsoleInit()
 					      &m_EgoFinishedMaps, // bestclient
 					      &m_LegitFinishedMaps, // bestclient
 					      &m_ShowPoints, // bestclient
+					      &m_RanbiPoints, // ranbi
 					      &m_ClientIndicator, // bestclient
 					      &m_VoiceChat, // bestclient
 					      &m_RanbiAimLines, // ranbi
@@ -4268,7 +4269,7 @@ void CGameClient::UpdateRanbiAutoSkin()
 			{
 				if(str_comp(CSkins7::ms_apSkinVariables[Dummy][Part], TargetSkin.m_aaSkinPartNames[Part]) != 0 ||
 					*CSkins7::ms_apUCCVariables[Dummy][Part] != TargetSkin.m_aUseCustomColors[Part] ||
-					*CSkins7::ms_apColorVariables[Dummy][Part] != TargetSkin.m_aSkinPartColors[Part])
+					*CSkins7::ms_apColorVariables[Dummy][Part] != static_cast<unsigned int>(TargetSkin.m_aSkinPartColors[Part]))
 				{
 					NeedChange = true;
 					break;
@@ -4299,7 +4300,7 @@ void CGameClient::UpdateRanbiAutoSkin()
 			{
 				str_copy(CSkins7::ms_apSkinVariables[Dummy][Part], TargetSkin.m_aaSkinPartNames[Part], protocol7::MAX_SKIN_ARRAY_SIZE);
 				*CSkins7::ms_apUCCVariables[Dummy][Part] = TargetSkin.m_aUseCustomColors[Part];
-				*CSkins7::ms_apColorVariables[Dummy][Part] = TargetSkin.m_aSkinPartColors[Part];
+				*CSkins7::ms_apColorVariables[Dummy][Part] = static_cast<unsigned int>(TargetSkin.m_aSkinPartColors[Part]);
 			}
 		}
 		else if(Dummy == 0)

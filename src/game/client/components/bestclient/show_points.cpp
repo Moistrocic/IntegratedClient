@@ -13,8 +13,6 @@
 
 #include <game/client/gameclient.h>
 
-#include <algorithm>
-
 namespace
 {
 	bool IsJsonObject(const json_value *pValue)
@@ -187,6 +185,10 @@ CShowPoints::EProvider CShowPoints::CurrentProvider() const
 
 bool CShowPoints::ActiveOnCurrentServer() const
 {
+	// task-47: when the Ranbi replacement is on, points are available on every server
+	// (the BC provider logic is ignored; Ranbi always queries ddnet.org).
+	if(g_Config.m_RcReplaceBcPoints)
+		return Enabled();
 	return Enabled() && CurrentProvider() != EProvider::None;
 }
 
@@ -218,6 +220,18 @@ bool CShowPoints::TryGetPoints(const char *pName, int *pPoints) const
 	if(!pName || !pName[0] || !pPoints)
 		return false;
 
+	// task-47: delegate all servers to Ranbi/DDNet when the replacement is enabled.
+	if(g_Config.m_RcReplaceBcPoints)
+	{
+		const int Points = GameClient()->m_RanbiPoints.GetPoints(pName);
+		if(Points > 0)
+		{
+			*pPoints = Points;
+			return true;
+		}
+		return false;
+	}
+
 	const EProvider Provider = CurrentProvider();
 	if(Provider == EProvider::None)
 		return false;
@@ -237,6 +251,11 @@ void CShowPoints::RequestPoints(const char *pName)
 {
 	if(!Enabled())
 		return;
+	if(g_Config.m_RcReplaceBcPoints)
+	{
+		GameClient()->m_RanbiPoints.GetPoints(pName);
+		return;
+	}
 	QueueRequest(pName);
 }
 
@@ -244,12 +263,20 @@ void CShowPoints::RequestPoints(const char *pName)
 // even when the scoreboard points column (bc_show_points_in_tab) is disabled.
 void CShowPoints::RequestPointsForDisplay(const char *pName)
 {
+	if(g_Config.m_RcReplaceBcPoints)
+	{
+		GameClient()->m_RanbiPoints.GetPoints(pName);
+		return;
+	}
 	QueueRequest(pName);
 }
 
 // ranbi
 bool CShowPoints::SupportedOnCurrentServer() const
 {
+	// task-47: the Ranbi/DDNet replacement works on every server.
+	if(g_Config.m_RcReplaceBcPoints)
+		return true;
 	return CurrentProvider() != EProvider::None;
 }
 
@@ -257,6 +284,11 @@ void CShowPoints::QueueRequest(const char *pName)
 {
 	if(!pName || !pName[0])
 		return;
+	if(g_Config.m_RcReplaceBcPoints)
+	{
+		GameClient()->m_RanbiPoints.GetPoints(pName);
+		return;
+	}
 
 	const EProvider Provider = CurrentProvider();
 	if(Provider == EProvider::None)
@@ -377,14 +409,6 @@ void CShowPoints::ProcessInFlight()
 	}
 }
 
-// ranbi: bc_show_points_max_concurrency (R3: configurable in-flight request limit)
-// The config value is clamped to 1..5 so a broken config cannot disable or
-// unboundedly raise the concurrency.
-int CShowPoints::MaxConcurrency() const
-{
-	return std::clamp((int)g_Config.m_BcShowPointsMaxConcurrency, 1, 5);
-}
-
 void CShowPoints::PumpQueue()
 {
 	const EProvider Provider = CurrentProvider();
@@ -399,7 +423,7 @@ void CShowPoints::PumpQueue()
 		ClearPending();
 	m_LastProvider = Provider;
 
-	while((int)m_vInFlight.size() < MaxConcurrency() && !m_Queue.empty())
+	while((int)m_vInFlight.size() < MAX_CONCURRENT && !m_Queue.empty())
 	{
 		const std::string Name = std::move(m_Queue.front());
 		m_Queue.pop_front();
@@ -417,6 +441,15 @@ void CShowPoints::PumpQueue()
 
 void CShowPoints::OnUpdate()
 {
+	// task-47: the Ranbi CPoints component owns the requests/cache when replacement is
+	// enabled; keep the BC queue empty so the two caches never mix.
+	if(g_Config.m_RcReplaceBcPoints)
+	{
+		ClearPending();
+		m_LastProvider = EProvider::None;
+		return;
+	}
+
 	// ranbi: requests can also come from the nameplate points display, so queued/in-flight
 	// requests are processed even while the scoreboard points column is disabled.
 	const bool HasPendingRequests = !m_Queue.empty() || !m_vInFlight.empty();

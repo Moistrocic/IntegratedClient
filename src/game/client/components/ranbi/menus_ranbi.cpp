@@ -98,16 +98,6 @@ int CMenus::GetRanbiSettingsTab() const
 	return s_CurRanbiTab;
 }
 
-static void RenderRanbiPlaceholder(CUi *pUi, CUIRect MainView, const char *pMessage)
-{
-	CUIRect Label;
-	MainView.HSplitTop(s_HeadlineFontSize, &Label, &MainView);
-	pUi->DoLabel(&Label, Localize("Ranbi"), s_HeadlineFontSize, TEXTALIGN_ML);
-	MainView.HSplitTop(s_Margin, nullptr, &MainView);
-	MainView.HSplitTop(s_LineSize, &Label, &MainView);
-	pUi->DoLabel(&Label, pMessage, s_FontSize, TEXTALIGN_ML);
-}
-
 void CMenus::RenderSettingsRanbi(CUIRect MainView)
 {
 	static CButtonContainer s_aPageTabs[RANBI_TAB_COUNT] = {};
@@ -312,6 +302,8 @@ void CMenus::RenderSettingsRanbiChatScoreboard(CUIRect MainView)
 	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
 	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Points"));
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcChatShowPoints, Localize("Show DDNet points in chat"), &g_Config.m_RcChatShowPoints, &Column, s_LineSize);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcReplaceBcPoints, Localize("Replace BC point fetching"), &g_Config.m_RcReplaceBcPoints, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("Uses Ranbi/DDNet (ddnet.org) points on all servers instead of the BC provider logic."));
 	RenderRanbiHint(Ui(), &Column, Localize("Requires a DDNet, EGO or Legit server."));
 
 	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);

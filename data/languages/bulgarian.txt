@@ -3540,9 +3540,6 @@ Show current checkpoint in hud
 Show points in tab
 == 
 
-Max concurrent point requests
-== 
-
 Show friend icon in scoreboard
 == 
 
@@ -5333,6 +5330,12 @@ Repeats the most recent message from another player in the same chat channel; do
 == 
 
 Show DDNet points in chat
+== 
+
+Replace BC point fetching
+== 
+
+Uses Ranbi/DDNet (ddnet.org) points on all servers instead of the BC provider logic.
 == 
 
 Requires a DDNet, EGO or Legit server.

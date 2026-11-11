@@ -84,6 +84,7 @@ MACRO_CONFIG_STR(RcAiSystemPrompt, rc_ai_system_prompt, 512, "", CFGFLAG_CLIENT 
 
 // integratedclient new features
 MACRO_CONFIG_INT(RcWeaponAimLines, rc_weapon_aim_lines, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show predicted aim lines for laser, shotgun and grenade")
+MACRO_CONFIG_INT(RcReplaceBcPoints, rc_replace_bc_points, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Replace BC point fetching with Ranbi/DDNet (ddnet.org) points")
 MACRO_CONFIG_INT(RcLockFinishedName, rc_lock_finished_name, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Use a fixed player name for the official server list map completion query")
 MACRO_CONFIG_STR(RcLockFinishedNameId, rc_lock_finished_name_id, 128, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Player name/ID used for the locked map completion query")
 MACRO_CONFIG_INT(RcFastPracticeGhostCoords, rc_fast_practice_ghost_coords, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "In BestClient fast practice, show the controlled practice character's position in the HUD movement info")
