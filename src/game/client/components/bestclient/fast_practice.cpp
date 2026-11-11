@@ -1,6 +1,7 @@
 /* Copyright © 2026 BestProject Team */
 #include "fast_practice.h"
 
+#include <base/log.h>
 #include <base/math.h>
 #include <base/mem.h>
 #include <base/str.h>
@@ -151,6 +152,7 @@ void CFastPractice::ConFastPracticeToggle(IConsole::IResult *pResult, void *pUse
 {
 	(void)pResult;
 	auto *pSelf = static_cast<CFastPractice *>(pUserData);
+	log_info("fast_practice", "toggle requested (enabled=%d)", pSelf->Enabled());
 	pSelf->Toggle();
 }
 
@@ -226,34 +228,39 @@ void CFastPractice::OnStateChange(int NewState, int OldState)
 
 bool CFastPractice::CanEnable() const
 {
+	return CanEnableFailureReason() == nullptr;
+}
+
+const char *CFastPractice::CanEnableFailureReason() const
+{
 	if(Client()->State() != IClient::STATE_ONLINE)
-		return false;
+		return "practice requires an online server";
 
 	if(!GameClient()->m_Snap.m_pLocalInfo || !GameClient()->m_Snap.m_pLocalCharacter)
-		return false;
+		return "practice requires a local character";
 
 	if(GameClient()->m_Snap.m_SpecInfo.m_Active || GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS)
-		return false;
+		return "practice cannot be enabled while spectating";
 
 	if(GameClient()->m_Snap.m_pGameInfoObj && (GameClient()->m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED))
-		return false;
+		return "practice cannot be enabled while the game is paused";
 
 	const int LocalClientId = GameClient()->m_Snap.m_LocalClientId;
 	if(LocalClientId < 0 || LocalClientId >= MAX_CLIENTS)
-		return false;
+		return "practice: local client id is invalid";
 
 	if(!GameClient()->m_Snap.m_aCharacters[LocalClientId].m_Active || GameClient()->m_aClients[LocalClientId].m_Paused)
-		return false;
+		return "practice: local character is inactive or paused";
 
 	const int ActiveConn = g_Config.m_ClDummy ? IClient::CONN_DUMMY : IClient::CONN_MAIN;
 	const int ActiveClientId = GameClient()->m_aLocalIds[ActiveConn];
 	if(ActiveClientId >= 0 && ActiveClientId < MAX_CLIENTS)
 	{
 		if(!GameClient()->m_Snap.m_aCharacters[ActiveClientId].m_Active || GameClient()->m_aClients[ActiveClientId].m_Paused)
-			return false;
+			return "practice: active connection character is inactive or paused";
 	}
 
-	return true;
+	return nullptr;
 }
 
 int CFastPractice::CurrentLocalPracticeId() const
@@ -951,8 +958,16 @@ void CFastPractice::CaptureServerLockedTargets()
 
 void CFastPractice::Enable()
 {
-	if(m_Enabled || !CanEnable())
+	if(m_Enabled)
+	{
+		EchoPractice("practice mode already enabled");
 		return;
+	}
+	if(const char *pFailureReason = CanEnableFailureReason())
+	{
+		EchoPractice("%s", Localize(pFailureReason));
+		return;
+	}
 
 	const int ActiveConn = g_Config.m_ClDummy ? IClient::CONN_DUMMY : IClient::CONN_MAIN;
 	const int InactiveConn = ActiveConn ^ 1;
@@ -980,6 +995,7 @@ void CFastPractice::Enable()
 
 	if(!Rebuild())
 	{
+		EchoPractice("practice rebuild failed (world/map state unavailable)");
 		ResetPracticeState();
 		return;
 	}
@@ -987,6 +1003,7 @@ void CFastPractice::Enable()
 	CaptureAnchorsFromSnapshot();
 	if(!m_MainAnchor.m_Valid || (m_RequireDummy && !m_HasDummyAnchor))
 	{
+		EchoPractice("practice anchors unavailable (try again after spawning)");
 		ResetPracticeState();
 		return;
 	}
