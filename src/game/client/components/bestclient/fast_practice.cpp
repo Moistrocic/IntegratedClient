@@ -927,6 +927,34 @@ void CFastPractice::ReleaseBufferedInputState()
 	GameClient()->m_DummyFire = 0;
 }
 
+void CFastPractice::ForceReleasedFireInputs()
+{
+	// task-31: a toggle boundary must not synthesize a fire press. Keep both the
+	// current and last fire state on the same even (released) ring state: CountInput()
+	// only counts a press when the state actually changes to an odd value, so choosing
+	// the release of the *previous* state (and writing it to both) is edge-free.
+	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
+	{
+		int Released = GameClient()->m_Controls.m_aLastData[Conn].m_Fire & INPUT_STATE_MASK;
+		if((Released & 1) != 0)
+			Released = (Released + 1) & INPUT_STATE_MASK;
+		GameClient()->m_Controls.m_aInputData[Conn].m_Fire = Released;
+		GameClient()->m_Controls.m_aLastData[Conn].m_Fire = Released;
+
+		// The next regular prediction reads the latest recorded client input; keep its
+		// fire state edge-free too (GetInput returns the newest entry <= Tick).
+		if(int *pInputData = Client()->GetInput(Client()->PredGameTick(g_Config.m_ClDummy), Conn))
+		{
+			CNetObj_PlayerInput *pInput = (CNetObj_PlayerInput *)pInputData;
+			pInput->m_Fire = Released;
+		}
+	}
+	GameClient()->m_Controls.m_aFastInput[g_Config.m_ClDummy].m_Fire = 0;
+	GameClient()->m_DummyInput.m_Fire = 0;
+	GameClient()->m_HammerInput.m_Fire = 0;
+	GameClient()->m_DummyFire = 0;
+}
+
 void CFastPractice::InvalidateBufferedInputState()
 {
 	if(!m_Enabled)
@@ -1019,7 +1047,12 @@ void CFastPractice::Enable()
 		if(CCharacter *pDummy = m_PracticeWorld.GetCharacterById(m_EnableDummyClientId))
 			TrackSafeRescuePosition(m_EnableDummyClientId, pDummy);
 	ReleaseBufferedInputState();
+	ForceReleasedFireInputs();
 	CaptureServerLockedTargets();
+	// task-31: the first ticks of the practice prediction must not synthesize a
+	// press from the seeded/live input state (previously this flag was not set here).
+	m_SuppressFireOnNextPredictTick = true;
+	m_InputSuppressTicks = std::max(m_InputSuppressTicks, 2);
 	PublishParticipantCores(m_EnableLocalClientId, m_EnableDummyClientId);
 	GameClient()->m_PredictedTick = m_PracticeWorld.GameTick();
 }
@@ -1043,6 +1076,7 @@ void CFastPractice::Disable()
 	GameClient()->m_PredictedWorld.m_PredictedEvents.clear();
 	GameClient()->m_GameWorld.m_PredictedEvents.clear();
 	ReleaseBufferedInputState();
+	ForceReleasedFireInputs();
 	m_aHasServerLockedTargets.fill(false);
 	m_aServerLockedFire.fill(0);
 	m_aServerLockedNextWeapon.fill(0);
@@ -1693,7 +1727,13 @@ void CFastPractice::TickPracticeWorld()
 			if(pInputData)
 			{
 				LocalNeutralizedInput = *pInputData;
-				LocalNeutralizedInput.m_Fire = ReleasedFireState(pLocalChar->LatestInput()->m_Fire);
+				// task-31: hold the fire ring at a constant released state. Writing
+				// ReleasedFireState(latest) here could turn a released previous state
+				// (0) into 2, which CountInput() counts as one press and fires once.
+				// Forcing the previous LatestInput too makes the CountInput transition
+				// 0 -> 0 (no press) and disables full-auto for this guard tick.
+				pLocalChar->LatestInput()->m_Fire = 0;
+				LocalNeutralizedInput.m_Fire = 0;
 				LocalNeutralizedInput.m_WantedWeapon = 0;
 				LocalNeutralizedInput.m_NextWeapon = 0;
 				LocalNeutralizedInput.m_PrevWeapon = 0;
@@ -1702,7 +1742,8 @@ void CFastPractice::TickPracticeWorld()
 			if(pDummyInputData)
 			{
 				DummyNeutralizedInput = *pDummyInputData;
-				DummyNeutralizedInput.m_Fire = ReleasedFireState(pDummyChar->LatestInput()->m_Fire);
+				pDummyChar->LatestInput()->m_Fire = 0;
+				DummyNeutralizedInput.m_Fire = 0;
 				DummyNeutralizedInput.m_WantedWeapon = 0;
 				DummyNeutralizedInput.m_NextWeapon = 0;
 				DummyNeutralizedInput.m_PrevWeapon = 0;

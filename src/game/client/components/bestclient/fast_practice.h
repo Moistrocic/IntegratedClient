@@ -225,6 +225,8 @@ private:
 	void UpdateFreezeSkinDebounce();
 	void RenderGhost(const SGhostData &Ghost, float Alpha) const;
 	void ReleaseBufferedInputState();
+	// task-31: keep fire in the same released state on toggle boundaries
+	void ForceReleasedFireInputs();
 	void CaptureServerLockedTargets();
 	void CaptureFrozenTargets();
 	void ResetStoredInputs();
