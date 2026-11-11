@@ -1,7 +1,6 @@
 /* Copyright © 2026 BestProject Team */
 #include "fast_practice.h"
 
-#include <base/log.h>
 #include <base/math.h>
 #include <base/mem.h>
 #include <base/str.h>
@@ -152,7 +151,6 @@ void CFastPractice::ConFastPracticeToggle(IConsole::IResult *pResult, void *pUse
 {
 	(void)pResult;
 	auto *pSelf = static_cast<CFastPractice *>(pUserData);
-	log_info("fast_practice", "toggle requested (enabled=%d)", pSelf->Enabled());
 	pSelf->Toggle();
 }
 
@@ -228,39 +226,34 @@ void CFastPractice::OnStateChange(int NewState, int OldState)
 
 bool CFastPractice::CanEnable() const
 {
-	return CanEnableFailureReason() == nullptr;
-}
-
-const char *CFastPractice::CanEnableFailureReason() const
-{
 	if(Client()->State() != IClient::STATE_ONLINE)
-		return "practice requires an online server";
+		return false;
 
 	if(!GameClient()->m_Snap.m_pLocalInfo || !GameClient()->m_Snap.m_pLocalCharacter)
-		return "practice requires a local character";
+		return false;
 
 	if(GameClient()->m_Snap.m_SpecInfo.m_Active || GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS)
-		return "practice cannot be enabled while spectating";
+		return false;
 
 	if(GameClient()->m_Snap.m_pGameInfoObj && (GameClient()->m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED))
-		return "practice cannot be enabled while the game is paused";
+		return false;
 
 	const int LocalClientId = GameClient()->m_Snap.m_LocalClientId;
 	if(LocalClientId < 0 || LocalClientId >= MAX_CLIENTS)
-		return "practice: local client id is invalid";
+		return false;
 
 	if(!GameClient()->m_Snap.m_aCharacters[LocalClientId].m_Active || GameClient()->m_aClients[LocalClientId].m_Paused)
-		return "practice: local character is inactive or paused";
+		return false;
 
 	const int ActiveConn = g_Config.m_ClDummy ? IClient::CONN_DUMMY : IClient::CONN_MAIN;
 	const int ActiveClientId = GameClient()->m_aLocalIds[ActiveConn];
 	if(ActiveClientId >= 0 && ActiveClientId < MAX_CLIENTS)
 	{
 		if(!GameClient()->m_Snap.m_aCharacters[ActiveClientId].m_Active || GameClient()->m_aClients[ActiveClientId].m_Paused)
-			return "practice: active connection character is inactive or paused";
+			return false;
 	}
 
-	return nullptr;
+	return true;
 }
 
 int CFastPractice::CurrentLocalPracticeId() const
@@ -927,34 +920,6 @@ void CFastPractice::ReleaseBufferedInputState()
 	GameClient()->m_DummyFire = 0;
 }
 
-void CFastPractice::ForceReleasedFireInputs()
-{
-	// task-31: a toggle boundary must not synthesize a fire press. Keep both the
-	// current and last fire state on the same even (released) ring state: CountInput()
-	// only counts a press when the state actually changes to an odd value, so choosing
-	// the release of the *previous* state (and writing it to both) is edge-free.
-	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
-	{
-		int Released = GameClient()->m_Controls.m_aLastData[Conn].m_Fire & INPUT_STATE_MASK;
-		if((Released & 1) != 0)
-			Released = (Released + 1) & INPUT_STATE_MASK;
-		GameClient()->m_Controls.m_aInputData[Conn].m_Fire = Released;
-		GameClient()->m_Controls.m_aLastData[Conn].m_Fire = Released;
-
-		// The next regular prediction reads the latest recorded client input; keep its
-		// fire state edge-free too (GetInput returns the newest entry <= Tick).
-		if(int *pInputData = Client()->GetInput(Client()->PredGameTick(g_Config.m_ClDummy), Conn))
-		{
-			CNetObj_PlayerInput *pInput = (CNetObj_PlayerInput *)pInputData;
-			pInput->m_Fire = Released;
-		}
-	}
-	GameClient()->m_Controls.m_aFastInput[g_Config.m_ClDummy].m_Fire = 0;
-	GameClient()->m_DummyInput.m_Fire = 0;
-	GameClient()->m_HammerInput.m_Fire = 0;
-	GameClient()->m_DummyFire = 0;
-}
-
 void CFastPractice::InvalidateBufferedInputState()
 {
 	if(!m_Enabled)
@@ -986,16 +951,8 @@ void CFastPractice::CaptureServerLockedTargets()
 
 void CFastPractice::Enable()
 {
-	if(m_Enabled)
-	{
-		EchoPractice("practice mode already enabled");
+	if(m_Enabled || !CanEnable())
 		return;
-	}
-	if(const char *pFailureReason = CanEnableFailureReason())
-	{
-		EchoPractice("%s", Localize(pFailureReason));
-		return;
-	}
 
 	const int ActiveConn = g_Config.m_ClDummy ? IClient::CONN_DUMMY : IClient::CONN_MAIN;
 	const int InactiveConn = ActiveConn ^ 1;
@@ -1023,7 +980,6 @@ void CFastPractice::Enable()
 
 	if(!Rebuild())
 	{
-		EchoPractice("practice rebuild failed (world/map state unavailable)");
 		ResetPracticeState();
 		return;
 	}
@@ -1031,7 +987,6 @@ void CFastPractice::Enable()
 	CaptureAnchorsFromSnapshot();
 	if(!m_MainAnchor.m_Valid || (m_RequireDummy && !m_HasDummyAnchor))
 	{
-		EchoPractice("practice anchors unavailable (try again after spawning)");
 		ResetPracticeState();
 		return;
 	}
@@ -1047,12 +1002,7 @@ void CFastPractice::Enable()
 		if(CCharacter *pDummy = m_PracticeWorld.GetCharacterById(m_EnableDummyClientId))
 			TrackSafeRescuePosition(m_EnableDummyClientId, pDummy);
 	ReleaseBufferedInputState();
-	ForceReleasedFireInputs();
 	CaptureServerLockedTargets();
-	// task-31: the first ticks of the practice prediction must not synthesize a
-	// press from the seeded/live input state (previously this flag was not set here).
-	m_SuppressFireOnNextPredictTick = true;
-	m_InputSuppressTicks = std::max(m_InputSuppressTicks, 2);
 	PublishParticipantCores(m_EnableLocalClientId, m_EnableDummyClientId);
 	GameClient()->m_PredictedTick = m_PracticeWorld.GameTick();
 }
@@ -1076,7 +1026,6 @@ void CFastPractice::Disable()
 	GameClient()->m_PredictedWorld.m_PredictedEvents.clear();
 	GameClient()->m_GameWorld.m_PredictedEvents.clear();
 	ReleaseBufferedInputState();
-	ForceReleasedFireInputs();
 	m_aHasServerLockedTargets.fill(false);
 	m_aServerLockedFire.fill(0);
 	m_aServerLockedNextWeapon.fill(0);
@@ -1086,9 +1035,6 @@ void CFastPractice::Disable()
 
 void CFastPractice::Toggle()
 {
-	// ranbi: task-38 - the toggle source can be a mouse1 click (also the +fire bind);
-	// swallow that press/release edge until the physical button is released.
-	Console()->ExecuteLine("ranbi_suppress_fire_until_release", IConsole::CLIENT_ID_UNSPECIFIED);
 	if(m_Enabled)
 		Disable();
 	else
@@ -1730,13 +1676,7 @@ void CFastPractice::TickPracticeWorld()
 			if(pInputData)
 			{
 				LocalNeutralizedInput = *pInputData;
-				// task-31: hold the fire ring at a constant released state. Writing
-				// ReleasedFireState(latest) here could turn a released previous state
-				// (0) into 2, which CountInput() counts as one press and fires once.
-				// Forcing the previous LatestInput too makes the CountInput transition
-				// 0 -> 0 (no press) and disables full-auto for this guard tick.
-				pLocalChar->LatestInput()->m_Fire = 0;
-				LocalNeutralizedInput.m_Fire = 0;
+				LocalNeutralizedInput.m_Fire = ReleasedFireState(pLocalChar->LatestInput()->m_Fire);
 				LocalNeutralizedInput.m_WantedWeapon = 0;
 				LocalNeutralizedInput.m_NextWeapon = 0;
 				LocalNeutralizedInput.m_PrevWeapon = 0;
@@ -1745,8 +1685,7 @@ void CFastPractice::TickPracticeWorld()
 			if(pDummyInputData)
 			{
 				DummyNeutralizedInput = *pDummyInputData;
-				pDummyChar->LatestInput()->m_Fire = 0;
-				DummyNeutralizedInput.m_Fire = 0;
+				DummyNeutralizedInput.m_Fire = ReleasedFireState(pDummyChar->LatestInput()->m_Fire);
 				DummyNeutralizedInput.m_WantedWeapon = 0;
 				DummyNeutralizedInput.m_NextWeapon = 0;
 				DummyNeutralizedInput.m_PrevWeapon = 0;

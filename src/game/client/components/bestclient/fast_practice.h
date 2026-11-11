@@ -33,8 +33,6 @@ public:
 	bool Enabled() const { return m_Enabled; }
 	bool Active() const { return m_Enabled && m_Ready; }
 	bool CanEnable() const;
-	// first failing enable condition, or nullptr when enabling is possible
-	const char *CanEnableFailureReason() const;
 	void Toggle();
 	void Enable();
 	void Disable();
@@ -225,8 +223,6 @@ private:
 	void UpdateFreezeSkinDebounce();
 	void RenderGhost(const SGhostData &Ghost, float Alpha) const;
 	void ReleaseBufferedInputState();
-	// task-31: keep fire in the same released state on toggle boundaries
-	void ForceReleasedFireInputs();
 	void CaptureServerLockedTargets();
 	void CaptureFrozenTargets();
 	void ResetStoredInputs();
