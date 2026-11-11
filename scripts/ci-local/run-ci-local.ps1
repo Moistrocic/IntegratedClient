@@ -26,14 +26,25 @@ param(
 	# Only list jobs that act sees in the workflow.
 	[switch]$List,
 
-	# Do not force-pull the runner image on every run.
-	[switch]$NoPull,
+	# Force-pull the runner image even if it exists locally.
+	[switch]$ForcePull,
 
 	# Keep containers for reuse between runs (-r).
 	[switch]$Reuse,
 
 	# Override the act executable.
-	[string]$ActBin
+	[string]$ActBin,
+
+	# Use the locally built GitHub-runner approximation (ic-ci-runner:*) instead
+	# of the bare catthehacker images. Build it once with -BuildRunnerImages.
+	[switch]$UseCustomRunner,
+
+	# Build the local runner images before running (requires Docker + network).
+	[switch]$BuildRunnerImages,
+
+	# Which Ubuntu runner images to build: latest / 22.04 / 24.04.
+	[ValidateSet("latest", "22.04", "24.04")]
+	[string[]]$RunnerImages = @("latest")
 )
 
 $ErrorActionPreference = "Stop"
@@ -84,6 +95,42 @@ function Resolve-WorkflowPath([string]$Name) {
 	throw "找不到 workflow：$Name（示例：style / build / rust / .github/workflows/style.yml）"
 }
 
+function Build-RunnerImages {
+	$baseByTag = @{
+		"latest" = "catthehacker/ubuntu:act-latest"
+		"22.04"  = "catthehacker/ubuntu:act-22.04"
+		"24.04"  = "catthehacker/ubuntu:act-24.04"
+	}
+	$dockerfile = Join-Path $PSScriptRoot "runner\Dockerfile"
+	foreach ($tag in $RunnerImages) {
+		$base = $baseByTag[$tag]
+		Write-Host "building ic-ci-runner:$tag from $base ..."
+		docker build -f $dockerfile --build-arg "BASE_IMAGE=$base" -t "ic-ci-runner:$tag" (Join-Path $PSScriptRoot "runner")
+		if ($LASTEXITCODE -ne 0) { throw "failed to build ic-ci-runner:$tag" }
+	}
+}
+
+function Get-RunnerMappings {
+	if ($UseCustomRunner) {
+		return @(
+			"-P", "ubuntu-latest=ic-ci-runner:latest",
+			"-P", "ubuntu-22.04=ic-ci-runner:22.04",
+			"-P", "ubuntu-24.04=ic-ci-runner:24.04",
+			"-P", "windows-latest=-self-hosted",
+			"-P", "windows-2022=-self-hosted"
+		)
+	}
+	return @(
+		"-P", "ubuntu-latest=catthehacker/ubuntu:act-latest",
+		"-P", "ubuntu-22.04=catthehacker/ubuntu:act-22.04",
+		"-P", "ubuntu-24.04=catthehacker/ubuntu:act-24.04",
+		"-P", "windows-latest=-self-hosted",
+		"-P", "windows-2022=-self-hosted"
+	)
+}
+
+if ($BuildRunnerImages) { Build-RunnerImages }
+
 Ensure-Act
 Ensure-Docker
 
@@ -127,24 +174,23 @@ foreach ($entry in $Matrix) { $actArgs += @("--matrix", $entry) }
 # Runner image mapping. Linux uses the community GitHub-runner images; Windows
 # jobs execute on this machine via act host mode. macOS/iOS are intentionally
 # unmapped so they fail loudly instead of pretending to work.
-$actArgs += @(
-	"-P", "ubuntu-latest=catthehacker/ubuntu:act-latest",
-	"-P", "ubuntu-22.04=catthehacker/ubuntu:act-22.04",
-	"-P", "ubuntu-24.04=catthehacker/ubuntu:act-24.04",
-	"-P", "windows-latest=-self-hosted",
-	"-P", "windows-2022=-self-hosted"
-)
+$actArgs += Get-RunnerMappings
 
 $actArgs += @(
 	"--container-options", "--cpus=$CpuLimit",
 	"--env-file", $envFile,
 	"--secret-file", $secretsFile,
 	"--artifact-server-path", $artifactsDir,
+	"--artifact-server-port", "$artifactPort",
 	"--cache-server-path", $cacheDir
 )
 
-if (-not $NoPull) { $actArgs += "--pull=false" }
+if ($ForcePull) { $actArgs += "--pull" } else { $actArgs += "--pull=false" }
 if ($Reuse) { $actArgs += "-r" }
+
+# act's default artifact server port (34567) collides when several act runs
+# happen at once, so pick a free-ish port per invocation.
+$artifactPort = Get-Random -Minimum 34000 -Maximum 35000
 
 $logName = "{0}-{1}-{2}.log" -f [IO.Path]::GetFileNameWithoutExtension($workflowPath), $Event, (Get-Date -Format "yyyyMMdd-HHmmss")
 $logPath = Join-Path $logsDir $logName

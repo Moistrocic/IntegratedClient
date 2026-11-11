@@ -12,6 +12,35 @@
 - 其他 GitHub 平台能力（secrets、artifact、cache、services、Pages、release）
   由 act 本地服务/参数近似，不能保证与 GitHub 完全一致。
 
+## 扩展 runner 镜像（推荐）
+
+GitHub 的 Ubuntu runner 预装了 Rust/CMake/Ninja/clang/pip 等工具，而 act 的
+`catthehacker` 基础镜像只保留 bootstrap 必需的工具。直接跑依赖这些预装工具的
+workflow（如 `rust.yml`、`build.yml`）会报 `cargo: command not found`。
+
+`scripts/ci-local/runner/Dockerfile` 在 act 镜像上补齐了这些工具，构建一次即可：
+
+```powershell
+# 构建本地扩展镜像（可只构建需要的 Ubuntu 版本）
+.\scripts\ci-local\run-ci-local.ps1 -BuildRunnerImages -RunnerImages latest,22.04,24.04
+
+# 之后运行时映射到扩展镜像
+.\scripts\ci-local\run-ci-local.ps1 -Workflow rust -Job rustfmt -UseCustomRunner
+.\scripts\ci-local\run-ci-local.ps1 -Workflow style -UseCustomRunner
+```
+
+映射关系（`-UseCustomRunner` 时）：
+
+- `ubuntu-latest` → `ic-ci-runner:latest`
+- `ubuntu-22.04` → `ic-ci-runner:22.04`
+- `ubuntu-24.04` → `ic-ci-runner:24.04`
+
+已知问题：
+
+- act 第一次运行某个 `uses:` action 时会从 GitHub 克隆 action，Docker Desktop
+  网络偶发超时；重试即可，成功后会缓存在 `%USERPROFILE%\.cache\act`。
+- `-ForcePull` 只用于确实需要更新镜像时；本地构建的 `ic-ci-runner:*` 不要拉取。
+
 ## 前置条件
 
 - Docker Desktop 正在运行（Linux 作业需要）。
@@ -37,8 +66,9 @@
 # 只跑 Android 作业（Linux 容器，会下载 NDK/SDK，很慢）
 .\scripts\ci-local\run-ci-local.ps1 -Workflow build -Job build-android
 
-# 关闭镜像强制拉取 / 复用容器状态
-.\scripts\ci-local\run-ci-local.ps1 -Workflow style -NoPull
+# 强制拉取 runner 镜像 / 复用容器状态
+.\scripts\ci-local\run-ci-local.ps1 -Workflow style -ForcePull
+.\scripts\ci-local\run-ci-local.ps1 -Workflow style -Reuse
 ```
 
 脚本默认：
