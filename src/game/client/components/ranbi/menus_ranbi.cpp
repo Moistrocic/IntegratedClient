@@ -459,31 +459,6 @@ void CMenus::RenderSettingsRanbiWeapons(CUIRect MainView)
 	RenderRanbiHint(Ui(), &Column, Localize("Draws a predicted laser line, shotgun spread lines or grenade trajectory for your own tee."));
 
 	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
-	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Aim line style"));
-	RenderRanbiHint(Ui(), &Column, Localize("Colors and thickness for each weapon; the hit player style is used when the trajectory hits another player."));
-	if(g_Config.m_RcWeaponAimLines)
-	{
-		static CButtonContainer s_AimLaserColorReset, s_AimShotgunColorReset, s_AimGrenadeColorReset, s_AimPlayerColorReset;
-		CUIRect Slider;
-
-		DoLine_ColorPicker(&s_AimLaserColorReset, s_ColorPickerLineSize, s_ColorPickerLabelSize, s_ColorPickerLineSpacing, &Column, Localize("Laser color"), &g_Config.m_RcWeaponAimLaserColor, color_cast<ColorRGBA>(ColorHSLA(0x9900FF9FU, true)), false, nullptr, true);
-		Column.HSplitTop(s_LineSize, &Slider, &Column);
-		Ui()->DoScrollbarOption(&g_Config.m_RcWeaponAimLaserWidth, &g_Config.m_RcWeaponAimLaserWidth, &Slider, Localize("Laser width"), 1, 8);
-
-		DoLine_ColorPicker(&s_AimShotgunColorReset, s_ColorPickerLineSize, s_ColorPickerLabelSize, s_ColorPickerLineSpacing, &Column, Localize("Shotgun color"), &g_Config.m_RcWeaponAimShotgunColor, color_cast<ColorRGBA>(ColorHSLA(0x8C24FFACU, true)), false, nullptr, true);
-		Column.HSplitTop(s_LineSize, &Slider, &Column);
-		Ui()->DoScrollbarOption(&g_Config.m_RcWeaponAimShotgunWidth, &g_Config.m_RcWeaponAimShotgunWidth, &Slider, Localize("Shotgun width"), 1, 8);
-
-		DoLine_ColorPicker(&s_AimGrenadeColorReset, s_ColorPickerLineSize, s_ColorPickerLabelSize, s_ColorPickerLineSpacing, &Column, Localize("Grenade color"), &g_Config.m_RcWeaponAimGrenadeColor, color_cast<ColorRGBA>(ColorHSLA(0x9915FF8CU, true)), false, nullptr, true);
-		Column.HSplitTop(s_LineSize, &Slider, &Column);
-		Ui()->DoScrollbarOption(&g_Config.m_RcWeaponAimGrenadeWidth, &g_Config.m_RcWeaponAimGrenadeWidth, &Slider, Localize("Grenade width"), 1, 8);
-
-		DoLine_ColorPicker(&s_AimPlayerColorReset, s_ColorPickerLineSize, s_ColorPickerLabelSize, s_ColorPickerLineSpacing, &Column, Localize("Hit player color"), &g_Config.m_RcWeaponAimPlayerColor, color_cast<ColorRGBA>(ColorHSLA(0xFF0000FFU, true)), false, nullptr, true);
-		Column.HSplitTop(s_LineSize, &Slider, &Column);
-		Ui()->DoScrollbarOption(&g_Config.m_RcWeaponAimPlayerWidth, &g_Config.m_RcWeaponAimPlayerWidth, &Slider, Localize("Hit player width"), 1, 10);
-	}
-
-	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
 
 	if(s_RanbiSelectedWeapon != s_RanbiLastSelectedWeapon)
 	{

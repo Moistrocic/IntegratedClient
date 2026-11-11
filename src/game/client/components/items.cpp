@@ -133,6 +133,34 @@ void CItems::RenderProjectile(const CProjectileData *pCurrent, int ItemId, const
 	}
 }
 
+void CItems::RenderProjectileTrailPreview(vec2 Pos, vec2 Vel, int Weapon, float Alpha, bool DrawSprite)
+{
+	// ranbi: reuse the original projectile visual path (same grenade rotation / sprite
+	// and the same SmokeTrail / BulletTrail effect) at a simulated trajectory point.
+	const int CurWeapon = std::clamp(Weapon, 0, NUM_WEAPONS - 1);
+	if(CurWeapon == WEAPON_GRENADE)
+	{
+		GameClient()->m_Effects.SmokeTrail(Pos, Vel * -1.0f, Alpha, 0.0f);
+		static float s_Time = 0.0f;
+		static float s_LastLocalTime = LocalTime();
+		s_Time += (LocalTime() - s_LastLocalTime) * GameClient()->GetAnimationPlaybackSpeed();
+		Graphics()->QuadsSetRotation(s_Time * pi * 2 * 2);
+		s_LastLocalTime = LocalTime();
+	}
+	else
+	{
+		GameClient()->m_Effects.BulletTrail(Pos, Alpha, 0.0f);
+		Graphics()->QuadsSetRotation(length(Vel) > 0.00001f ? angle(Vel) : 0.0f);
+	}
+
+	if(DrawSprite && GameClient()->m_GameSkin.m_aSpriteWeaponProjectiles[CurWeapon].IsValid())
+	{
+		Graphics()->TextureSet(GameClient()->m_GameSkin.m_aSpriteWeaponProjectiles[CurWeapon]);
+		Graphics()->SetColor(1.f, 1.f, 1.f, Alpha);
+		Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, m_aProjectileOffset[CurWeapon], Pos.x, Pos.y);
+	}
+}
+
 void CItems::RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCurrent, bool IsPredicted, int Flags)
 {
 	int CurWeapon = std::clamp(pCurrent->m_Subtype, 0, NUM_WEAPONS - 1);

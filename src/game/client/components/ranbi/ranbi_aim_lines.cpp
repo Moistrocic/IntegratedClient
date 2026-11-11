@@ -1,12 +1,15 @@
-// ranbi: weapon aim lines, faithful weapon physics preview (task-19) with
-// configurable per-weapon colors/thickness and a distinct "hit player" style
-// (task-24). Rendering uses textured quads instead of 1px LinesDraw, and the
-// start position/direction are interpolated with the render intra-tick to avoid
-// the 50 Hz step. Read-only rendering for the local player only.
+// ranbi: weapon aim lines (task-41).
+// Reuses the vanilla post-fire visuals instead of drawing custom styled lines:
+//   - laser / DDRace shotgun: CItems::RenderLaser (same outline/inner colors, ticks
+//     and LASERTYPE as a real fired CLaser);
+//   - vanilla shotgun / grenade: CItems::RenderProjectileTrailPreview (same projectile
+//     sprite rotation + SmokeTrail/BulletTrail as the original RenderProjectile).
+// The trajectory itself is still the faithful CLaser/CProjectile simulation from
+// task-19/22 (current input direction from task-37); re-simulated on every render
+// frame with only defensive segment/step caps. No custom colors/widths/hit style.
 
 #include "ranbi_aim_lines.h"
 
-#include <base/color.h>
 #include <base/math.h>
 #include <base/vmath.h>
 
@@ -15,6 +18,7 @@
 
 #include <generated/protocol.h>
 
+#include <game/client/components/items.h>
 #include <game/client/gameclient.h>
 #include <game/client/prediction/entities/character.h>
 #include <game/client/prediction/gameworld.h>
@@ -29,7 +33,7 @@ namespace
 	constexpr int MAX_AIM_SEGMENTS = 512;
 	constexpr int MAX_LASER_SEGMENTS = 64; // defensive cap; CLaser uses m_LaserBounceNum
 	constexpr int MAX_PROJECTILE_TICKS = 200; // defensive cap; grenade default = 2s * 50 = 100
-	constexpr float HIT_MARKER_HALF_SIZE = 4.0f;
+	constexpr int PROJECTILE_SAMPLE_STEP = 4; // trail sample rate (render frames still every frame)
 	// character.cpp:310: ProjStartPos = m_Pos + Direction * m_ProximityRadius * 0.75f
 	constexpr float PROJECTILE_START_OFFSET = 0.75f;
 
@@ -40,7 +44,7 @@ namespace
 	{
 		vec2 m_From;
 		vec2 m_To;
-		bool m_HitPlayer;
+		int m_Path;
 	};
 
 	struct SAimDrawBuffer
@@ -48,20 +52,20 @@ namespace
 		SAimSegment *m_pSegments;
 		int m_Max;
 		int m_Num = 0;
+		int m_Path = 0;
 
-		void Line(vec2 From, vec2 To, bool HitPlayer = false)
+		int NextPath()
+		{
+			return m_Path++;
+		}
+
+		void Line(vec2 From, vec2 To)
 		{
 			if(m_Num >= m_Max)
 				return;
-			m_pSegments[m_Num++] = SAimSegment{From, To, HitPlayer};
+			m_pSegments[m_Num++] = SAimSegment{From, To, m_Path};
 		}
 	};
-
-	void AddHitMarker(SAimDrawBuffer &Buf, vec2 Pos, bool HitPlayer)
-	{
-		Buf.Line(Pos - vec2(HIT_MARKER_HALF_SIZE, 0.0f), Pos + vec2(HIT_MARKER_HALF_SIZE, 0.0f), HitPlayer);
-		Buf.Line(Pos - vec2(0.0f, HIT_MARKER_HALF_SIZE), Pos + vec2(0.0f, HIT_MARKER_HALF_SIZE), HitPlayer);
-	}
 
 	int ClampTuneZone(int Zone)
 	{
@@ -87,6 +91,7 @@ namespace
 	void SimulateLaser(SAimDrawBuffer &Buf, CGameWorld &World, CCollision *pCollision, CCharacter *pOwner, int OwnerId,
 		int WeaponType, const CTuningParams *pTuning, vec2 StartPos, vec2 Direction, float StartEnergy)
 	{
+		Buf.NextPath();
 		// laser.cpp:21-22
 		float Energy = StartEnergy;
 		if(World.m_WorldConfig.m_IsFNG && Energy < 10.0f)
@@ -115,8 +120,7 @@ namespace
 				pHit = nullptr;
 			if(pHit != nullptr)
 			{
-				Buf.Line(Last, At, true);
-				AddHitMarker(Buf, At, true);
+				Buf.Line(Last, At);
 				return;
 			}
 
@@ -138,10 +142,8 @@ namespace
 				const vec2 From = Pos;
 				Pos = TempPos;
 				Dir = normalize(TempDir);
-				// laser.cpp:135-136: draw to the collision point first, then continue from
-				// the reflected MovePoint position.
-				Buf.Line(Last, To, false);
-				Buf.Line(To, Pos, false);
+				Buf.Line(Last, To);
+				Buf.Line(To, Pos);
 				Last = Pos;
 
 				const float Distance = distance(From, Pos);
@@ -159,13 +161,10 @@ namespace
 			{
 				// laser.cpp:160-168: no wall hit, stops at the end of the reach
 				Pos = To;
-				Buf.Line(Last, Pos, false);
-				AddHitMarker(Buf, Pos, false);
+				Buf.Line(Last, Pos);
 				return;
 			}
 		}
-
-		AddHitMarker(Buf, Last, false);
 	}
 
 	// Port of CProjectile::GetPos/Tick (projectile.cpp:48-168) for the local
@@ -176,6 +175,8 @@ namespace
 		int LifeSpan, float Curvature, float Speed, int TickSpeed)
 	{
 		(void)pSpawnTuning;
+		(void)World;
+		Buf.NextPath();
 		const vec2 Dir = Direction * SpeedFactor; // CProjectile m_Direction
 		vec2 Last = StartPos;
 		float PrevT = 0.0f;
@@ -196,39 +197,24 @@ namespace
 			CCharacter *pHit = World.IntersectCharacter(PrevPos, ColPos, 6.0f, At, pOwner, OwnerId);
 			if(Collide || pHit != nullptr || IsLayerClipped(pCollision, CurPos))
 			{
-				const bool HitPlayer = pHit != nullptr;
 				// projectile.cpp:107: explosions happen at ColPos; character hits use At.
-				const vec2 HitPos = Collide ? ColPos : (HitPlayer ? At : ColPos);
-				Buf.Line(Last, HitPos, HitPlayer);
-				AddHitMarker(Buf, HitPos, HitPlayer);
+				const vec2 HitPos = Collide ? ColPos : (pHit != nullptr ? At : ColPos);
+				Buf.Line(Last, HitPos);
 				return;
 			}
 
-			Buf.Line(Last, CurPos, false);
+			Buf.Line(Last, CurPos);
 			Last = CurPos;
 			PrevT = CurT;
-
-			if(Tick == Steps)
-			{
-				AddHitMarker(Buf, Last, false);
-				return;
-			}
 		}
-		AddHitMarker(Buf, Last, false);
-	}
-
-	ColorRGBA AimLineColor(unsigned int HslaColor)
-	{
-		return color_cast<ColorRGBA>(ColorHSLA(HslaColor, true));
 	}
 } // namespace
 
 void CRanbiAimLines::OnRender()
 {
-	// task-30: this component is re-simulated on *every render frame* with the
-	// current PredIntraGameTick() (position only; direction uses the current input target). There is no game
-	// tick cache / throttle / fps cap here; only the defensive segment and step caps
-	// limit simulation complexity (they are not a frame-rate limit).
+	// task-30/task-41: re-simulated on *every render frame* (current PredIntraGameTick
+	// position smoothing, task-37 current input direction). No tick cache/throttle/fps
+	// cap; the segment/step caps are only complexity limits.
 	if(!g_Config.m_RcWeaponAimLines)
 		return;
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
@@ -271,9 +257,6 @@ void CRanbiAimLines::OnRender()
 	if(pLocalChar == nullptr)
 		pLocalChar = World.GetCharacterById(LocalId);
 
-	// task-24: smooth the start position/direction with the render intra-tick. The
-	// predicted cores are published for the local player and (in fast practice) for
-	// the controlled practice participant, so both paths avoid 50 Hz stepping.
 	const bool UsePublishedCores = UsePracticeCharacter && PracticeId >= 0 && PracticeId < MAX_CLIENTS;
 	const CCharacterCore &CurCore = UsePublishedCores ? GameClient()->m_aClients[PracticeId].m_Predicted : LocalClient.m_Predicted;
 	const CCharacterCore &PrevCore = UsePublishedCores ? GameClient()->m_aClients[PracticeId].m_PrevPredicted : LocalClient.m_PrevPredicted;
@@ -282,12 +265,7 @@ void CRanbiAimLines::OnRender()
 	if(Weapon != WEAPON_LASER && Weapon != WEAPON_SHOTGUN && Weapon != WEAPON_GRENADE)
 		return;
 
-	// task-37: FireWeapon aims with the *current* input target
-	// (character.cpp:268: normalize(vec2(m_LatestInput.m_TargetX, m_TargetY))).
-	// Interpolating Prev/Cur targets made the preview lag/deflect from the actual
-	// shot, which diverges visibly on long laser lines. Use the current core input
-	// directly (practice: the published practice core / practice world core); only
-	// the position above stays render-frame smoothed.
+	// task-37: FireWeapon aims with the *current* input target (character.cpp:268).
 	vec2 Direction;
 	if(CurCore.m_Input.m_TargetX != 0 || CurCore.m_Input.m_TargetY != 0)
 		Direction = normalize(vec2((float)CurCore.m_Input.m_TargetX, (float)CurCore.m_Input.m_TargetY));
@@ -314,11 +292,8 @@ void CRanbiAimLines::OnRender()
 	CCollision *pCollision = World.Collision();
 	SAimSegment aSegments[MAX_AIM_SEGMENTS];
 	SAimDrawBuffer Buf{aSegments, MAX_AIM_SEGMENTS};
-
-	ColorRGBA WeaponColor;
-	float WeaponWidth = 1.0f;
-	const ColorRGBA PlayerColor = AimLineColor(g_Config.m_RcWeaponAimPlayerColor);
-	const float PlayerWidth = (float)g_Config.m_RcWeaponAimPlayerWidth;
+	bool RenderAsLaser = false;
+	int LaserType = LASERTYPE_RIFLE;
 
 	if(Weapon == WEAPON_LASER)
 	{
@@ -327,14 +302,12 @@ void CRanbiAimLines::OnRender()
 		const int LaserTuneZone = SpawnTuneZone(World, pCollision, LaserStartPos);
 		const CTuningParams *pFireTuning = World.GetTuning(FireTuneZone);
 		const CTuningParams *pTuning = World.GetTuning(LaserTuneZone);
-		WeaponColor = AimLineColor(g_Config.m_RcWeaponAimLaserColor);
-		WeaponWidth = (float)g_Config.m_RcWeaponAimLaserWidth;
+		RenderAsLaser = true;
+		LaserType = LASERTYPE_RIFLE;
 		SimulateLaser(Buf, World, pCollision, pLocalChar, OwnerId, WEAPON_LASER, pTuning, LaserStartPos, Direction, (float)pFireTuning->m_LaserReach);
 	}
 	else if(Weapon == WEAPON_SHOTGUN)
 	{
-		WeaponColor = AimLineColor(g_Config.m_RcWeaponAimShotgunColor);
-		WeaponWidth = (float)g_Config.m_RcWeaponAimShotgunWidth;
 		if(World.m_WorldConfig.m_IsVanilla)
 		{
 			// character.cpp:413-437: vanilla shotgun = 5 CProjectiles with spread
@@ -360,18 +333,17 @@ void CRanbiAimLines::OnRender()
 			const int LaserTuneZone = SpawnTuneZone(World, pCollision, LaserStartPos);
 			const CTuningParams *pFireTuning = World.GetTuning(FireTuneZone);
 			const CTuningParams *pTuning = World.GetTuning(LaserTuneZone);
+			RenderAsLaser = true;
+			LaserType = LASERTYPE_SHOTGUN;
 			SimulateLaser(Buf, World, pCollision, pLocalChar, OwnerId, WEAPON_SHOTGUN, pTuning, LaserStartPos, Direction, (float)pFireTuning->m_LaserReach);
 		}
 		else
 		{
-			// FireWeapon has no branch for other modes -> no trajectory
 			return;
 		}
 	}
 	else // WEAPON_GRENADE
 	{
-		WeaponColor = AimLineColor(g_Config.m_RcWeaponAimGrenadeColor);
-		WeaponWidth = (float)g_Config.m_RcWeaponAimGrenadeWidth;
 		// character.cpp:449-467: one explosive CProjectile; FireWeapon defaults m_Bouncing = 0
 		const int FireTuneZone = pLocalChar != nullptr ? ClampTuneZone(pLocalChar->GetOverriddenTuneZone()) : SpawnTuneZone(World, pCollision, ProjectileStartPos);
 		const int ProjTuneZone = SpawnTuneZone(World, pCollision, ProjectileStartPos);
@@ -385,87 +357,58 @@ void CRanbiAimLines::OnRender()
 	if(Buf.m_Num == 0)
 		return;
 
-	// Draw in world coordinates with the actual camera zoom; width is scaled by the
-	// camera zoom like the hook collision line (players.cpp:442-490). Contiguous
-	// segments are converted to a shared-vertex miter strip: the same joint offset is
-	// used by both adjacent quads, so there is neither a gap at corners (no separate
-	// unjoined segments) nor area overlap (alpha does not accumulate/darken at joints).
+	// Use the same world mapping as the items renderer so the vanilla visuals line up
+	// exactly with the normal in-game laser/projectile rendering (camera zoom aware).
 	const vec2 CameraPos = GameClient()->m_Camera.m_Center;
-	const float CameraZoom = GameClient()->m_Camera.m_Zoom;
 	const CScreenRect SavedScreen = Graphics()->GetScreen();
 	const CScreenRect WorldScreen = Graphics()->MapScreenToWorld(
 		CameraPos.x, CameraPos.y, 100.0f, 100.0f, 100.0f, 0, 0,
-		Graphics()->ScreenAspect(), CameraZoom);
+		Graphics()->ScreenAspect(), GameClient()->m_Camera.m_Zoom);
 	Graphics()->MapScreen(WorldScreen);
 
-	Graphics()->TextureClear();
-	auto DrawStrip = [&](bool HitStyle, const ColorRGBA &Color, float Width) {
-		IGraphics::CFreeformItem aQuads[MAX_AIM_SEGMENTS];
-		vec2 aPoints[MAX_AIM_SEGMENTS + 2];
-		vec2 aOffsets[MAX_AIM_SEGMENTS + 2];
-		int NumQuads = 0;
-		const float HalfWidth = Width * CameraZoom * 0.5f;
-
-		int i = 0;
-		while(i < Buf.m_Num && NumQuads < MAX_AIM_SEGMENTS)
+	if(RenderAsLaser)
+	{
+		// Same colors/ticks/types as CItems::RenderLaser(CLaserData*, bool):
+		// RIFLE uses the rifle outline/inner colors, SHOTGUN the shotgun ones; a
+		// just-fired laser body has TicksBody = 0 (full outline/inner width), the head
+		// animation uses the current render tick like the fired laser.
+		const unsigned int ColorOut = LaserType == LASERTYPE_SHOTGUN ? g_Config.m_ClLaserShotgunOutlineColor : g_Config.m_ClLaserRifleOutlineColor;
+		const unsigned int ColorIn = LaserType == LASERTYPE_SHOTGUN ? g_Config.m_ClLaserShotgunInnerColor : g_Config.m_ClLaserRifleInnerColor;
+		const ColorRGBA OuterColor = color_cast<ColorRGBA>(ColorHSLA(ColorOut).WithAlpha(1.0f));
+		const ColorRGBA InnerColor = color_cast<ColorRGBA>(ColorHSLA(ColorIn).WithAlpha(1.0f));
+		const float TicksHead = (float)Client()->GameTick(g_Config.m_ClDummy) + Client()->PredIntraGameTick(g_Config.m_ClDummy);
+		for(int i = 0; i < Buf.m_Num; i++)
 		{
-			if(aSegments[i].m_HitPlayer != HitStyle)
-			{
-				i++;
+			if(Buf.m_pSegments[i].m_To == Buf.m_pSegments[i].m_From)
 				continue;
-			}
-
-			// Collect one contiguous chain of same-style segments (a new shotgun
-			// projectile or a break in the chain starts a new strip).
-			int j = i;
-			while(j + 1 < Buf.m_Num && aSegments[j + 1].m_HitPlayer == HitStyle &&
-				distance(aSegments[j].m_To, aSegments[j + 1].m_From) < 0.01f)
-				j++;
-
-			int NumPoints = 0;
-			aPoints[NumPoints++] = aSegments[i].m_From;
-			for(int k = i; k <= j; k++)
-				aPoints[NumPoints++] = aSegments[k].m_To;
-
-			// Miter offsets: at an interior joint both adjacent quads share this exact
-			// offset, which keeps a continuous strip and avoids double blending.
-			for(int k = 0; k < NumPoints; k++)
-			{
-				const vec2 PrevDir = k > 0 ? normalize(aPoints[k] - aPoints[k - 1]) : normalize(aPoints[1] - aPoints[0]);
-				const vec2 NextDir = k + 1 < NumPoints ? normalize(aPoints[k + 1] - aPoints[k]) : PrevDir;
-				const vec2 PrevNormal(-PrevDir.y, PrevDir.x);
-				const vec2 NextNormal(-NextDir.y, NextDir.x);
-				vec2 Miter = PrevNormal + NextNormal;
-				if(length(Miter) < 0.001f)
-					Miter = NextNormal;
-				else
-					Miter = normalize(Miter);
-				const float Denom = std::max(dot(Miter, NextNormal), 0.5f);
-				const float Scale = std::min(HalfWidth / Denom, HalfWidth * 2.0f);
-				aOffsets[k] = Miter * Scale;
-			}
-
-			for(int k = i; k <= j && NumQuads < MAX_AIM_SEGMENTS; k++)
-			{
-				const int Local = k - i;
-				aQuads[NumQuads++] = IGraphics::CFreeformItem(
-					aPoints[Local] + aOffsets[Local],
-					aPoints[Local + 1] + aOffsets[Local + 1],
-					aPoints[Local + 1] - aOffsets[Local + 1],
-					aPoints[Local] - aOffsets[Local]);
-			}
-			i = j + 1;
+			GameClient()->m_Items.RenderLaser(Buf.m_pSegments[i].m_From, Buf.m_pSegments[i].m_To, OuterColor, InnerColor, 0.0f, TicksHead, LaserType);
 		}
-
-		if(NumQuads == 0)
-			return;
-		Graphics()->QuadsBegin();
-		Graphics()->SetColor(Color);
-		Graphics()->QuadsDrawFreeform(aQuads, NumQuads);
-		Graphics()->QuadsEnd();
-	};
-	DrawStrip(false, WeaponColor, WeaponWidth);
-	DrawStrip(true, PlayerColor, PlayerWidth);
+	}
+	else
+	{
+		// Same projectile visuals as CItems::RenderProjectile: sprite rotation + SmokeTrail
+		// (grenade) / BulletTrail (shotgun). Sample the simulated trajectory instead of
+		// spawning a full particle per segment (keeps the per-frame cost bounded).
+		int Index = 0;
+		while(Index < Buf.m_Num)
+		{
+			const int Path = Buf.m_pSegments[Index].m_Path;
+			int End = Index;
+			while(End + 1 < Buf.m_Num && Buf.m_pSegments[End + 1].m_Path == Path)
+				End++;
+			const int NumSegments = End - Index + 1;
+			for(int i = 0; i < NumSegments; i++)
+			{
+				const bool Last = i == NumSegments - 1;
+				if(!Last && i % PROJECTILE_SAMPLE_STEP != 0)
+					continue;
+				const SAimSegment &Seg = Buf.m_pSegments[Index + i];
+				const vec2 Vel = Seg.m_To - Seg.m_From;
+				GameClient()->m_Items.RenderProjectileTrailPreview(Seg.m_To, Vel, Weapon, 1.0f, Last);
+			}
+			Index = End + 1;
+		}
+	}
 
 	Graphics()->MapScreen(SavedScreen);
 }
