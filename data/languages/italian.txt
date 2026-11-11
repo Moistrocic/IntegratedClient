@@ -889,18 +889,6 @@ Use current map as background
 Show tiles layers from BG map
 == Mostra i layer dei tile dalla mappa in sfondo
 
-Update now
-== Aggiorna ora
-
-Updating…
-== Aggiornamento in corso…
-
-No updates available
-== Non ci sono aggiornamenti disponibili
-
-Check now
-== Controlla adesso
-
 New random timeout code
 == Nuovo codice timeout a caso
 
@@ -2357,7 +2345,7 @@ Configs
 Credits
 == 
 
-BestClient update downloaded! Restart to apply.
+Ranbi
 == 
 
 Name Plate
@@ -2742,18 +2730,6 @@ Regular background color
 Entities background color
 == 
 
-BestClient %s is out!
-== 
-
-Preparing update...
-== 
-
-BestClient updated!
-== 
-
-Update failed
-== 
-
 [Hertz]
 Hz
 == 
@@ -2867,24 +2843,6 @@ Discord
 == 
 
 Telegram
-== 
-
-Check update
-== 
-
-Try Light
-== 
-
-Download
-== 
-
-Downloading %d%%
-== 
-
-Update downloaded
-== 
-
-Install
 == 
 
 [Spectators]
@@ -4243,9 +4201,6 @@ Lower Discords Process Priority
 Gameplay QoL
 == 
 
-Automatic update
-== 
-
 Cinematic camera
 == 
 
@@ -4514,6 +4469,24 @@ Action
 == 
 
 slot %d
+== 
+
+Based on
+== 
+
+Source clients
+== 
+
+RanbiClient (GUI integration in progress)
+== 
+
+Links
+== 
+
+Integration registry
+== 
+
+BestClient information is on the second page.
 == 
 
 Mini games
@@ -5008,6 +4981,15 @@ Translation timed out
 Translation failed: %s
 == 
 
+Nameplates
+== 
+
+Chat & Scoreboard
+== 
+
+Notify
+== 
+
 System default
 == 
 
@@ -5144,6 +5126,9 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+Ranbi features are not integrated yet. This page is a placeholder.
 == 
 
 [bgdraw]

@@ -580,9 +580,6 @@ Countries
 Types
 == Tipos
 
-Update now
-== Actualizar agora
-
 Restart
 == Reiniciar
 
@@ -822,15 +819,6 @@ Show other players' hook collision lines
 
 Show tiles layers from BG map
 == Mostrar capas de tiles do mapa de fondo
-
-Updating…
-== Actualizando…
-
-No updates available
-== Non hai actualizacións dispoñibles
-
-Check now
-== Revisalo agora
 
 New random timeout code
 == Novo código de timeout aleatorio
@@ -2460,7 +2448,7 @@ Configs
 Credits
 == 
 
-BestClient update downloaded! Restart to apply.
+Ranbi
 == 
 
 Info Messages
@@ -2775,18 +2763,6 @@ Regular background color
 Entities background color
 == 
 
-BestClient %s is out!
-== 
-
-Preparing update...
-== 
-
-BestClient updated!
-== 
-
-Update failed
-== 
-
 [Hertz]
 Hz
 == 
@@ -2870,24 +2846,6 @@ Unable to delete skin
 == 
 
 Telegram
-== 
-
-Check update
-== 
-
-Try Light
-== 
-
-Download
-== 
-
-Downloading %d%%
-== 
-
-Update downloaded
-== 
-
-Install
 == 
 
 [Spectators]
@@ -4240,9 +4198,6 @@ Lower Discords Process Priority
 Gameplay QoL
 == 
 
-Automatic update
-== 
-
 Cinematic camera
 == 
 
@@ -4511,6 +4466,24 @@ Action
 == 
 
 slot %d
+== 
+
+Based on
+== 
+
+Source clients
+== 
+
+RanbiClient (GUI integration in progress)
+== 
+
+Links
+== 
+
+Integration registry
+== 
+
+BestClient information is on the second page.
 == 
 
 Mini games
@@ -5005,6 +4978,15 @@ Translation timed out
 Translation failed: %s
 == 
 
+Nameplates
+== 
+
+Chat & Scoreboard
+== 
+
+Notify
+== 
+
 System default
 == 
 
@@ -5141,6 +5123,9 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+Ranbi features are not integrated yet. This page is a placeholder.
 == 
 
 [bgdraw]

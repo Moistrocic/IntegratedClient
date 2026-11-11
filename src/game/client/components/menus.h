@@ -307,7 +307,6 @@ protected:
 	// for settings
 	bool m_NeedRestartGraphics;
 	bool m_NeedRestartSound;
-	bool m_NeedRestartUpdate;
 	bool m_NeedRestartDiscord; // bestclient
 	bool m_NeedSendinfo;
 	bool m_NeedSendDummyinfo;
@@ -838,8 +837,21 @@ public:
 		SETTINGS_PROFILES, // TClient
 		SETTINGS_CONFIGS, // TClient
 		SETTINGS_CREDITS,
+		SETTINGS_RANBI, // integratedclient
 		SETTINGS_LENGTH,
 	};
+
+	// integratedclient
+	enum
+	{
+		RANBI_TAB_GENERAL = 0,
+		RANBI_TAB_NAMEPLATES,
+		RANBI_TAB_CHAT_SCOREBOARD,
+		RANBI_TAB_NOTIFY,
+		RANBI_TAB_WEAPONS,
+		RANBI_TAB_COUNT,
+	};
+	// integratedclient
 
 	enum
 	{
@@ -1013,6 +1025,17 @@ private:
 	int DoButtonNoRect_FontIcon(CButtonContainer *pButtonContainer, const char *pText, int Checked, const CUIRect *pRect, int Corners = IGraphics::CORNER_ALL);
 	int DoButtonLineSize_Menu(CButtonContainer *pButtonContainer, const char *pText, int Checked, const CUIRect *pRect, float ButtonLineSize, bool Fake = false, const char *pImageName = nullptr, int Corners = IGraphics::CORNER_ALL, float Rounding = 5.0f, float FontFactor = 0.0f, ColorRGBA Color = ColorRGBA(1.0f, 1.0f, 1.0f, 0.5f));
 
+	// integratedclient
+	void RenderSettingsBestClientInfoProject(CUIRect MainView);
+	void RenderSettingsBestClientInfoBestClient(CUIRect MainView);
+	void RenderSettingsRanbi(CUIRect MainView);
+	void RenderSettingsRanbiGeneral(CUIRect MainView);
+	void RenderSettingsRanbiNameplates(CUIRect MainView);
+	void RenderSettingsRanbiChatScoreboard(CUIRect MainView);
+	void RenderSettingsRanbiNotify(CUIRect MainView);
+	void RenderSettingsRanbiWeapons(CUIRect MainView);
+	// integratedclient
+
 	// found in components/bestclient/menus_bestclient.cpp // bestclient
 	void RenderSettingsBestClient(CUIRect MainView);
 	void RenderSettingsBestClientVisuals(CUIRect MainView);
@@ -1157,11 +1180,13 @@ public:
 	void CloseBestClientFun();
 	void SetBestClientSettingsTab(int Tab);
 	int GetBestClientSettingsTab() const;
+	void SetRanbiSettingsTab(int Tab); // integratedclient
+	int GetRanbiSettingsTab() const; // integratedclient
 	void SetTClientSettingsTab(int Tab);
 	int GetTClientSettingsTab() const;
 	void RenderSettingsNavNewStyle(CUIRect &TabBar);
 	void RenderSettingsPage(CUIRect MainView);
-	void RenderSettingsPageAt(CUIRect MainView, int SettingsPage, int TClientTab, int BestClientTab);
+	void RenderSettingsPageAt(CUIRect MainView, int SettingsPage, int TClientTab, int BestClientTab, int RanbiTab);
 	void RenderSettingsContentNewStyle(CUIRect MainView);
 	void RenderSettingsContentLegacyStyle(CUIRect MainView);
 	// bestclient

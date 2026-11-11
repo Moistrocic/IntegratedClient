@@ -381,9 +381,6 @@ private:
 	class IFriends *m_pFriends;
 	class IFriends *m_pFoes;
 	class IDiscord *m_pDiscord;
-#if defined(CONF_AUTOUPDATE)
-	class IUpdater *m_pUpdater;
-#endif
 	class IHttp *m_pHttp;
 
 	CLayers m_Layers;
@@ -463,12 +460,6 @@ public:
 	class IEditor *Editor() { return m_pEditor; }
 	class IFriends *Friends() { return m_pFriends; }
 	class IFriends *Foes() { return m_pFoes; }
-#if defined(CONF_AUTOUPDATE)
-	class IUpdater *Updater()
-	{
-		return m_pUpdater;
-	}
-#endif
 	class IHttp *Http()
 	{
 		return m_pHttp;

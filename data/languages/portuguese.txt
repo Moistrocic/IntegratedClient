@@ -523,9 +523,6 @@ Show ghost
 DDNet
 == DDNet
 
-No updates available
-== Sem atualizações disponíveis
-
 Enable server message sound
 == Ativar o som de mensagem do servidor
 
@@ -586,9 +583,6 @@ Ghost
 Remove chat
 == Remover o chat
 
-Check now
-== Verificar agora
-
 AntiPing: predict other players
 == AntiPing: prever os outros jogadores
 
@@ -597,9 +591,6 @@ Automatically take statboard screenshot
 
 System message
 == Mensagem do sistema
-
-Updating…
-== A atualizar…
 
 Messages
 == Mensagens
@@ -642,9 +633,6 @@ Connecting dummy
 
 Clan plates size
 == Tamanho do nome do clã
-
-Update now
-== Atualizar agora
 
 Show clan above name plates
 == Mostrar o nome do clã por cima dos nomes
@@ -2607,9 +2595,6 @@ Predict events (experimental)
 Scoreboard cursor
 == Cursor no placar
 
-Download
-== Descarregar
-
 Unmute
 == Ativar conversa
 
@@ -2769,7 +2754,7 @@ Configs
 Credits
 == 
 
-BestClient update downloaded! Restart to apply.
+Ranbi
 == 
 
 Show dummy position
@@ -2889,18 +2874,6 @@ Interact
 Always predict frozen players
 == 
 
-BestClient %s is out!
-== 
-
-Preparing update...
-== 
-
-BestClient updated!
-== 
-
-Update failed
-== 
-
 No country flags match your filter criteria
 == 
 
@@ -2935,21 +2908,6 @@ Choose country flag
 == 
 
 Telegram
-== 
-
-Check update
-== 
-
-Try Light
-== 
-
-Downloading %d%%
-== 
-
-Update downloaded
-== 
-
-Install
 == 
 
 Points
@@ -4246,9 +4204,6 @@ Lower Discords Process Priority
 Gameplay QoL
 == 
 
-Automatic update
-== 
-
 Cinematic camera
 == 
 
@@ -4517,6 +4472,24 @@ Action
 == 
 
 slot %d
+== 
+
+Based on
+== 
+
+Source clients
+== 
+
+RanbiClient (GUI integration in progress)
+== 
+
+Links
+== 
+
+Integration registry
+== 
+
+BestClient information is on the second page.
 == 
 
 Mini games
@@ -5011,6 +4984,15 @@ Translation timed out
 Translation failed: %s
 == 
 
+Nameplates
+== 
+
+Chat & Scoreboard
+== 
+
+Notify
+== 
+
 System default
 == 
 
@@ -5147,6 +5129,9 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+Ranbi features are not integrated yet. This page is a placeholder.
 == 
 
 [bgdraw]

@@ -580,9 +580,6 @@ Countries
 Types
 == Tipovi
 
-Update now
-== Ažuriraj sad
-
 Restart
 == Restart
 
@@ -810,15 +807,6 @@ Show other players' hook collision lines
 
 Show tiles layers from BG map
 == Prikaži slojeve od pozadinske mape
-
-Updating…
-== Ažuriranje…
-
-No updates available
-== Nema dostupnih ažuriranja
-
-Check now
-== Provjeri sad
 
 New random timeout code
 == Novi nasumični timeout kod
@@ -2130,7 +2118,7 @@ Configs
 Credits
 == 
 
-BestClient update downloaded! Restart to apply.
+Ranbi
 == 
 
 HUD
@@ -2642,18 +2630,6 @@ Chat command (e.g. showall 1)
 Unregister protocol and file extensions
 == 
 
-BestClient %s is out!
-== 
-
-Preparing update...
-== 
-
-BestClient updated!
-== 
-
-Update failed
-== 
-
 Smooth Dynamic Camera
 == 
 
@@ -2829,12 +2805,6 @@ Discord
 Telegram
 == 
 
-Check update
-== 
-
-Try Light
-== 
-
 [Start menu]
 Play
 == 
@@ -2843,18 +2813,6 @@ Stop server
 == 
 
 Run server
-== 
-
-Download
-== 
-
-Downloading %d%%
-== 
-
-Update downloaded
-== 
-
-Install
 == 
 
 Loading race demo files
@@ -4237,9 +4195,6 @@ Lower Discords Process Priority
 Gameplay QoL
 == 
 
-Automatic update
-== 
-
 Cinematic camera
 == 
 
@@ -4508,6 +4463,24 @@ Action
 == 
 
 slot %d
+== 
+
+Based on
+== 
+
+Source clients
+== 
+
+RanbiClient (GUI integration in progress)
+== 
+
+Links
+== 
+
+Integration registry
+== 
+
+BestClient information is on the second page.
 == 
 
 Mini games
@@ -5005,6 +4978,15 @@ Translation timed out
 Translation failed: %s
 == 
 
+Nameplates
+== 
+
+Chat & Scoreboard
+== 
+
+Notify
+== 
+
 System default
 == 
 
@@ -5141,6 +5123,9 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+Ranbi features are not integrated yet. This page is a placeholder.
 == 
 
 [bgdraw]

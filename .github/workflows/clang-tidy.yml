@@ -84,7 +84,6 @@ jobs:
           -DCMAKE_C_CLANG_TIDY="clang-tidy-20;-warnings-as-errors=*" \
           -DCMAKE_BUILD_TYPE=Debug \
           -DANTIBOT=ON \
-          -DAUTOUPDATE=ON \
           -DDISCORD=ON \
           -DDOWNLOAD_GTEST=ON \
           -DMYSQL=ON \

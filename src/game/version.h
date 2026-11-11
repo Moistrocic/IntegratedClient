@@ -32,6 +32,12 @@ extern const char *GIT_SHORTREV_HASH;
 #define BestClient_VERSION BESTCLIENT_VERSION
 #endif
 
+// IntegratedClient
+#define INTEGRATEDCLIENT_NAME "IntegratedClient"
+#ifndef INTEGRATEDCLIENT_VERSION
+#define INTEGRATEDCLIENT_VERSION "1.0.0"
+#endif
+
 // custom
 #define CLIENT_NAME "BestClient"
 #define CLIENT_RELEASE_VERSION BESTCLIENT_VERSION

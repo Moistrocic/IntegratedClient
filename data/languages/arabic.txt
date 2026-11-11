@@ -511,12 +511,6 @@ Show kill messages
 Show ghost
 == ﺢﺒﺸﻟﺍ ﺭﺎﻬﻇﺍ
 
-No updates available
-== ﺕﺎﺜﻳﺪﺤﺗ ﺪﺟﻮﻳﻻ
-
-Update now
-== ﻥﻻﺍ ﺚﻳﺪﺤﺘﻟﺍ
-
 Enable server message sound
 == ﺮﻓﺮﻴﺴﻟﺍ ﺔﺷﺩﺭﺩ ﺕﻮﺻ ﻞﻴﻌﻔﺗ
 
@@ -565,17 +559,11 @@ Are you sure that you want to disconnect?
 Ghost
 == ﺢﺒﺸﻟﺍ
 
-Check now
-== ﻥﻻﺍ ﺪﻛﺄﺗ
-
 AntiPing: predict other players
 == AntiPing: ﻦﻳﺮﺧﻵﺍ ﻦﻴﺒﻋﻼﻟ ﻖﺒﺴﻣ ﺏﺎﺴﺣ
 
 System message
 == ﻡﺎﻈﻨﻟﺍ ﻞﺋﺎﺳﺭ
-
-Updating…
-== …ﺚﻳﺪﺤﺘﻟﺍ ﺭﺎﺟ
 
 Overlay entities
 == ﻥﺍﺭﺪﺠﻟﺍ-ﺐﻛﺍﺮﺗ
@@ -2224,7 +2212,7 @@ Configs
 Credits
 == 
 
-BestClient update downloaded! Restart to apply.
+Ranbi
 == 
 
 Name Plate
@@ -2709,18 +2697,6 @@ Chat command (e.g. showall 1)
 Unregister protocol and file extensions
 == 
 
-BestClient %s is out!
-== 
-
-Preparing update...
-== 
-
-BestClient updated!
-== 
-
-Update failed
-== 
-
 [Hertz]
 Hz
 == 
@@ -2861,24 +2837,6 @@ Discord
 == 
 
 Telegram
-== 
-
-Check update
-== 
-
-Try Light
-== 
-
-Download
-== 
-
-Downloading %d%%
-== 
-
-Update downloaded
-== 
-
-Install
 == 
 
 Loading race demo files
@@ -4240,9 +4198,6 @@ Lower Discords Process Priority
 Gameplay QoL
 == 
 
-Automatic update
-== 
-
 Cinematic camera
 == 
 
@@ -4511,6 +4466,24 @@ Action
 == 
 
 slot %d
+== 
+
+Based on
+== 
+
+Source clients
+== 
+
+RanbiClient (GUI integration in progress)
+== 
+
+Links
+== 
+
+Integration registry
+== 
+
+BestClient information is on the second page.
 == 
 
 Mini games
@@ -5005,6 +4978,15 @@ Translation timed out
 Translation failed: %s
 == 
 
+Nameplates
+== 
+
+Chat & Scoreboard
+== 
+
+Notify
+== 
+
 System default
 == 
 
@@ -5141,6 +5123,9 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+Ranbi features are not integrated yet. This page is a placeholder.
 == 
 
 [bgdraw]

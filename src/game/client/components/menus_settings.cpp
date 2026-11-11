@@ -8,16 +8,13 @@
 
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
-// bestclient
-#include <engine/updater.h>
-
-#include <SDL.h>
-// bestclient
 
 #include <game/client/components/menu_background.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/client/ui_listbox.h> // bestclient
+
+#include <SDL.h>
 // bestclient
 #include <game/client/components/bestclient/settings_search.h>
 #include <game/client/components/bestclient/ui_theme/settings_nav.h>
@@ -109,7 +106,7 @@ void CMenus::RenderSettings(CUIRect MainView)
 	// bestclient
 	MainView.Margin(20.0f, &MainView);
 
-	const bool NeedRestart = m_NeedRestartGraphics || m_NeedRestartSound || m_NeedRestartUpdate || m_NeedRestartDiscord; // bestclient
+	const bool NeedRestart = m_NeedRestartGraphics || m_NeedRestartSound || m_NeedRestartDiscord; // bestclient
 	if(NeedRestart)
 	{
 		MainView.HSplitBottom(20.0f, &MainView, &RestartBar);
@@ -153,7 +150,8 @@ void CMenus::RenderSettings(CUIRect MainView)
 			Localize("BestClient"), // bestclient
 			Localize("Profiles"), // TClient
 			Localize("Configs"), // TClient
-			Localize("Credits")};
+			Localize("Credits"),
+			Localize("Ranbi")}; // integratedclient
 		static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 		const int TabCorners = NavOnLeft ? IGraphics::CORNER_L : IGraphics::CORNER_R;
 
@@ -187,34 +185,20 @@ void CMenus::RenderSettings(CUIRect MainView)
 	{
 		// bestclient
 		CUIRect RestartWarning, RestartButton;
-#if defined(CONF_AUTOUPDATE)
-		const bool UpdateReady = Updater()->GetCurrentState() == IUpdater::NEED_RESTART;
-#else
-		const bool UpdateReady = false;
-#endif
-		if(UpdateReady)
-		{
-			TextRender()->TextColor(0.7f, 1.0f, 0.7f, 1.0f);
-			Ui()->DoLabel(&RestartBar, Localize("BestClient update downloaded! Restart to apply."), 14.0f, TEXTALIGN_ML);
-			TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
-		}
-		else
-		{
-			RestartBar.VSplitRight(125.0f, &RestartWarning, &RestartButton);
-			RestartWarning.VSplitRight(10.0f, &RestartWarning, nullptr);
-			Ui()->DoLabel(&RestartWarning, Localize("You must restart the game for all settings to take effect."), 14.0f, TEXTALIGN_ML);
+		RestartBar.VSplitRight(125.0f, &RestartWarning, &RestartButton);
+		RestartWarning.VSplitRight(10.0f, &RestartWarning, nullptr);
+		Ui()->DoLabel(&RestartWarning, Localize("You must restart the game for all settings to take effect."), 14.0f, TEXTALIGN_ML);
 
-			static CButtonContainer s_RestartButton;
-			if(DoButton_Menu(&s_RestartButton, Localize("Restart"), 0, &RestartButton))
+		static CButtonContainer s_RestartButton;
+		if(DoButton_Menu(&s_RestartButton, Localize("Restart"), 0, &RestartButton))
+		{
+			if(Client()->State() == IClient::STATE_ONLINE || GameClient()->Editor()->HasUnsavedData())
 			{
-				if(Client()->State() == IClient::STATE_ONLINE || GameClient()->Editor()->HasUnsavedData())
-				{
-					m_Popup = POPUP_RESTART;
-				}
-				else
-				{
-					Client()->Restart();
-				}
+				m_Popup = POPUP_RESTART;
+			}
+			else
+			{
+				Client()->Restart();
 			}
 		}
 		// bestclient

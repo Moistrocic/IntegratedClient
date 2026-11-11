@@ -11,7 +11,6 @@
 #include <engine/shared/config.h>
 #include <engine/storage.h>
 #include <engine/textrender.h>
-#include <engine/updater.h>
 
 #include <game/client/components/background.h>
 #include <game/client/components/mapimages.h>
@@ -26,12 +25,6 @@
 void CMenus::RenderSettingsDDNet(CUIRect MainView)
 {
 	CUIRect Button, Left, Right, LeftLeft, Label;
-
-#if defined(CONF_AUTOUPDATE)
-	CUIRect UpdaterRect;
-	MainView.HSplitBottom(20.0f, &MainView, &UpdaterRect);
-	MainView.HSplitBottom(5.0f, &MainView, nullptr);
-#endif
 
 	// demo
 	CUIRect Demo;
@@ -299,53 +292,6 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 	if(DoButton_Menu(&s_ButtonUnregisterShell, Localize("Unregister protocol and file extensions"), 0, &Button))
 	{
 		Client()->ShellUnregister();
-	}
-#endif
-
-	// Updater
-#if defined(CONF_AUTOUPDATE)
-	{
-		// bestclient
-		IUpdater::EUpdaterState State = Updater()->GetCurrentState();
-
-		char aBuf[256];
-		if(State == IUpdater::VERSION_AVAILABLE)
-		{
-			str_format(aBuf, sizeof(aBuf), Localize("BestClient %s is out!"), Updater()->GetLatestVersionString());
-			UpdaterRect.VSplitLeft(TextRender()->TextWidth(14.0f, aBuf, -1, -1.0f) + 10.0f, &UpdaterRect, &Button);
-			Button.VSplitLeft(100.0f, &Button, nullptr);
-			static CButtonContainer s_ButtonUpdate;
-			if(DoButton_Menu(&s_ButtonUpdate, Localize("Update now"), 0, &Button))
-			{
-				Updater()->InitiateUpdate();
-			}
-		}
-		else if(State == IUpdater::GETTING_MANIFEST)
-			str_copy(aBuf, Localize("Preparing update..."));
-		else if(State == IUpdater::DOWNLOADING)
-			str_copy(aBuf, Localize("Updating…"));
-		else if(State == IUpdater::NEED_RESTART)
-		{
-			str_copy(aBuf, Localize("BestClient updated!"));
-			m_NeedRestartUpdate = true;
-		}
-		else
-		{
-			if(State == IUpdater::FAIL)
-				str_copy(aBuf, Localize("Update failed"));
-			else
-				str_copy(aBuf, Localize("No updates available"));
-			UpdaterRect.VSplitLeft(TextRender()->TextWidth(14.0f, aBuf, -1, -1.0f) + 10.0f, &UpdaterRect, &Button);
-			Button.VSplitLeft(100.0f, &Button, nullptr);
-			static CButtonContainer s_ButtonUpdate;
-			if(DoButton_Menu(&s_ButtonUpdate, Localize("Check now"), 0, &Button))
-			{
-				Updater()->CheckForUpdate();
-			}
-		}
-		Ui()->DoLabel(&UpdaterRect, aBuf, 14.0f, TEXTALIGN_ML);
-		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
-		// bestclient
 	}
 #endif
 }

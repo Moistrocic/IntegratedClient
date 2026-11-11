@@ -129,13 +129,6 @@ protected:
 	 */
 	class CCollision *Collision() const;
 
-#if defined(CONF_AUTOUPDATE)
-	/**
-	 * Get the updater interface.
-	 */
-	class IUpdater *Updater() const;
-#endif
-
 	/**
 	 * Gets the current time.
 	 * @see time_get()

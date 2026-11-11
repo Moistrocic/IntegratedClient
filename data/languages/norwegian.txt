@@ -577,9 +577,6 @@ Countries
 Types
 == Typer
 
-Update now
-== Oppdater nå
-
 Restart
 == Restart
 
@@ -825,15 +822,6 @@ Show other players' hook collision lines
 
 Show tiles layers from BG map
 == Vis tile-lag fra BG-bane
-
-Updating…
-== Oppdaterer…
-
-No updates available
-== Ingen oppdateringer tilgjengelig
-
-Check now
-== Sjekk nå
 
 New random timeout code
 == Ny tilfeldig timeout-kode
@@ -2224,7 +2212,7 @@ Configs
 Credits
 == 
 
-BestClient update downloaded! Restart to apply.
+Ranbi
 == 
 
 Name Plate
@@ -2709,18 +2697,6 @@ Chat command (e.g. showall 1)
 Unregister protocol and file extensions
 == 
 
-BestClient %s is out!
-== 
-
-Preparing update...
-== 
-
-BestClient updated!
-== 
-
-Update failed
-== 
-
 [Hertz]
 Hz
 == 
@@ -2861,24 +2837,6 @@ Discord
 == 
 
 Telegram
-== 
-
-Check update
-== 
-
-Try Light
-== 
-
-Download
-== 
-
-Downloading %d%%
-== 
-
-Update downloaded
-== 
-
-Install
 == 
 
 Loading race demo files
@@ -4240,9 +4198,6 @@ Lower Discords Process Priority
 Gameplay QoL
 == 
 
-Automatic update
-== 
-
 Cinematic camera
 == 
 
@@ -4511,6 +4466,24 @@ Action
 == 
 
 slot %d
+== 
+
+Based on
+== 
+
+Source clients
+== 
+
+RanbiClient (GUI integration in progress)
+== 
+
+Links
+== 
+
+Integration registry
+== 
+
+BestClient information is on the second page.
 == 
 
 Mini games
@@ -5005,6 +4978,15 @@ Translation timed out
 Translation failed: %s
 == 
 
+Nameplates
+== 
+
+Chat & Scoreboard
+== 
+
+Notify
+== 
+
 System default
 == 
 
@@ -5141,6 +5123,9 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+Ranbi features are not integrated yet. This page is a placeholder.
 == 
 
 [bgdraw]

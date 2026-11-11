@@ -1587,18 +1587,6 @@ Chat command (e.g. showall 1)
 Unregister protocol and file extensions
 == Odregistrovať protokol a prípony súborov
 
-Update now
-== Aktualizovať teraz
-
-Updating…
-== Aktualizácia…
-
-No updates available
-== Nie sú k dispozícii žiadne aktualizácie
-
-Check now
-== Skontrolovať teraz
-
 Emoticons
 == Emotikony
 
@@ -2404,9 +2392,6 @@ Chat background color
 Censor profanity
 == Cenzurovať nevhodné slová
 
-Download
-== Stiahnuť
-
 Save failed!
 == Uloženie zlyhalo!
 
@@ -2720,7 +2705,7 @@ Configs
 Credits
 == 
 
-BestClient update downloaded! Restart to apply.
+Ranbi
 == 
 
 Show dummy position
@@ -2871,18 +2856,6 @@ Interact
 Always predict frozen players
 == 
 
-BestClient %s is out!
-== 
-
-Preparing update...
-== 
-
-BestClient updated!
-== 
-
-Update failed
-== 
-
 Update Rate
 == 
 
@@ -2923,21 +2896,6 @@ Choose country flag
 == 
 
 Telegram
-== 
-
-Check update
-== 
-
-Try Light
-== 
-
-Downloading %d%%
-== 
-
-Update downloaded
-== 
-
-Install
 == 
 
 Points
@@ -4246,9 +4204,6 @@ Lower Discords Process Priority
 Gameplay QoL
 == 
 
-Automatic update
-== 
-
 Cinematic camera
 == 
 
@@ -4517,6 +4472,24 @@ Action
 == 
 
 slot %d
+== 
+
+Based on
+== 
+
+Source clients
+== 
+
+RanbiClient (GUI integration in progress)
+== 
+
+Links
+== 
+
+Integration registry
+== 
+
+BestClient information is on the second page.
 == 
 
 Mini games
@@ -5011,6 +4984,15 @@ Translation timed out
 Translation failed: %s
 == 
 
+Nameplates
+== 
+
+Chat & Scoreboard
+== 
+
+Notify
+== 
+
 System default
 == 
 
@@ -5147,6 +5129,9 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+Ranbi features are not integrated yet. This page is a placeholder.
 == 
 
 [bgdraw]

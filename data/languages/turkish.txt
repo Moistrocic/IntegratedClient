@@ -580,9 +580,6 @@ Countries
 Types
 == Türler
 
-Update now
-== Güncelle
-
 Restart
 == Yeniden başlat
 
@@ -831,15 +828,6 @@ Show other players' hook collision lines
 
 Show tiles layers from BG map
 == Yapı katmanlarını göster
-
-Updating…
-== Güncelleniyor…
-
-No updates available
-== Güncelleme mevcut değil
-
-Check now
-== Kontrol et
 
 New random timeout code
 == Yeni rastgele zaman aşımı kodu
@@ -2404,9 +2392,6 @@ Chat background color
 Censor profanity
 == Küfür Sansürü
 
-Download
-== İndir
-
 Team save in progress. You'll be able to load with '/load %s'
 == Takım kaydediliyor. '/load %s' ile yükleyebilirsiniz
 
@@ -2790,7 +2775,7 @@ Profiles
 Configs
 == 
 
-BestClient update downloaded! Restart to apply.
+Ranbi
 == 
 
 Show dummy position
@@ -2895,18 +2880,6 @@ BestClient Practice
 Mouse max distance
 == 
 
-BestClient %s is out!
-== 
-
-Preparing update...
-== 
-
-BestClient updated!
-== 
-
-Update failed
-== 
-
 Mute hook sounds of other players
 == 
 
@@ -2938,21 +2911,6 @@ Choose country flag
 == 
 
 Telegram
-== 
-
-Check update
-== 
-
-Try Light
-== 
-
-Downloading %d%%
-== 
-
-Update downloaded
-== 
-
-Install
 == 
 
 Points
@@ -4246,9 +4204,6 @@ Lower Discords Process Priority
 Gameplay QoL
 == 
 
-Automatic update
-== 
-
 Cinematic camera
 == 
 
@@ -4517,6 +4472,24 @@ Action
 == 
 
 slot %d
+== 
+
+Based on
+== 
+
+Source clients
+== 
+
+RanbiClient (GUI integration in progress)
+== 
+
+Links
+== 
+
+Integration registry
+== 
+
+BestClient information is on the second page.
 == 
 
 Mini games
@@ -5011,6 +4984,15 @@ Translation timed out
 Translation failed: %s
 == 
 
+Nameplates
+== 
+
+Chat & Scoreboard
+== 
+
+Notify
+== 
+
 System default
 == 
 
@@ -5147,6 +5129,9 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+Ranbi features are not integrated yet. This page is a placeholder.
 == 
 
 [bgdraw]

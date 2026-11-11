@@ -16,6 +16,7 @@ namespace BestClientUiTheme
 		SETTINGS_NAV_GROUP_DDNET = 0,
 		SETTINGS_NAV_GROUP_TCLIENT,
 		SETTINGS_NAV_GROUP_BESTCLIENT,
+		SETTINGS_NAV_GROUP_RANBI, // integratedclient
 		SETTINGS_NAV_GROUP_COUNT,
 	};
 
@@ -43,6 +44,13 @@ namespace BestClientUiTheme
 		SETTINGS_NAV_LEAF_BC_OTHERS,
 		SETTINGS_NAV_LEAF_BC_CONFIGS,
 		SETTINGS_NAV_LEAF_BC_INFO,
+		// integratedclient
+		SETTINGS_NAV_LEAF_RC_GENERAL,
+		SETTINGS_NAV_LEAF_RC_NAMEPLATES,
+		SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD,
+		SETTINGS_NAV_LEAF_RC_NOTIFY,
+		SETTINGS_NAV_LEAF_RC_WEAPONS,
+		// integratedclient
 		SETTINGS_NAV_LEAF_COUNT,
 	};
 
@@ -51,10 +59,11 @@ namespace BestClientUiTheme
 		int m_SettingsPage = 0;
 		int m_TClientTab = 0;
 		int m_BestClientTab = 0;
+		int m_RanbiTab = 0; // integratedclient
 	};
 
 	SSettingsLeafTarget LeafTarget(int Leaf);
-	int LeafFromState(int SettingsPage, int TClientTab, int BestClientTab);
+	int LeafFromState(int SettingsPage, int TClientTab, int BestClientTab, int RanbiTab); // integratedclient
 	int GroupForLeaf(int Leaf);
 	bool IsLeafVisible(int Leaf, int TcTabFlags, int BcTabFlags);
 

@@ -150,7 +150,7 @@ Demo playback only (Demo Player): **Camera Drift**, **Dynamic FOV**.
 
 ### Others
 
-- **Misc** — auto update, silent typing, cinematic camera, better spectate (`+specpause` radio), spec moved notify, extend zoom, UI/wheel/scoreboard scale, and more
+- **Misc** — silent typing, cinematic camera, better spectate (`+specpause` radio), spec moved notify, extend zoom, UI/wheel/scoreboard scale, and more
 - **Browser Utils** — auto server list refresh, short EGO/KoG server names
 - **Chat Filter** — regex/censor list, player whitelist (from RushieClient)
 - **Voice Binds** — push-to-talk and voice moderation key
@@ -246,7 +246,6 @@ bc_auto_server_list_refresh
 bc_auto_server_list_refresh_seconds
 bc_auto_team_lock
 bc_auto_team_lock_delay
-bc_auto_update
 bc_best_input_amount
 bc_best_input_interpolation
 bc_best_input_latency_comp

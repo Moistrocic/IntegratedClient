@@ -616,18 +616,6 @@ Show other players' hook collision lines
 Show tiles layers from BG map
 == 顯示實體層背景地圖的圖塊層
 
-Update now
-== 現在更新
-
-Updating…
-== 更新中…
-
-No updates available
-== 沒有可用的更新
-
-Check now
-== 檢查更新
-
 Loading DDNet Client
 == 正在載入 DDNet 客戶端
 
@@ -2404,9 +2392,6 @@ Chat background color
 Censor profanity
 == 過濾不雅用語
 
-Download
-== 下載
-
 Team save in progress. You'll be able to load with '/load %s'
 == 隊伍正在存檔。成功後可使用 "/load %s" 載入存檔
 
@@ -2769,7 +2754,7 @@ Configs
 Credits
 == 
 
-BestClient update downloaded! Restart to apply.
+Ranbi
 == 
 
 Show dummy position
@@ -2889,18 +2874,6 @@ Interact
 Always predict frozen players
 == 
 
-BestClient %s is out!
-== 
-
-Preparing update...
-== 
-
-BestClient updated!
-== 
-
-Update failed
-== 
-
 No country flags match your filter criteria
 == 
 
@@ -2935,21 +2908,6 @@ Choose country flag
 == 
 
 Telegram
-== 
-
-Check update
-== 
-
-Try Light
-== 
-
-Downloading %d%%
-== 
-
-Update downloaded
-== 
-
-Install
 == 
 
 Points
@@ -4246,9 +4204,6 @@ Lower Discords Process Priority
 Gameplay QoL
 == 
 
-Automatic update
-== 
-
 Cinematic camera
 == 
 
@@ -4517,6 +4472,24 @@ Action
 == 
 
 slot %d
+== 
+
+Based on
+== 
+
+Source clients
+== 
+
+RanbiClient (GUI integration in progress)
+== 
+
+Links
+== 
+
+Integration registry
+== 
+
+BestClient information is on the second page.
 == 
 
 Mini games
@@ -5011,6 +4984,15 @@ Translation timed out
 Translation failed: %s
 == 
 
+Nameplates
+== 
+
+Chat & Scoreboard
+== 
+
+Notify
+== 
+
 System default
 == 
 
@@ -5147,6 +5129,9 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+Ranbi features are not integrated yet. This page is a placeholder.
 == 
 
 [bgdraw]

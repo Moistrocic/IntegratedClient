@@ -430,15 +430,6 @@ Normal message
 Preview
 == Antaŭrigardo
 
-Update now
-== Ĝisdatigi nun
-
-Updating…
-== Ĝisdatiĝas…
-
-Check now
-== Kontroli nun
-
 Discord
 == Diskordo
 
@@ -1489,9 +1480,6 @@ Chat command (e.g. showall 1)
 Unregister protocol and file extensions
 == Malregistri protokolon kaj dosiersufikson
 
-No updates available
-== Neniu ĝisdatigo disponebla
-
 Custom
 == Propra
 
@@ -1613,9 +1601,6 @@ Axis
 
 Status
 == Stato
-
-Download
-== Elŝuti
 
 [Spectators]
 %d others…
@@ -2359,7 +2344,7 @@ Configs
 Credits
 == 
 
-BestClient update downloaded! Restart to apply.
+Ranbi
 == 
 
 HUD
@@ -2793,18 +2778,6 @@ Show tiles layers from BG map
 Run on join
 == 
 
-BestClient %s is out!
-== 
-
-Preparing update...
-== 
-
-BestClient updated!
-== 
-
-Update failed
-== 
-
 Dynamic Camera
 == 
 
@@ -2908,21 +2881,6 @@ Basic
 == 
 
 Telegram
-== 
-
-Check update
-== 
-
-Try Light
-== 
-
-Downloading %d%%
-== 
-
-Update downloaded
-== 
-
-Install
 == 
 
 Loading race demo files
@@ -4246,9 +4204,6 @@ Lower Discords Process Priority
 Gameplay QoL
 == 
 
-Automatic update
-== 
-
 Cinematic camera
 == 
 
@@ -4517,6 +4472,24 @@ Action
 == 
 
 slot %d
+== 
+
+Based on
+== 
+
+Source clients
+== 
+
+RanbiClient (GUI integration in progress)
+== 
+
+Links
+== 
+
+Integration registry
+== 
+
+BestClient information is on the second page.
 == 
 
 Mini games
@@ -5011,6 +4984,15 @@ Translation timed out
 Translation failed: %s
 == 
 
+Nameplates
+== 
+
+Chat & Scoreboard
+== 
+
+Notify
+== 
+
 System default
 == 
 
@@ -5147,6 +5129,9 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+Ranbi features are not integrated yet. This page is a placeholder.
 == 
 
 [bgdraw]

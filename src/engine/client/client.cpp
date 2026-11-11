@@ -3267,9 +3267,6 @@ void CClient::RegisterInterfaces()
 	Kernel()->RegisterInterface(static_cast<IGhostRecorder *>(&m_GhostRecorder), false);
 	Kernel()->RegisterInterface(static_cast<IGhostLoader *>(&m_GhostLoader), false);
 	Kernel()->RegisterInterface(static_cast<IServerBrowser *>(&m_ServerBrowser), false);
-#if defined(CONF_AUTOUPDATE)
-	Kernel()->RegisterInterface(static_cast<IUpdater *>(&m_Updater), false);
-#endif
 	Kernel()->RegisterInterface(static_cast<IFriends *>(&m_Friends), false);
 	Kernel()->ReregisterInterface(static_cast<IFriends *>(&m_Foes));
 }
@@ -3286,9 +3283,6 @@ void CClient::InitInterfaces()
 	m_pInput = Kernel()->RequestInterface<IEngineInput>();
 	m_pConfigManager = Kernel()->RequestInterface<IConfigManager>();
 	m_pConfig = m_pConfigManager->Values();
-#if defined(CONF_AUTOUPDATE)
-	m_pUpdater = Kernel()->RequestInterface<IUpdater>();
-#endif
 	m_pDiscord = Kernel()->RequestInterface<IDiscord>();
 	m_pSteam = Kernel()->RequestInterface<ISteam>();
 	m_pNotifications = Kernel()->RequestInterface<INotifications>();
@@ -3297,10 +3291,6 @@ void CClient::InitInterfaces()
 	m_DemoEditor.Init(&m_SnapshotDelta, &m_SnapshotDeltaSixup, m_pConsole, m_pStorage);
 
 	m_ServerBrowser.SetBaseInfo(&m_aNetClient[CONN_CONTACT], m_pGameClient->NetVersion());
-
-#if defined(CONF_AUTOUPDATE)
-	m_Updater.Init();
-#endif
 
 	m_pConfigManager->RegisterCallback(IFavorites::ConfigSaveCallback, m_pFavorites);
 	m_Friends.Init();
@@ -3514,10 +3504,6 @@ void CClient::Run()
 			else if(str_endswith(aFile, ".map"))
 				HandleMapPath(aFile);
 		}
-
-#if defined(CONF_AUTOUPDATE)
-		Updater()->Update();
-#endif
 
 		// update sound
 		Sound()->Update();
@@ -5218,9 +5204,6 @@ int main(int argc, const char **argv)
 			"%s"
 			"Platform: %s (%s)\n"
 			"Configuration: base"
-#if defined(CONF_AUTOUPDATE)
-			" + autoupdate"
-#endif
 #if defined(CONF_CRASHDUMP)
 			" + crashdump"
 #endif

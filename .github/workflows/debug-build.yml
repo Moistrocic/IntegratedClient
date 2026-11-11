@@ -21,7 +21,7 @@ jobs:
         os: [ubuntu-latest]
         include:
         - os: ubuntu-latest
-          cmake-args: -G Ninja -DCMAKE_BUILD_TYPE=Debug -DDISCORD=ON -DDISCORD_DYNAMIC=ON -DWEBSOCKETS=OFF -DPREFER_BUNDLED_LIBS=ON -DAUTOUPDATE=ON
+          cmake-args: -G Ninja -DCMAKE_BUILD_TYPE=Debug -DDISCORD=ON -DDISCORD_DYNAMIC=ON -DWEBSOCKETS=OFF -DPREFER_BUNDLED_LIBS=ON
           cmake-init-env: CC=clang CXX=clang++ CFLAGS="-fsanitize=address,undefined -fsanitize-recover=all -fno-omit-frame-pointer -fno-common" CXXFLAGS="-fsanitize=address,undefined -fsanitize-recover=all -fno-omit-frame-pointer -fno-common" LDFLAGS="-fsanitize=address,undefined"
           package-file: "*-linux_x86_64.tar.xz"
 
@@ -38,7 +38,7 @@ jobs:
         #   package-file: "*-macos-x86_64.dmg"
 
         # - os: windows-latest
-        #   cmake-args: -A x64 -DCMAKE_BUILD_TYPE=Debug -T ClangCl -DDISCORD=ON -DTOOLS=OFF -DAUTOUPDATE=ON
+        #   cmake-args: -A x64 -DCMAKE_BUILD_TYPE=Debug -T ClangCl -DDISCORD=ON -DTOOLS=OFF
         #   cmake-init-env: CC=clang-cl CXX=clang-cl
         #   package-file: "*-win64.zip"
 

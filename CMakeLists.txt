@@ -167,7 +167,6 @@ endif()
 option(WEBSOCKETS "Enable websockets support" OFF)
 option(MYSQL "Enable mysql support" OFF)
 option(TEST_MYSQL "Test mysql support in unit tests (also sets -DMYSQL=ON)" OFF)
-option(AUTOUPDATE "Enable the autoupdater" ON)
 option(INFORM_UPDATE "Inform about available updates" ON)
 option(VIDEORECORDER "Enable video recording support via FFmpeg" ON)
 option(UPNP "Enable UPnP support" OFF)
@@ -2569,7 +2568,6 @@ set_src(ENGINE_INTERFACE GLOB src/engine
   steam.h
   storage.h
   textrender.h
-  updater.h
   uuid.h
   warning.h
   # tidy-alphabetical-end
@@ -3090,8 +3088,6 @@ if(CLIENT)
     components/bestclient/ui_theme/style.h
     components/bestclient/ui_theme/widgets.cpp
     components/bestclient/ui_theme/widgets.h
-    components/bestclient/updater.cpp
-    components/bestclient/updater.h
     components/bestclient/version.h
     components/bestclient/visualizer/analyzer.cpp
     components/bestclient/visualizer/analyzer.h
@@ -3199,6 +3195,7 @@ if(CLIENT)
     components/players.h
     components/race_demo.cpp
     components/race_demo.h
+    components/ranbi/menus_ranbi.cpp
     components/scoreboard.cpp
     components/scoreboard.h
     components/skins.cpp
@@ -3630,40 +3627,6 @@ if(CLIENT)
 
   list(APPEND TARGETS_OWN game-client)
   list(APPEND TARGETS_LINK game-client)
-
-  if(WIN32)
-    set(VERSION_COMPANY "${CLIENT_EXECUTABLE} Team")
-    set(VERSION_PRODUCT_NAME "BestClient")
-    configure_file("other/versioninfo/updater.versioninfo.rc.in" "updater.versioninfo.rc")
-    configure_file("other/manifest/updater.manifest.in" "updater.manifest")
-    if(NOT MINGW)
-      set(UPDATER_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/updater.manifest")
-    else()
-      configure_file("other/manifest/updater.rc" "updater.rc" COPYONLY)
-      set(UPDATER_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/updater.rc")
-    endif()
-    add_executable(bestclient-updater WIN32
-      src/tools/bestclient_updater.cpp
-      other/icons/DDNet.rc
-      "${CMAKE_CURRENT_BINARY_DIR}/updater.versioninfo.rc"
-      ${UPDATER_MANIFEST}
-      ${ZLIB_DEP}
-    )
-    target_link_libraries(bestclient-updater shell32 ${ZLIB_LIBRARIES})
-    target_include_directories(bestclient-updater SYSTEM PRIVATE ${ZLIB_INCLUDE_DIRS})
-    set_property(TARGET bestclient-updater PROPERTY OUTPUT_NAME "bestclient-updater")
-    list(APPEND TARGETS_OWN bestclient-updater)
-    list(APPEND TARGETS_LINK bestclient-updater)
-  elseif(TARGET_OS STREQUAL "linux")
-    add_executable(bestclient-updater
-      src/tools/bestclient_updater_linux.cpp
-    )
-    target_link_libraries(bestclient-updater ${SDL2_LIBRARIES})
-    target_include_directories(bestclient-updater PRIVATE ${SDL2_INCLUDE_DIRS})
-    set_property(TARGET bestclient-updater PROPERTY OUTPUT_NAME "bestclient-updater")
-    list(APPEND TARGETS_OWN bestclient-updater)
-    list(APPEND TARGETS_LINK bestclient-updater)
-  endif()
 endif()
 
 
@@ -3890,10 +3853,6 @@ if(TOOLS)
   set(TARGETS_TOOLS)
   set_src(TOOLS_SRC GLOB src/tools
     # tidy-alphabetical-start
-    bestclient_updater.cpp
-    bestclient_updater_linux.cpp
-    bestclient_updater_linux_font.h
-    bestclient_updater_linux_fs.h
     config_common.h
     config_retrieve.cpp
     config_store.cpp
@@ -3922,9 +3881,6 @@ if(TOOLS)
     file(RELATIVE_PATH T "${PROJECT_SOURCE_DIR}/src/tools/" ${ABS_T})
     if(T MATCHES "\\.cpp$")
       string(REGEX REPLACE "\\.cpp$" "" TOOL "${T}")
-      if(TOOL MATCHES "^bestclient_updater(_linux)?$")
-        continue()
-      endif()
       if(TOOL MATCHES "^map_render$" AND NOT EGL_FOUND)
         continue()
       endif()
@@ -4370,9 +4326,6 @@ set(CPACK_TARGETS)
 if(TARGET game-client)
   list(APPEND CPACK_TARGETS game-client)
 endif()
-if(TARGET bestclient-updater)
-  list(APPEND CPACK_TARGETS bestclient-updater)
-endif()
 if(TARGET game-server)
   list(APPEND CPACK_TARGETS game-server)
 endif()
@@ -4813,9 +4766,7 @@ foreach(target ${TARGETS_OWN})
     # See https://learn.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
     target_compile_definitions(${target} PRIVATE NOMINMAX) # windows.h shouldn't define min/max macros
     target_compile_definitions(${target} PRIVATE WIN32_LEAN_AND_MEAN) # windows.h shouldn't define the name IStorage
-    if(NOT "${target}" STREQUAL "bestclient-updater")
-      target_compile_definitions(${target} PRIVATE NOGDI) # wingdi.h shouldn't define the name ERROR
-    endif()
+    target_compile_definitions(${target} PRIVATE NOGDI) # wingdi.h shouldn't define the name ERROR
     # 0x0501 (Windows XP) is required for mingw to get getaddrinfo to work
     # 0x0600 (Windows Vista) is required to use RegGetValueW and RegDeleteTreeW
     target_compile_definitions(${target} PRIVATE NTDDI_VERSION=0x06000000) # Minimum OS version (new macro, since Vista)
@@ -4877,9 +4828,6 @@ foreach(target ${TARGETS_OWN})
   endif()
   if(TEST_MYSQL)
     target_compile_definitions(${target} PRIVATE CONF_TEST_MYSQL)
-  endif()
-  if(AUTOUPDATE)
-    target_compile_definitions(${target} PRIVATE CONF_AUTOUPDATE)
   endif()
   if(INFORM_UPDATE)
     target_compile_definitions(${target} PRIVATE CONF_INFORM_UPDATE)

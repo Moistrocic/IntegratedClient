@@ -499,9 +499,6 @@ Show ghost
 DDNet
 == DDNet
 
-No updates available
-== Nincs elérhető frissítés
-
 Enable server message sound
 == Szerver chat hang engedélyezése
 
@@ -583,9 +580,6 @@ Ghost
 Remove chat
 == Chat eltüntetése
 
-Check now
-== Nézd meg
-
 Frags
 == Zászlók
 
@@ -600,9 +594,6 @@ System message
 
 Enable long pain sound (used when shooting in freeze)
 == Hosszú fájdalom hang lejátszása (mikor a játékos lő, ha lefagyott)
-
-Updating…
-== Frissítés…
 
 Overlay entities
 == Entitás láthatósága
@@ -675,9 +666,6 @@ Connecting dummy
 
 Clan plates size
 == Klán felirat mérete
-
-Update now
-== Frissíts most
 
 Show clan above name plates
 == Klán mutatása a nevek fölött
@@ -2463,7 +2451,7 @@ Configs
 Credits
 == 
 
-BestClient update downloaded! Restart to apply.
+Ranbi
 == 
 
 Info Messages
@@ -2775,18 +2763,6 @@ Regular background color
 Entities background color
 == 
 
-BestClient %s is out!
-== 
-
-Preparing update...
-== 
-
-BestClient updated!
-== 
-
-Update failed
-== 
-
 [Hertz]
 Hz
 == 
@@ -2870,24 +2846,6 @@ Unable to delete skin
 == 
 
 Telegram
-== 
-
-Check update
-== 
-
-Try Light
-== 
-
-Download
-== 
-
-Downloading %d%%
-== 
-
-Update downloaded
-== 
-
-Install
 == 
 
 [Spectators]
@@ -4240,9 +4198,6 @@ Lower Discords Process Priority
 Gameplay QoL
 == 
 
-Automatic update
-== 
-
 Cinematic camera
 == 
 
@@ -4511,6 +4466,24 @@ Action
 == 
 
 slot %d
+== 
+
+Based on
+== 
+
+Source clients
+== 
+
+RanbiClient (GUI integration in progress)
+== 
+
+Links
+== 
+
+Integration registry
+== 
+
+BestClient information is on the second page.
 == 
 
 Mini games
@@ -5005,6 +4978,15 @@ Translation timed out
 Translation failed: %s
 == 
 
+Nameplates
+== 
+
+Chat & Scoreboard
+== 
+
+Notify
+== 
+
 System default
 == 
 
@@ -5141,6 +5123,9 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+Ranbi features are not integrated yet. This page is a placeholder.
 == 
 
 [bgdraw]

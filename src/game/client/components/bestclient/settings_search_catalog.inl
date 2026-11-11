@@ -224,7 +224,6 @@
 	{"High DDNet Process Priority", SETTINGS_NAV_LEAF_BC_GAMEPLAY, "Performance", &g_Config.m_BcHighProcessPriority, nullptr},
 	{"Lower Discords Process Priority", SETTINGS_NAV_LEAF_BC_GAMEPLAY, "Performance", &g_Config.m_BcDiscordNormalProcessPriority, nullptr},
 
-	{"Automatic update", SETTINGS_NAV_LEAF_BC_GAMEPLAY, "Gameplay QoL", &g_Config.m_BcAutoUpdate, nullptr},
 	{"Cinematic camera", SETTINGS_NAV_LEAF_BC_GAMEPLAY, "Gameplay QoL", &g_Config.m_BcCinematicCamera, nullptr},
 	{"Extend zoom (0.5 steps)", SETTINGS_NAV_LEAF_BC_GAMEPLAY, "Gameplay QoL", &g_Config.m_BcExtendZoom, nullptr},
 	{"Better spectate", SETTINGS_NAV_LEAF_BC_GAMEPLAY, "Gameplay QoL", &g_Config.m_BcBetterSpectate, nullptr},

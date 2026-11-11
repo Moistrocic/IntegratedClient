@@ -19,21 +19,11 @@
 #define PLAT_NAME CONF_PLATFORM_STRING "-unsupported"
 #endif
 #else
-#if defined(AUTOUPDATE)
-#error Compiling with autoupdater on an unsupported platform
-#endif
 #define PLAT_EXT ""
 #define PLAT_NAME "unsupported-unsupported"
 #endif
 
-#define PLAT_CLIENT_DOWN CLIENT_EXEC "-" PLAT_NAME PLAT_EXT
-#define PLAT_SERVER_DOWN SERVER_EXEC "-" PLAT_NAME PLAT_EXT
-
 #define PLAT_CLIENT_EXEC CLIENT_EXEC PLAT_EXT
 #define PLAT_SERVER_EXEC SERVER_EXEC PLAT_EXT
-
-// bestclient
-#include <game/client/components/bestclient/updater.h>
-// bestclient
 
 #endif

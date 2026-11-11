@@ -36,9 +36,6 @@ MACRO_CONFIG_INT(BcTranslateMessageButton, bc_translate_message_button, 0, 0, 1,
 MACRO_CONFIG_INT(BcCasinoBalance, bc_casino_balance, 500, 0, 9999999, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Casino game balance in dollars")
 MACRO_CONFIG_INT(BcCasinoLastClaim, bc_casino_last_claim, 0, 0, 2147483647, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Unix timestamp of last casino free claim")
 
-// Auto update
-MACRO_CONFIG_INT(BcAutoUpdate, bc_auto_update, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Automatically download updates and restart to apply them on the main menu")
-
 // Twitch chat integration
 MACRO_CONFIG_STR(BcTwitchChatNick, bc_twitch_chat_nick, 64, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Twitch channel nick for chat integration")
 
@@ -240,7 +237,7 @@ MACRO_CONFIG_INT(BcMenuUiTabSide, bc_menu_ui_tab_side, 1, 0, 1, CFGFLAG_CLIENT |
 MACRO_CONFIG_INT(BcMenuUiNewColorPicker, bc_menu_ui_new_color_picker, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Use better color picker style when Better UI is enabled")
 MACRO_CONFIG_INT(BcMenuUiBetterFont, bc_menu_ui_better_font, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Use Better font (Actay Wide Bold) instead of default/TClient font")
 MACRO_CONFIG_INT(BcShowStylePicker, bc_show_style_picker, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show one-time menu UI style picker on first launch")
-MACRO_CONFIG_INT(BcSettingsNavExpanded, bc_settings_nav_expanded, 0, 0, 7, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Better settings nav expanded groups (bit 0 = DDNet, 1 = TClient, 2 = BestClient)")
+MACRO_CONFIG_INT(BcSettingsNavExpanded, bc_settings_nav_expanded, 0, 0, 15, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Better settings nav expanded groups (bit 0 = DDNet, 1 = TClient, 2 = BestClient, 3 = Ranbi)")
 
 // UI Themes
 MACRO_CONFIG_INT(BcUiThemes, bc_ui_themes, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable UI Themes")

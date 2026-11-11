@@ -2,7 +2,6 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "menus_start.h"
 
-#include <engine/client/updater.h>
 #include <engine/font_icons.h>
 #include <engine/graphics.h>
 #include <engine/keys.h>
@@ -15,7 +14,6 @@
 #include <algorithm>
 
 // bestclient
-#include <game/client/bc_menu_badges.h>
 #include <game/client/components/bestclient/version.h>
 // bestclient
 #include <game/client/gameclient.h>
@@ -62,35 +60,6 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 	static CButtonContainer s_TelegramButton;
 	if(GameClient()->m_Menus.DoButton_Menu(&s_TelegramButton, BcLocalize("Telegram"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f))) // bestclient
 		Client()->ViewLink("https://t.me/bestddnet");
-
-	ExtMenu.HSplitBottom(5.0f, &ExtMenu, nullptr);
-	ExtMenu.HSplitBottom(20.0f, &ExtMenu, &Button);
-	static CButtonContainer s_CheckUpdateButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_CheckUpdateButton, BcLocalize("Check update"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f))) // bestclient
-	{
-#if defined(CONF_AUTOUPDATE)
-		Updater()->CheckForUpdate();
-#endif
-	}
-
-	// bestclient
-	ExtMenu.HSplitBottom(5.0f, &ExtMenu, nullptr);
-	ExtMenu.HSplitBottom(20.0f, &ExtMenu, &Button);
-	static CButtonContainer s_TryLightButton;
-	if(GameClient()->m_Menus.DoButton_Menu(&s_TryLightButton, BcLocalize("Try Light"), 0, &Button, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
-		Client()->ViewLink("https://github.com/BestProjectTeam/BestClient-Light");
-	{
-		BcMenuBadges::SBadge CornerNew = BcMenuBadges::New;
-		CornerNew.m_FontSize = 8.0f;
-		CornerNew.m_Rounding = 3.0f;
-		CUIRect NewBadge;
-		NewBadge.h = 11.0f;
-		NewBadge.w = TextRender()->TextWidth(CornerNew.m_FontSize, CornerNew.m_pText) + 8.0f;
-		NewBadge.x = Button.x + Button.w - NewBadge.w + 2.0f;
-		NewBadge.y = Button.y - 4.0f;
-		BcMenuBadges::DrawAt(Graphics(), Ui(), TextRender(), NewBadge, CornerNew);
-	}
-	// bestclient
 
 	constexpr float LogoW = 360.0f;
 	constexpr float LogoH = 103.0f;
@@ -209,104 +178,12 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 		}
 	}
 
-	const CUIRect SettingsButton = aMenuButtons[4];
 	{
 		CUIRect ScaledButton = ScaleButtonRect(aMenuButtons[4], s_aMenuButtonScale[4]);
 		static CButtonContainer s_SettingsButton;
 		if(GameClient()->m_Menus.DoButton_MenuEx(&s_SettingsButton, Localize("Settings"), 0, &ScaledButton, BUTTONFLAG_LEFT, g_Config.m_ClShowStartMenuImages ? "settings" : nullptr, IGraphics::CORNER_ALL, Rounding, 0.5f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f), true) || CheckHotKey(KEY_S))
 			NewPage = CMenus::PAGE_SETTINGS;
 	}
-
-#if defined(CONF_AUTOUPDATE)
-	{
-		char aUpdateBuf[128] = "";
-		const IUpdater::EUpdaterState State = Updater()->GetCurrentState();
-		const bool NeedUpdate = Updater()->GetLatestVersionString()[0] != '\0';
-		const bool ShowDownloadButton = State == IUpdater::VERSION_AVAILABLE;
-		const bool ShowRetryButton = NeedUpdate && State == IUpdater::FAIL;
-		const bool ShowRestartButton = State == IUpdater::NEED_RESTART;
-		const bool ShowUpdateProgress = State == IUpdater::DOWNLOADING;
-
-		if(ShowDownloadButton || ShowRetryButton || ShowRestartButton || ShowUpdateProgress)
-		{
-			CUIRect UpdateRow = SettingsButton;
-			UpdateRow.y += SettingsButton.h + ButtonGap;
-			UpdateRow.h = 22.0f;
-
-			// bestclient
-			CUIRect UpdateLabel, UpdateButton, ChangelogButton{};
-			const bool ShowChangelogButton = ShowDownloadButton || ShowRetryButton;
-			if(ShowChangelogButton)
-			{
-				const float ButtonFont = 14.0f;
-				const float DownloadW = std::max(90.0f, TextRender()->TextWidth(ButtonFont, Localize("Download")) + 16.0f);
-				const float ChangelogW = std::max(90.0f, TextRender()->TextWidth(ButtonFont, BcLocalize("Changelog")) + 16.0f);
-				UpdateRow.VSplitRight(DownloadW, &UpdateRow, &UpdateButton);
-				UpdateRow.VSplitRight(6.0f, &UpdateRow, nullptr);
-				UpdateRow.VSplitRight(ChangelogW, &UpdateLabel, &ChangelogButton);
-			}
-			else
-			{
-				UpdateRow.VSplitRight(120.0f, &UpdateLabel, &UpdateButton);
-			}
-			// bestclient
-			UpdateLabel.VSplitRight(10.0f, &UpdateLabel, nullptr);
-
-			if(ShowDownloadButton)
-			{
-				str_format(aUpdateBuf, sizeof(aUpdateBuf), Localize("BestClient %s is out!"), Updater()->GetLatestVersionString());
-				TextRender()->TextColor(1.0f, 0.4f, 0.4f, 1.0f);
-			}
-			else if(ShowUpdateProgress)
-			{
-				if(State == IUpdater::GETTING_MANIFEST)
-					str_copy(aUpdateBuf, Localize("Preparing update..."));
-				else
-					str_format(aUpdateBuf, sizeof(aUpdateBuf), Localize("Downloading %d%%"), Updater()->GetCurrentPercent());
-			}
-			else if(ShowRetryButton)
-			{
-				str_copy(aUpdateBuf, Localize("Update failed"));
-				TextRender()->TextColor(1.0f, 0.4f, 0.4f, 1.0f);
-			}
-			else if(ShowRestartButton)
-			{
-				str_copy(aUpdateBuf, Localize("Update downloaded"));
-				TextRender()->TextColor(0.7f, 1.0f, 0.7f, 1.0f);
-			}
-
-			Ui()->DoLabel(&UpdateLabel, aUpdateBuf, 14.0f, TEXTALIGN_ML);
-			TextRender()->TextColor(TextRender()->DefaultTextColor());
-
-			if(ShowDownloadButton || ShowRetryButton)
-			{
-				static CButtonContainer s_MenuUpdateDownload;
-				if(GameClient()->m_Menus.DoButton_Menu(&s_MenuUpdateDownload, Localize("Download"), 0, &UpdateButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
-					Updater()->InitiateUpdate();
-				// bestclient
-				static CButtonContainer s_MenuUpdateChangelog;
-				if(GameClient()->m_Menus.DoButton_Menu(&s_MenuUpdateChangelog, BcLocalize("Changelog"), 0, &ChangelogButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
-					NewPage = CMenus::PAGE_CHANGELOG;
-				// bestclient
-			}
-			else if(ShowRestartButton)
-			{
-				static CButtonContainer s_MenuUpdateRestart;
-#if defined(CONF_PLATFORM_ANDROID)
-				const char *pRestartButtonLabel = Localize("Install");
-#else
-				const char *pRestartButtonLabel = Localize("Restart");
-#endif
-				if(GameClient()->m_Menus.DoButton_Menu(&s_MenuUpdateRestart, pRestartButtonLabel, 0, &UpdateButton, BUTTONFLAG_LEFT, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
-					Updater()->ApplyUpdateAndRestart();
-			}
-			else
-			{
-				Ui()->RenderProgressBar(UpdateButton, Updater()->GetCurrentPercent() / 100.0f);
-			}
-		}
-	}
-#endif
 
 	{
 		CUIRect QuitArea;
@@ -332,28 +209,34 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 
 	{
 		CUIRect CurVersion, ConsoleButton;
-		MainView.HSplitBottom(74.0f, nullptr, &CurVersion);
+		MainView.HSplitBottom(95.0f, nullptr, &CurVersion);
 		CurVersion.VSplitRight(40.0f, &CurVersion, nullptr);
 		CurVersion.HSplitTop(20.0f, &ConsoleButton, &CurVersion);
 		CurVersion.HSplitTop(5.0f, nullptr, &CurVersion);
 		ConsoleButton.VSplitRight(40.0f, nullptr, &ConsoleButton);
 
-		CUIRect VersionLine1, VersionLine2, VersionLine3;
+		CUIRect VersionLine1, VersionLine2, VersionLine3, VersionLine4;
 		CurVersion.HSplitTop(16.0f, &VersionLine1, &CurVersion);
 		CurVersion.HSplitTop(2.0f, nullptr, &CurVersion);
 		CurVersion.HSplitTop(16.0f, &VersionLine2, &CurVersion);
 		CurVersion.HSplitTop(2.0f, nullptr, &CurVersion);
 		CurVersion.HSplitTop(16.0f, &VersionLine3, &CurVersion);
+		CurVersion.HSplitTop(2.0f, nullptr, &CurVersion);
+		CurVersion.HSplitTop(16.0f, &VersionLine4, &CurVersion);
 
 		char aDDNetBuf[64];
 		char aTClientBuf[64];
 		char aBestClientBuf[64];
+		char aIntegratedBuf[64];
 		str_format(aDDNetBuf, sizeof(aDDNetBuf), "DDNet %s", GAME_RELEASE_VERSION);
 		str_format(aTClientBuf, sizeof(aTClientBuf), "TClient %s", TCLIENT_VERSION);
 		str_format(aBestClientBuf, sizeof(aBestClientBuf), "BestClient %s", BESTCLIENT_VERSION);
+		// integratedclient: project version goes after the source client versions
+		str_format(aIntegratedBuf, sizeof(aIntegratedBuf), "%s %s", INTEGRATEDCLIENT_NAME, INTEGRATEDCLIENT_VERSION);
 		Ui()->DoLabel(&VersionLine1, aDDNetBuf, 14.0f, TEXTALIGN_MR);
 		Ui()->DoLabel(&VersionLine2, aTClientBuf, 14.0f, TEXTALIGN_MR);
 		Ui()->DoLabel(&VersionLine3, aBestClientBuf, 14.0f, TEXTALIGN_MR);
+		Ui()->DoLabel(&VersionLine4, aIntegratedBuf, 14.0f, TEXTALIGN_MR);
 
 		static CButtonContainer s_ConsoleButton;
 		SetIconMode();

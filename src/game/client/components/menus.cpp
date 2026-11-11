@@ -19,7 +19,6 @@
 #include <base/vmath.h>
 
 #include <engine/client.h>
-#include <engine/client/updater.h>
 #include <engine/config.h>
 #include <engine/editor.h>
 #include <engine/font_icons.h>
@@ -74,7 +73,6 @@ CMenus::CMenus()
 
 	m_NeedRestartGraphics = false;
 	m_NeedRestartSound = false;
-	m_NeedRestartUpdate = false; // bestclient
 	m_NeedRestartDiscord = false; // bestclient
 	m_NeedSendinfo = false;
 	m_NeedSendDummyinfo = false;
@@ -643,16 +641,7 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 
 		Box.VSplitLeft(33.0f, &Button, &Box);
 
-		bool GotNewsOrUpdate = false;
-
-#if defined(CONF_AUTOUPDATE)
-		// bestclient
-		if(Updater()->GetCurrentState() == IUpdater::VERSION_AVAILABLE)
-			GotNewsOrUpdate = true;
-		// bestclient
-#endif
-
-		GotNewsOrUpdate |= (bool)g_Config.m_UiUnreadNews;
+		bool GotNews = (bool)g_Config.m_UiUnreadNews;
 
 		ColorRGBA HomeButtonColorAlert(0, 1, 0, 0.25f);
 		ColorRGBA HomeButtonColorAlertHover(0, 1, 0, 0.5f);
@@ -660,7 +649,7 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 		ColorRGBA *pHomeButtonColorHover = nullptr;
 
 		const char *pHomeScreenButtonLabel = FontIcon::HOUSE;
-		if(GotNewsOrUpdate)
+		if(GotNews)
 		{
 			pHomeScreenButtonLabel = FontIcon::NEWSPAPER;
 			pHomeButtonColor = &HomeButtonColorAlert;

@@ -106,13 +106,6 @@ class CCollision *CComponentInterfaces::Collision() const
 	return m_pClient->Collision();
 }
 
-#if defined(CONF_AUTOUPDATE)
-class IUpdater *CComponentInterfaces::Updater() const
-{
-	return m_pClient->Updater();
-}
-#endif
-
 int64_t CComponentInterfaces::time() const
 {
 #if defined(CONF_VIDEORECORDER)

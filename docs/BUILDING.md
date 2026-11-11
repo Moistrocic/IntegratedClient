@@ -28,9 +28,6 @@ GRANT ALL PRIVILEGES ON ddnet.* TO 'ddnet'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-* **-DAUTOUPDATE=[ON|OFF]** <br>
-	Whether to enable the autoupdater. Packagers may want to disable this for their packages. Default value is ON for Windows and Linux.
-
 * **-DCLIENT=[ON|OFF]** <br>
 	Whether to enable client compilation. If set to OFF, DDNet will not depend on Curl, Freetype, Ogg, Opus, Opusfile, and SDL2. Default value is ON.
 

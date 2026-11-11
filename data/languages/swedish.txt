@@ -655,9 +655,6 @@ Zoom in
 %d new mentions
 == %d nya nämningar
 
-Check now
-== Kolla nu
-
 Search
 == Sök
 
@@ -711,9 +708,6 @@ Show score
 
 Refresh Rate
 == Uppdateringsfrekvens
-
-No updates available
-== Inga updateringar tillgängliga
 
 %.2f MiB
 == %.2f MiB
@@ -796,9 +790,6 @@ AntiPing: predict grenade paths
 Best
 == Bäst
 
-Updating…
-== Uppdaterar…
-
 Clan plates size
 == Klanskylt storlek
 
@@ -858,9 +849,6 @@ Unfinished map
 
 Show names in chat in team colors
 == Visa namn in chatten med lagets färger
-
-Update now
-== Uppdatera nu
 
 Toggle ghost
 == Växla spöke
@@ -2404,9 +2392,6 @@ Dragger Outline Color
 Dragger Inner Color
 == Dragger inre färg
 
-Download
-== Ladda ner
-
 Add clan
 == Lägg till klan
 
@@ -2720,7 +2705,7 @@ Configs
 Credits
 == 
 
-BestClient update downloaded! Restart to apply.
+Ranbi
 == 
 
 Show dummy position
@@ -2871,18 +2856,6 @@ Interact
 Always predict frozen players
 == 
 
-BestClient %s is out!
-== 
-
-Preparing update...
-== 
-
-BestClient updated!
-== 
-
-Update failed
-== 
-
 Update Rate
 == 
 
@@ -2923,21 +2896,6 @@ Choose country flag
 == 
 
 Telegram
-== 
-
-Check update
-== 
-
-Try Light
-== 
-
-Downloading %d%%
-== 
-
-Update downloaded
-== 
-
-Install
 == 
 
 Points
@@ -4246,9 +4204,6 @@ Lower Discords Process Priority
 Gameplay QoL
 == 
 
-Automatic update
-== 
-
 Cinematic camera
 == 
 
@@ -4517,6 +4472,24 @@ Action
 == 
 
 slot %d
+== 
+
+Based on
+== 
+
+Source clients
+== 
+
+RanbiClient (GUI integration in progress)
+== 
+
+Links
+== 
+
+Integration registry
+== 
+
+BestClient information is on the second page.
 == 
 
 Mini games
@@ -5011,6 +4984,15 @@ Translation timed out
 Translation failed: %s
 == 
 
+Nameplates
+== 
+
+Chat & Scoreboard
+== 
+
+Notify
+== 
+
 System default
 == 
 
@@ -5147,6 +5129,9 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+Ranbi features are not integrated yet. This page is a placeholder.
 == 
 
 [bgdraw]

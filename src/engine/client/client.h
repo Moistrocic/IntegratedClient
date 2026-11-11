@@ -44,7 +44,6 @@ class ILogger;
 class ISteam;
 class INotifications;
 class IStorage;
-class IUpdater;
 
 class CServerCapabilities
 {
@@ -75,7 +74,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	INotifications *m_pNotifications = nullptr;
 	IStorage *m_pStorage = nullptr;
 	IEngineTextRender *m_pTextRender = nullptr;
-	IUpdater *m_pUpdater = nullptr;
 
 	CNetClient m_aNetClient[NUM_CONNS];
 	CDemoPlayer m_DemoPlayer;
@@ -85,7 +83,6 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	CGhostRecorder m_GhostRecorder;
 	CGhostLoader m_GhostLoader;
 	CServerBrowser m_ServerBrowser;
-	CUpdater m_Updater;
 	CFriends m_Friends;
 	CFriends m_Foes;
 
@@ -300,7 +297,6 @@ public:
 	INotifications *Notifications() { return m_pNotifications; }
 	IStorage *Storage() { return m_pStorage; }
 	IEngineTextRender *TextRender() { return m_pTextRender; }
-	IUpdater *Updater() { return m_pUpdater; }
 	IHttp *Http() { return m_pHttp; }
 
 	CClient();

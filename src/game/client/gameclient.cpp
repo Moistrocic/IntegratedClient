@@ -70,7 +70,6 @@
 #include <engine/sound.h>
 #include <engine/storage.h>
 #include <engine/textrender.h>
-#include <engine/updater.h>
 
 #include <generated/client_data.h>
 #include <generated/client_data7.h>
@@ -119,9 +118,6 @@ void CGameClient::OnConsoleInit()
 	m_pFriends = Kernel()->RequestInterface<IFriends>();
 	m_pFoes = Client()->Foes();
 	m_pDiscord = Kernel()->RequestInterface<IDiscord>();
-#if defined(CONF_AUTOUPDATE)
-	m_pUpdater = Kernel()->RequestInterface<IUpdater>();
-#endif
 	m_pHttp = Kernel()->RequestInterface<IHttp>();
 	m_pMap = CreateMap();
 
