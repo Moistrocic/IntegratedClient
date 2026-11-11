@@ -92,7 +92,7 @@ Lead:
 
 ## 5. 构建、运行与验证
 
-当前开发/验证平台：Windows 10/11 + Visual Studio 2022（C++ 桌面开发）；上游代码本身跨平台，其他平台构建按上游文档。依赖：CMake、Ninja、Rust stable（含 cargo，MSRV 1.85）、Python 3。Ninja 构建需在 VS Developer PowerShell（或已执行 vcvars 的终端）中运行。
+当前开发/验证平台：Windows 10/11 + Visual Studio 2022（C++ 桌面开发）；上游代码本身跨平台，其他平台构建按上游文档。依赖：CMake、Ninja、Rust stable（含 cargo，MSRV 1.85）、Python 3。Ninja 构建需在 VS Developer PowerShell（或已执行 vcvars 的终端）中运行；rustup 已安装但 cargo 未在 PATH 时，把 `%USERPROFILE%\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin` 放到 PATH 最前。
 
 首次准备（根目录）：
 
@@ -109,7 +109,7 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DDEV=ON -DDOWNLOAD_GTEST=
 cmake --build build --target everything
 ```
 
-- 只编客户端：`cmake --build build --target DDNet`；产物 `build\DDNet.exe`（`CLIENT_EXECUTABLE` 默认 `DDNet`）。
+- 只编客户端：`cmake --build build --target game-client`；产物 `build\DDNet.exe`（`CLIENT_EXECUTABLE` 默认 `DDNet`；`DDNet` 同名 target 只在 Makefile 生成器下存在）。
 - 也可用 VS 生成器：`cmake -S . -B build -A x64`，构建时加 `--config Debug`（CI Windows 用此法）。
 - 运行：在**根目录**执行 `.\build\DDNet.exe`（客户端优先从当前目录的 `data/` 读资源）。
 - 测试与检查：
