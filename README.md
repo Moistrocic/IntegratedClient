@@ -23,6 +23,8 @@
 ## BestClient
 
 - 添加了是否向 BC 服务器发送身份的开关，关闭后你将无法使用和 BC 服务器相关功能。开启则会被 BC 服务器标记为 Fake 玩家（非官方构建 BC 端）。
+- 修复 Fast Practice 开关瞬间误攻击（底座 BestClient 本身问题）：开启/关闭练习不再向服务器发送一次残留 fire，正常开火与练习内攻击不受影响。
+- Fast Practice 虚影坐标：HUD 与 TClient statusbar 的 Position / Speed / Angle 可在练习时显示当前操控虚影的数据，而不是固定的实体值。
 
 ### RanbiClient 功能整合（默认关闭，关闭时与底座行为一致）
 
@@ -33,14 +35,14 @@
 - 聊天历史去重、聊天显示分数、旁观者皮肤名、跳过三格水提示
 - 信息获取功能（默认关闭 + UI 风险提示）：碰撞自动换肤、全图玩家信息、计分板“获取名称”
 - AI 自动回复（默认关闭 + Token/隐私/规则警告；支持 0.6/0.7）
+- **分数获取替换**：Ranbi → Chat & Scoreboard 开关“替换bc的分数获取逻辑”（默认关闭）。开启后 BC 计分板 / nameplate / chat 的分数统一使用 Ranbi 的 ddnet.org 取数逻辑，**所有服务器**（含 EGO / Legit）显示 DDNet 分数；关闭则完全使用 BC 原 provider 逻辑。
 
 ### 本项目新增功能
 
 - **DeepSeek 翻译后端**：翻译设置新增 DeepSeek（OpenAI 兼容 API），支持 Endpoint / API Key / Model 配置
 - **复读上一个玩家**：Ranbi → Chat & Scoreboard 绑定快捷键，按下后复读其他玩家最近一条消息（无消息时不动作，团队消息按团队频道复读）
-- **武器辅助线**：Ranbi → Weapons 开关；手持激光枪 / 霰弹枪 / 榴弹炮时预测显示射线、扩散线与抛物线终点
+- **武器辅助线**：Ranbi → Weapons 开关；激光枪 / 霰弹枪 / 榴弹炮使用真实 CLaser / CProjectile 物理模拟轨迹，并复用原版发射后的光束 / 投射物尾迹渲染；不发射也会显示，随渲染帧更新
 - **锁定地图完成名称**：Ranbi → General 设置；官方服务器列表的地图完成查询固定使用指定玩家名称，不受当前游戏内名称影响
-- **分数并发上限**：BestClient → Visuals → QoL 新增 `Max concurrent point requests`（1–5，默认 5），加速 DDNet 分数获取
 
 ## 构建与运行
 
