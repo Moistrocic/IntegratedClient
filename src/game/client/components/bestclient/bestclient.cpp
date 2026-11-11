@@ -864,6 +864,9 @@ float BestClientScoreboardPlayerPopupHeight(const CGameClient *pGameClient, bool
 	}
 
 	int ButtonRows = 7;
+	// ranbi: m_RcScoreboardCopyName adds the "Take Name" action for other players
+	if(g_Config.m_RcScoreboardCopyName && !IsLocal)
+		ButtonRows++;
 	if(!IsSpectatorRow)
 		ButtonRows++;
 	if(!IsLocal && g_Config.m_BcVoiceChatEnable)

@@ -357,3 +357,7 @@
 	{"Three-tile hint right arrow text", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTilesInfoPositionRightText, &g_Config.m_RcShowEnableSkipThreeTiles},
 	{"Three-tile hint DJ left arrow text", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTilesInfoPositionDJLeftText, &g_Config.m_RcShowEnableSkipThreeTiles},
 	{"Three-tile hint DJ right arrow text", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTilesInfoPositionDJRightText, &g_Config.m_RcShowEnableSkipThreeTiles},
+
+	{"Auto change skin on collision", SETTINGS_NAV_LEAF_RC_GENERAL, "Risky features", &g_Config.m_RcAutoChangeSkin, nullptr},
+	{"Receive all players outside the view", SETTINGS_NAV_LEAF_RC_GENERAL, "Risky features", &g_Config.m_RcShowAllPlayers, nullptr},
+	{"Take player name from scoreboard", SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD, "Risky features", &g_Config.m_RcScoreboardCopyName, nullptr},

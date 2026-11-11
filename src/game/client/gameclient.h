@@ -1159,6 +1159,10 @@ private:
 
 	std::vector<std::shared_ptr<CManagedTeeRenderInfo>> m_vpManagedTeeRenderInfos;
 	void UpdateManagedTeeRenderInfos();
+	// ranbi
+	void UpdateRanbiAutoSkin();
+	static void ConchainRanbiShowAllPlayers(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	// ranbi
 
 	void UpdateLocalTuning();
 	void UpdatePrediction();
@@ -1182,6 +1186,7 @@ private:
 	CTuningParams m_aTuningList[TuneZone::NUM];
 	CTuningParams *TuningList() { return m_aTuningList; }
 
+	int m_aRanbiLastSkinChangeTick[NUM_DUMMIES] = {}; // ranbi
 	float m_LastShowDistanceZoom;
 	float m_LastZoom;
 	float m_LastScreenAspect;

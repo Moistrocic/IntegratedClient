@@ -2913,6 +2913,9 @@ not bound
 Show cursor
 == 
 
+Name changes are not supported on 0.7 servers
+== 
+
 Unmute
 == 
 
@@ -2956,6 +2959,12 @@ Clip Name
 == 
 
 /Swap
+== 
+
+Take Name
+== 
+
+Change your name to "%s"? This can be seen as impersonation and may violate server rules.
 == 
 
 Voice unmute
@@ -5158,6 +5167,27 @@ Deferred hook collision line
 Renders above water and transparent tiles.
 == 
 
+Risky features
+== 
+
+Auto change skin on collision
+== 
+
+Copies the closest player's skin within collision range (0.6 skin or 0.7 skin parts).
+== 
+
+Warning: frequent skin changes may be rate-limited by the server and can look like impersonation.
+== 
+
+Receive all players outside the view
+== 
+
+Requests every player from the server instead of only those in view.
+== 
+
+Warning: increases bandwidth, may reduce frame rate and can violate server rules.
+== 
+
 Show DDNet points
 == 
 
@@ -5267,6 +5297,15 @@ Show spectator skin in Following line
 == 
 
 Appends the skin name; BestClient spectator names stay unchanged.
+== 
+
+Take player name from scoreboard
+== 
+
+Adds a 'Take Name' action to the scoreboard player menu and requires a confirmation each time.
+== 
+
+Warning: renaming to another player can be seen as impersonation and may violate server rules.
 == 
 
 Skip three tiles

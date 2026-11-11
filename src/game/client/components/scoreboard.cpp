@@ -33,6 +33,11 @@
 static constexpr float MARGIN = 10.0f;
 static constexpr const char *SCOREBOARD_CURSOR_BIND_NAME = "toggle_scoreboard_cursor";
 
+// ranbi: m_RcScoreboardCopyName needs a second confirmation before renaming
+static CUi::SConfirmPopupContext s_RanbiTakeNameConfirm;
+static char s_aRanbiTakeName[MAX_NAME_LENGTH];
+static int s_RanbiTakeNameDummy = 0;
+
 CScoreboard::CScoreboard()
 {
 	CScoreboard::OnReset();
@@ -118,6 +123,7 @@ void CScoreboard::OnInit()
 
 void CScoreboard::OnReset()
 {
+	s_RanbiTakeNameConfirm.Reset(); // ranbi
 	m_Active = false;
 	m_MouseUnlocked = false;
 	m_LastMousePos = std::nullopt;
@@ -1141,6 +1147,30 @@ void CScoreboard::RenderRecordingNotification(float x)
 
 void CScoreboard::OnRender()
 {
+	// ranbi: m_RcScoreboardCopyName (apply a confirmed name change; 0.7 has no name change message)
+	if(s_RanbiTakeNameConfirm.m_Result == CUi::SConfirmPopupContext::CONFIRMED)
+	{
+		if(Client()->IsSixup())
+		{
+			GameClient()->Echo(Localize("Name changes are not supported on 0.7 servers"));
+		}
+		else if(s_RanbiTakeNameDummy == 0)
+		{
+			str_copy(g_Config.m_PlayerName, s_aRanbiTakeName, sizeof(g_Config.m_PlayerName));
+			GameClient()->SendInfo(false);
+		}
+		else
+		{
+			str_copy(g_Config.m_ClDummyName, s_aRanbiTakeName, sizeof(g_Config.m_ClDummyName));
+			GameClient()->SendDummyInfo(false);
+		}
+		s_RanbiTakeNameConfirm.Reset();
+	}
+	else if(s_RanbiTakeNameConfirm.m_Result == CUi::SConfirmPopupContext::CANCELED)
+	{
+		s_RanbiTakeNameConfirm.Reset();
+	}
+
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
 
@@ -1636,6 +1666,21 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 	AddTextButton(&pPopupContext->m_SwapButton, Localize("/Swap"), [&]() {
 		SayNamed("/swap");
 	});
+
+	// ranbi: m_RcScoreboardCopyName ("Clip Name" only copies to the clipboard; this renames)
+	if(g_Config.m_RcScoreboardCopyName && !pPopupContext->m_IsLocal)
+	{
+		AddTextButton(&pPopupContext->m_TakeNameButton, Localize("Take Name"), [&]() {
+			s_RanbiTakeNameDummy = g_Config.m_ClDummy;
+			str_copy(s_aRanbiTakeName, Client.m_aName, sizeof(s_aRanbiTakeName));
+			s_RanbiTakeNameConfirm.Reset();
+			s_RanbiTakeNameConfirm.YesNoButtons();
+			char aMessage[512];
+			str_format(aMessage, sizeof(aMessage), Localize("Change your name to \"%s\"? This can be seen as impersonation and may violate server rules."), Client.m_aName);
+			str_copy(s_RanbiTakeNameConfirm.m_aMessage, aMessage);
+			pUi->ShowPopupConfirm(pUi->MouseX(), pUi->MouseY(), &s_RanbiTakeNameConfirm);
+		});
+	}
 
 	if(!pPopupContext->m_IsLocal && g_Config.m_BcVoiceChatEnable)
 	{

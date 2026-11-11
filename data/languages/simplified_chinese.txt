@@ -2910,6 +2910,42 @@ IntegratedClient
 RanbiClient (integrated)
 == RanbiClient（已整合）
 
+Name changes are not supported on 0.7 servers
+== 0.7 服务器不支持改名
+
+Take Name
+== 获取名称
+
+Risky features
+== 高风险功能
+
+Auto change skin on collision
+== 碰撞时自动换肤
+
+Copies the closest player's skin within collision range (0.6 skin or 0.7 skin parts).
+== 复制碰撞范围内最近玩家的皮肤（0.6 皮肤或 0.7 皮肤部件）。
+
+Warning: frequent skin changes may be rate-limited by the server and can look like impersonation.
+== 警告：频繁更改皮肤可能被服务器限流，并且可能被视为冒名。
+
+Receive all players outside the view
+== 接收视野外所有玩家
+
+Requests every player from the server instead of only those in view.
+== 向服务器请求所有玩家，而不仅是视野内玩家。
+
+Warning: increases bandwidth, may reduce frame rate and can violate server rules.
+== 警告：会增加带宽、可能降低帧率，并可能违反服务器规则。
+
+Take player name from scoreboard
+== 从计分板获取玩家名称
+
+Adds a 'Take Name' action to the scoreboard player menu and requires a confirmation each time.
+== 在计分板玩家菜单中添加“获取名称”操作，每次都需要确认。
+
+Warning: renaming to another player can be seen as impersonation and may violate server rules.
+== 警告：改为其他玩家名称可能被视为冒名，并可能违反服务器规则。
+
 BETA
 == 
 
@@ -3205,6 +3241,9 @@ Clip Name
 == 
 
 /Swap
+== 
+
+Change your name to "%s"? This can be seen as impersonation and may violate server rules.
 == 
 
 Voice unmute

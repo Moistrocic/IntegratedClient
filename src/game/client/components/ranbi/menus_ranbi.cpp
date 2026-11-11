@@ -55,6 +55,16 @@ static void RenderRanbiHint(CUi *pUi, CUIRect *pColumn, const char *pText)
 	pUi->DoLabel(&Label, pText, s_FontSize * 0.85f, TEXTALIGN_ML);
 }
 
+static void RenderRanbiWarning(CUi *pUi, CUIRect *pColumn, const char *pText)
+{
+	CUIRect Label;
+	pColumn->HSplitTop(s_LineSize, &Label, pColumn);
+	Label.VSplitLeft(s_Margin, nullptr, &Label);
+	SLabelProperties Props;
+	Props.SetColor(ColorRGBA(1.0f, 0.45f, 0.35f, 1.0f));
+	pUi->DoLabel(&Label, pText, s_FontSize * 0.85f, TEXTALIGN_ML, Props);
+}
+
 static void BeginRanbiPageScroll(CScrollRegion &ScrollRegion, CUIRect &MainView)
 {
 	CScrollRegionParams ScrollParams;
@@ -154,6 +164,15 @@ void CMenus::RenderSettingsRanbiGeneral(CUIRect MainView)
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcEmotionDeferredRender, Localize("Deferred emoticon rendering"), &g_Config.m_RcEmotionDeferredRender, &Column, s_LineSize);
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcHookCollDeferredRender, Localize("Deferred hook collision line"), &g_Config.m_RcHookCollDeferredRender, &Column, s_LineSize);
 	RenderRanbiHint(Ui(), &Column, Localize("Renders above water and transparent tiles."));
+
+	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Risky features"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcAutoChangeSkin, Localize("Auto change skin on collision"), &g_Config.m_RcAutoChangeSkin, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("Copies the closest player's skin within collision range (0.6 skin or 0.7 skin parts)."));
+	RenderRanbiWarning(Ui(), &Column, Localize("Warning: frequent skin changes may be rate-limited by the server and can look like impersonation."));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcShowAllPlayers, Localize("Receive all players outside the view"), &g_Config.m_RcShowAllPlayers, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("Requests every player from the server instead of only those in view."));
+	RenderRanbiWarning(Ui(), &Column, Localize("Warning: increases bandwidth, may reduce frame rate and can violate server rules."));
 
 	EndRanbiPageScroll(s_ScrollRegion, MainView, Column);
 }
@@ -263,6 +282,12 @@ void CMenus::RenderSettingsRanbiChatScoreboard(CUIRect MainView)
 	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Spectator"));
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcShowSpectatorSkin, Localize("Show spectator skin in Following line"), &g_Config.m_RcShowSpectatorSkin, &Column, s_LineSize);
 	RenderRanbiHint(Ui(), &Column, Localize("Appends the skin name; BestClient spectator names stay unchanged."));
+
+	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Risky features"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcScoreboardCopyName, Localize("Take player name from scoreboard"), &g_Config.m_RcScoreboardCopyName, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("Adds a 'Take Name' action to the scoreboard player menu and requires a confirmation each time."));
+	RenderRanbiWarning(Ui(), &Column, Localize("Warning: renaming to another player can be seen as impersonation and may violate server rules."));
 
 	EndRanbiPageScroll(s_ScrollRegion, MainView, Column);
 }

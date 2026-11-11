@@ -296,6 +296,7 @@ void CGameClient::OnConsoleInit()
 		pComponent->OnConsoleInit();
 
 	Console()->Chain("cl_languagefile", ConchainLanguageUpdate, this);
+	Console()->Chain("rc_show_all_players", ConchainRanbiShowAllPlayers, this); // ranbi
 
 	Console()->Chain("player_name", ConchainSpecialInfoupdate, this);
 	Console()->Chain("player_clan", ConchainSpecialInfoupdate, this);
@@ -1142,6 +1143,8 @@ void CGameClient::OnRender()
 		}
 	}
 
+	// ranbi: m_RcAutoChangeSkin
+	UpdateRanbiAutoSkin();
 	UpdateManagedTeeRenderInfos();
 }
 
@@ -2768,6 +2771,12 @@ void CGameClient::OnNewSnapshot(bool DummySwapped)
 			CNetMsg_Cl_ShowDistance Msg;
 			float x, y;
 			Graphics()->CalcScreenParams(Graphics()->ScreenAspect(), ShowDistanceZoom, &x, &y);
+			// ranbi: m_RcShowAllPlayers (request the whole map from the server)
+			if(g_Config.m_RcShowAllPlayers)
+			{
+				x = 50000.0f;
+				y = 50000.0f;
+			}
 			Msg.m_X = x;
 			Msg.m_Y = y;
 			CMsgPacker Packer(&Msg);
@@ -2791,6 +2800,12 @@ void CGameClient::OnNewSnapshot(bool DummySwapped)
 		CNetMsg_Cl_ShowDistance Msg;
 		float x, y;
 		Graphics()->CalcScreenParams(Graphics()->ScreenAspect(), ShowDistanceZoom, &x, &y);
+		// ranbi: m_RcShowAllPlayers (request the whole map from the server)
+		if(g_Config.m_RcShowAllPlayers)
+		{
+			x = 50000.0f;
+			y = 50000.0f;
+		}
 		Msg.m_X = x;
 		Msg.m_Y = y;
 		Client()->ChecksumData()->m_Zoom = ShowDistanceZoom;
@@ -4185,6 +4200,117 @@ void CGameClient::SendDummyInfo(bool Start)
 	}
 }
 
+// ranbi: m_RcAutoChangeSkin (ported from RanbiClient 1.0.2 ranbi_client.cpp:28-122).
+// Copies the skin of the closest player within collision range to the player/dummy,
+// throttled to one update per second per dummy. On 0.7 servers the sixup skin parts
+// are copied into the CSkins7 config variables (the source only handled the 0.6 skin).
+void CGameClient::UpdateRanbiAutoSkin()
+{
+	if(!g_Config.m_RcAutoChangeSkin || Client()->State() != IClient::STATE_ONLINE)
+		return;
+
+	const bool IsSixup = Client()->IsSixup();
+
+	for(int Dummy = 0; Dummy < NUM_DUMMIES; Dummy++)
+	{
+		const int LocalId = m_aLocalIds[Dummy];
+		if(LocalId < 0 || LocalId >= MAX_CLIENTS)
+			continue;
+
+		const CClientData &LocalClient = m_aClients[LocalId];
+		if(!LocalClient.m_Active)
+			continue;
+
+		const vec2 LocalPos = LocalClient.m_Predicted.m_Pos;
+		float ClosestDist = CCharacterCore::PhysicalSize() * 1.25f;
+		int ClosestId = -1;
+
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if(i == LocalId)
+				continue;
+
+			const CClientData &OtherClient = m_aClients[i];
+			if(!OtherClient.m_Active)
+				continue;
+
+			const float Dist = distance(LocalPos, OtherClient.m_Predicted.m_Pos);
+			if(Dist < ClosestDist)
+			{
+				ClosestDist = Dist;
+				ClosestId = i;
+			}
+		}
+
+		if(ClosestId < 0)
+			continue;
+
+		const CClientData &CollidedClient = m_aClients[ClosestId];
+		bool NeedChange = false;
+
+		if(IsSixup)
+		{
+			const CClientData::CSixup &TargetSkin = CollidedClient.m_aSixup[Dummy];
+			for(int Part = 0; Part < protocol7::NUM_SKINPARTS; Part++)
+			{
+				if(str_comp(CSkins7::ms_apSkinVariables[Dummy][Part], TargetSkin.m_aaSkinPartNames[Part]) != 0 ||
+					*CSkins7::ms_apUCCVariables[Dummy][Part] != TargetSkin.m_aUseCustomColors[Part] ||
+					*CSkins7::ms_apColorVariables[Dummy][Part] != TargetSkin.m_aSkinPartColors[Part])
+				{
+					NeedChange = true;
+					break;
+				}
+			}
+		}
+		else
+		{
+			if(str_comp(LocalClient.m_aSkinName, CollidedClient.m_aSkinName) != 0 ||
+				LocalClient.m_UseCustomColor != CollidedClient.m_UseCustomColor ||
+				LocalClient.m_ColorBody != CollidedClient.m_ColorBody ||
+				LocalClient.m_ColorFeet != CollidedClient.m_ColorFeet)
+				NeedChange = true;
+		}
+
+		if(!NeedChange)
+			continue;
+
+		const int CurTick = Client()->GameTick(Dummy);
+		if(CurTick - m_aRanbiLastSkinChangeTick[Dummy] <= Client()->GameTickSpeed())
+			continue;
+		m_aRanbiLastSkinChangeTick[Dummy] = CurTick;
+
+		if(IsSixup)
+		{
+			const CClientData::CSixup &TargetSkin = CollidedClient.m_aSixup[Dummy];
+			for(int Part = 0; Part < protocol7::NUM_SKINPARTS; Part++)
+			{
+				str_copy(CSkins7::ms_apSkinVariables[Dummy][Part], TargetSkin.m_aaSkinPartNames[Part], protocol7::MAX_SKIN_ARRAY_SIZE);
+				*CSkins7::ms_apUCCVariables[Dummy][Part] = TargetSkin.m_aUseCustomColors[Part];
+				*CSkins7::ms_apColorVariables[Dummy][Part] = TargetSkin.m_aSkinPartColors[Part];
+			}
+		}
+		else if(Dummy == 0)
+		{
+			str_copy(g_Config.m_ClPlayerSkin, CollidedClient.m_aSkinName);
+			g_Config.m_ClPlayerUseCustomColor = CollidedClient.m_UseCustomColor;
+			g_Config.m_ClPlayerColorBody = CollidedClient.m_ColorBody;
+			g_Config.m_ClPlayerColorFeet = CollidedClient.m_ColorFeet;
+		}
+		else
+		{
+			str_copy(g_Config.m_ClDummySkin, CollidedClient.m_aSkinName);
+			g_Config.m_ClDummyUseCustomColor = CollidedClient.m_UseCustomColor;
+			g_Config.m_ClDummyColorBody = CollidedClient.m_ColorBody;
+			g_Config.m_ClDummyColorFeet = CollidedClient.m_ColorFeet;
+		}
+
+		if(Dummy == 0)
+			SendInfo(false);
+		else
+			SendDummyInfo(false);
+	}
+}
+
 void CGameClient::SendKill()
 {
 	// bestclient
@@ -4238,6 +4364,14 @@ void CGameClient::ConchainLanguageUpdate(IConsole::IResult *pResult, void *pUser
 	{
 		pThis->OnLanguageChange();
 	}
+}
+
+// ranbi: m_RcShowAllPlayers (force a ShowDistance resend when the setting changes)
+void CGameClient::ConchainRanbiShowAllPlayers(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
+{
+	pfnCallback(pResult, pCallbackUserData);
+	if(pResult->NumArguments())
+		((CGameClient *)pUserData)->m_LastShowDistanceZoom = -1.0f;
 }
 
 void CGameClient::ConchainSpecialInfoupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
