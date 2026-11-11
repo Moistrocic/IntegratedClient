@@ -265,13 +265,35 @@ bool CPoints::ParseJson(const json_value *pObj, const std::string &TargetName, i
 	}
 
 	const json_value *PlayerName = json_object_get(pObj, "player");
-	const json_value *PlayerPointsObject = json_object_get(pObj, "points");
-	const json_value *PlayerPoints = PlayerPointsObject ? json_object_get(PlayerPointsObject, "points") : nullptr;
-
-	if(!PlayerName || PlayerName->type != json_string || !PlayerPoints || PlayerPoints->type != json_integer)
+	if(PlayerName == nullptr)
 	{
-		LogPoints("parse fail name=%s reason=missing_fields", TargetName.c_str());
+		// task-52: ddnet.org returns {} for a player without any finished maps.
+		// That is a valid "0 points" result, not a failed request.
+		LogPoints("parse empty -> points=0 name=%s", TargetName.c_str());
+		*pPoints = 0;
+		return true;
+	}
+	if(PlayerName->type != json_string)
+	{
+		LogPoints("parse fail name=%s reason=invalid_player", TargetName.c_str());
 		return false;
+	}
+
+	const json_value *PlayerPointsObject = json_object_get(pObj, "points");
+	if(!PlayerPointsObject || PlayerPointsObject->type != json_object)
+	{
+		LogPoints("parse empty -> points=0 name=%s", TargetName.c_str());
+		*pPoints = 0;
+		return true;
+	}
+
+	const json_value *PlayerPoints = json_object_get(PlayerPointsObject, "points");
+	if(!PlayerPoints || PlayerPoints->type != json_integer)
+	{
+		// No score data for this player (new player / no finished maps): 0 points success.
+		LogPoints("parse empty -> points=0 name=%s", TargetName.c_str());
+		*pPoints = 0;
+		return true;
 	}
 
 	const char *pName = json_string_get(PlayerName);
