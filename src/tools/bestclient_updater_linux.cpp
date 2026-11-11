@@ -93,10 +93,10 @@ static const char *k_apUserDirs[] = {
 
 struct SWorkerArgs
 {
-	pid_t Pid;
-	std::string Archive;
-	std::string InstallDir;
-	std::string ExePath;
+	pid_t m_Pid;
+	std::string m_Archive;
+	std::string m_InstallDir;
+	std::string m_ExePath;
 };
 
 static int WorkerThreadFn(void *pData)
@@ -105,11 +105,11 @@ static int WorkerThreadFn(void *pData)
 
 	SetStatus("Waiting for client to close...");
 	SetPercent(2);
-	while(!ProcessGone(pArgs->Pid))
+	while(!ProcessGone(pArgs->m_Pid))
 		usleep(200 * 1000);
 	SetPercent(8);
 
-	const std::string Extract = pArgs->InstallDir + "/update/extract";
+	const std::string Extract = pArgs->m_InstallDir + "/update/extract";
 	BcFs::DeleteTree(Extract.c_str());
 	if(!BcFs::MakeDirRecursive(Extract))
 	{
@@ -120,7 +120,7 @@ static int WorkerThreadFn(void *pData)
 
 	SetStatus("Extracting update...");
 	{
-		char *apArgv[] = {(char *)"tar", (char *)"-xf", (char *)pArgs->Archive.c_str(), (char *)"-C", (char *)Extract.c_str(), nullptr};
+		char *apArgv[] = {(char *)"tar", (char *)"-xf", (char *)pArgs->m_Archive.c_str(), (char *)"-C", (char *)Extract.c_str(), nullptr};
 		const int ExitCode = RunProcessSync("tar", apArgv);
 		if(ExitCode != 0)
 		{
@@ -159,11 +159,11 @@ static int WorkerThreadFn(void *pData)
 	}
 
 	SetStatus("Backing up settings...");
-	const std::string Backup = pArgs->InstallDir + "/update/backup_" + std::to_string((long long)pArgs->Pid);
+	const std::string Backup = pArgs->m_InstallDir + "/update/backup_" + std::to_string((long long)pArgs->m_Pid);
 	BcFs::DeleteTree(Backup.c_str());
 	for(const char *pRel : k_apUserDirs)
 	{
-		const std::string Src = pArgs->InstallDir + "/" + pRel;
+		const std::string Src = pArgs->m_InstallDir + "/" + pRel;
 		const std::string Dst = Backup + "/" + pRel;
 		if(BcFs::PathExists(Src.c_str()))
 			BcFs::CopyTree(Src.c_str(), Dst.c_str());
@@ -174,7 +174,7 @@ static int WorkerThreadFn(void *pData)
 	{
 		const int Total = BcFs::CountFiles(CopyRoot.c_str());
 		int Done = 0;
-		BcFs::CopyTree(CopyRoot.c_str(), pArgs->InstallDir.c_str(), [&]() {
+		BcFs::CopyTree(CopyRoot.c_str(), pArgs->m_InstallDir.c_str(), [&]() {
 			++Done;
 			const int Pct = 55 + Done * 35 / Total;
 			SetPercent(Pct < 90 ? Pct : 90);
@@ -186,14 +186,14 @@ static int WorkerThreadFn(void *pData)
 	for(const char *pRel : k_apUserDirs)
 	{
 		const std::string Src = Backup + "/" + pRel;
-		const std::string Dst = pArgs->InstallDir + "/" + pRel;
+		const std::string Dst = pArgs->m_InstallDir + "/" + pRel;
 		if(BcFs::PathExists(Src.c_str()))
 			BcFs::CopyTree(Src.c_str(), Dst.c_str());
 	}
 	SetPercent(95);
 
 	SetStatus("Cleaning up...");
-	unlink(pArgs->Archive.c_str());
+	unlink(pArgs->m_Archive.c_str());
 	BcFs::DeleteTree(Extract.c_str());
 	BcFs::DeleteTree(Backup.c_str());
 	SetPercent(100);
@@ -204,12 +204,12 @@ static int WorkerThreadFn(void *pData)
 	const pid_t Child = fork();
 	if(Child == 0)
 	{
-		if(chdir(pArgs->InstallDir.c_str()) != 0)
+		if(chdir(pArgs->m_InstallDir.c_str()) != 0)
 		{
 			// The executable path is absolute, so the launch can still succeed.
 		}
-		char *apArgv[] = {(char *)pArgs->ExePath.c_str(), nullptr};
-		execvp(pArgs->ExePath.c_str(), apArgv);
+		char *apArgv[] = {(char *)pArgs->m_ExePath.c_str(), nullptr};
+		execvp(pArgs->m_ExePath.c_str(), apArgv);
 		_exit(1);
 	}
 
@@ -313,10 +313,10 @@ int main(int argc, char **argv)
 	}
 
 	auto *pArgs = new SWorkerArgs();
-	pArgs->Pid = (pid_t)atol(argv[1]);
-	pArgs->Archive = argv[2];
-	pArgs->InstallDir = argv[3];
-	pArgs->ExePath = argv[4];
+	pArgs->m_Pid = (pid_t)atol(argv[1]);
+	pArgs->m_Archive = argv[2];
+	pArgs->m_InstallDir = argv[3];
+	pArgs->m_ExePath = argv[4];
 
 	if(SDL_Init(SDL_INIT_VIDEO) != 0)
 	{

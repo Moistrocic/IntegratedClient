@@ -71,7 +71,6 @@ private:
 	CUIRect m_LastPopupOuterRect{};
 	SResetAnim m_aResetAnims[MAX_MODULE_VISUALS];
 	int m_ResetAnimCount = 0;
-	CButtonContainer m_ResetAllButton;
 	CButtonContainer m_ToggleModuleButton;
 	CButtonContainer m_OpacitySlider;
 	CButtonContainer m_ResetPositionButton;

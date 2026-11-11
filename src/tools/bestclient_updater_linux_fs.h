@@ -118,7 +118,7 @@ namespace BcFs
 			}
 			char aBuf[65536];
 			size_t Read;
-			while((Read = fread(aBuf, 1, sizeof(aBuf), pIn)) > 0)
+			while((Read = fread(aBuf, 1, sizeof(aBuf), pIn)) > 0) // NOLINT(clang-analyzer-unix.Stream)
 				fwrite(aBuf, 1, Read, pOut);
 			fclose(pIn);
 			fclose(pOut);

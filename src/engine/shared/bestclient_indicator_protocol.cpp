@@ -191,12 +191,12 @@ namespace BestClientIndicator
 
 	SHA256_DIGEST ComputeHmacSha256(const char *pSecret, const uint8_t *pPacketData, int PacketDataSize)
 	{
-		constexpr int HMAC_BLOCK_SIZE = 64;
-		unsigned char aKey[HMAC_BLOCK_SIZE] = {};
+		constexpr int HmacBlockSize = 64;
+		unsigned char aKey[HmacBlockSize] = {};
 		if(pSecret && pSecret[0] != '\0')
 		{
 			const int SecretLength = str_length(pSecret);
-			if(SecretLength > HMAC_BLOCK_SIZE)
+			if(SecretLength > HmacBlockSize)
 			{
 				const SHA256_DIGEST HashedKey = sha256(pSecret, SecretLength);
 				std::memcpy(aKey, HashedKey.data, sizeof(HashedKey.data));
@@ -207,9 +207,9 @@ namespace BestClientIndicator
 			}
 		}
 
-		unsigned char aInnerPad[HMAC_BLOCK_SIZE];
-		unsigned char aOuterPad[HMAC_BLOCK_SIZE];
-		for(int i = 0; i < HMAC_BLOCK_SIZE; ++i)
+		unsigned char aInnerPad[HmacBlockSize];
+		unsigned char aOuterPad[HmacBlockSize];
+		for(int i = 0; i < HmacBlockSize; ++i)
 		{
 			aInnerPad[i] = aKey[i] ^ 0x36;
 			aOuterPad[i] = aKey[i] ^ 0x5c;
