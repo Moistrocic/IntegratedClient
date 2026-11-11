@@ -32,7 +32,7 @@ permissions:
   contents: write
 
 env:
-  CLIENT_NAME: BestClient
+  CLIENT_NAME: IntegratedClient
 
 jobs:
   build-cmake:
@@ -52,14 +52,14 @@ jobs:
           cmake-init-env: CXXFLAGS="-Werror -Wno-unused-function"
           package-file: "*-linux_x86_64.tar.xz"
           artifact-name: release-linux
-          asset-name: BestClient-linux.tar.xz
+          asset-name: IntegratedClient-linux.tar.xz
         - name: windows
           os: windows-latest
           cmake-args: -A x64 -DTOOLS=OFF -DDOWNLOAD_GTEST=OFF -DVULKAN=ON
           cmake-init-env: CXXFLAGS= LDFLAGS=
           package-file: "*-win64.zip"
           artifact-name: release-windows
-          asset-name: BestClient-windows.zip
+          asset-name: IntegratedClient-windows.zip
         - name: macos
           os: macOS-latest
           # Universal PCH builds split architectures and reject the shared ARM compiler flags.
@@ -67,7 +67,7 @@ jobs:
           cmake-init-env: CXXFLAGS=
           package-file: "*-macos.dmg"
           artifact-name: release-macos
-          asset-name: BestClient-macos.dmg
+          asset-name: IntegratedClient-macos.dmg
 
     steps:
     - uses: actions/checkout@v4
