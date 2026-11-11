@@ -117,6 +117,7 @@ void CMenus::RenderSettingsRanbi(CUIRect MainView)
 		Localize("Chat & Scoreboard"),
 		Localize("Notify"),
 		Localize("Weapons"),
+		Localize("AI"),
 	};
 
 	CUIRect TabBar, TabButton;
@@ -141,6 +142,8 @@ void CMenus::RenderSettingsRanbi(CUIRect MainView)
 		RenderSettingsRanbiNotify(MainView);
 	else if(s_CurRanbiTab == RANBI_TAB_WEAPONS)
 		RenderSettingsRanbiWeapons(MainView);
+	else if(s_CurRanbiTab == RANBI_TAB_AI)
+		RenderSettingsRanbiAi(MainView);
 }
 
 void CMenus::RenderSettingsRanbiGeneral(CUIRect MainView)
