@@ -32,6 +32,7 @@
 #include "components/particles.h"
 #include "components/players.h"
 #include "components/race_demo.h"
+#include "components/ranbi/render_proxy.h" // ranbi
 #include "components/scoreboard.h"
 #include "components/skins.h"
 #include "components/skins7.h"
@@ -122,7 +123,9 @@ void CGameClient::OnConsoleInit()
 	m_pMap = CreateMap();
 
 	// make a list of all the systems, make sure to add them in the correct render order
-	m_vpAll.insert(m_vpAll.end(), {&m_Skins,
+	// ranbi: render proxy must be first so queued callbacks are cleared at the start of each frame
+	m_vpAll.insert(m_vpAll.end(), {&m_RenderProxy,
+					      &m_Skins,
 					      &m_Skins7,
 					      &m_CountryFlags,
 					      &m_MapImages,

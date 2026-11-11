@@ -1201,26 +1201,40 @@ void CPlayers::RenderPlayer(
 	if((Player.m_PlayerFlags & PLAYERFLAG_CHATTING) && !GameClient()->m_aClients[ClientId].m_Afk)
 	{
 		int CurEmoticon = (SPRITE_DOTDOT - SPRITE_OOP);
-		Graphics()->TextureSet(GameClient()->m_EmoticonsSkin.m_aSpriteEmoticons[CurEmoticon]);
 		int QuadOffset = QuadOffsetToEmoticon + CurEmoticon;
-		Graphics()->SetColor(1.0f, 1.0f, 1.0f, Alpha);
-		Graphics()->RenderQuadContainerAsSprite(m_WeaponEmoteQuadContainerIndex, QuadOffset, Position.x + 24.f, Position.y - 40.f);
 
-		Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-		Graphics()->QuadsSetRotation(0);
+		auto Proxy = [this, CurEmoticon, QuadOffset, Alpha, Position]() {
+			Graphics()->TextureSet(GameClient()->m_EmoticonsSkin.m_aSpriteEmoticons[CurEmoticon]);
+			Graphics()->SetColor(1.0f, 1.0f, 1.0f, Alpha);
+			Graphics()->RenderQuadContainerAsSprite(m_WeaponEmoteQuadContainerIndex, QuadOffset, Position.x + 24.f, Position.y - 40.f);
+			Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+			Graphics()->QuadsSetRotation(0);
+		};
+		// ranbi: m_RcEmotionDeferredRender
+		if(g_Config.m_RcEmotionDeferredRender)
+			GameClient()->m_RenderProxy.AddProxy(Proxy, RenderProxyTrigger::NamePlatesAfter);
+		else
+			Proxy();
 	}
 
 	if(g_Config.m_ClAfkEmote && GameClient()->m_aClients[ClientId].m_Afk && ClientId != GameClient()->m_aLocalIds[!g_Config.m_ClDummy] &&
 		!(GameClient()->m_FastPractice.Active() && GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))) // bestclient
 	{
 		int CurEmoticon = (SPRITE_ZZZ - SPRITE_OOP);
-		Graphics()->TextureSet(GameClient()->m_EmoticonsSkin.m_aSpriteEmoticons[CurEmoticon]);
 		int QuadOffset = QuadOffsetToEmoticon + CurEmoticon;
-		Graphics()->SetColor(1.0f, 1.0f, 1.0f, Alpha);
-		Graphics()->RenderQuadContainerAsSprite(m_WeaponEmoteQuadContainerIndex, QuadOffset, Position.x + 24.f, Position.y - 40.f);
 
-		Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-		Graphics()->QuadsSetRotation(0);
+		auto Proxy = [this, CurEmoticon, QuadOffset, Alpha, Position]() {
+			Graphics()->TextureSet(GameClient()->m_EmoticonsSkin.m_aSpriteEmoticons[CurEmoticon]);
+			Graphics()->SetColor(1.0f, 1.0f, 1.0f, Alpha);
+			Graphics()->RenderQuadContainerAsSprite(m_WeaponEmoteQuadContainerIndex, QuadOffset, Position.x + 24.f, Position.y - 40.f);
+			Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+			Graphics()->QuadsSetRotation(0);
+		};
+		// ranbi: m_RcEmotionDeferredRender
+		if(g_Config.m_RcEmotionDeferredRender)
+			GameClient()->m_RenderProxy.AddProxy(Proxy, RenderProxyTrigger::NamePlatesAfter);
+		else
+			Proxy();
 	}
 
 	if(g_Config.m_ClShowEmotes && !GameClient()->m_aClients[ClientId].m_EmoticonIgnore && GameClient()->m_aClients[ClientId].m_EmoticonStartTick != -1)
@@ -1245,16 +1259,23 @@ void CPlayers::RenderPlayer(
 
 			float WiggleAngle = std::sin(5 * Wiggle);
 
-			Graphics()->QuadsSetRotation(pi / 6 * WiggleAngle);
+			auto Proxy = [this, ClientId, QuadOffsetToEmoticon, a, Alpha, Position, h, WiggleAngle]() {
+				Graphics()->QuadsSetRotation(pi / 6 * WiggleAngle);
 
-			Graphics()->SetColor(1.0f, 1.0f, 1.0f, a * Alpha);
-			// client_datas::emoticon is an offset from the first emoticon
-			int QuadOffset = QuadOffsetToEmoticon + GameClient()->m_aClients[ClientId].m_Emoticon;
-			Graphics()->TextureSet(GameClient()->m_EmoticonsSkin.m_aSpriteEmoticons[GameClient()->m_aClients[ClientId].m_Emoticon]);
-			Graphics()->RenderQuadContainerAsSprite(m_WeaponEmoteQuadContainerIndex, QuadOffset, Position.x, Position.y - 23.f - 32.f * h, 1.f, (64.f * h) / 64.f);
+				Graphics()->SetColor(1.0f, 1.0f, 1.0f, a * Alpha);
+				// client_datas::emoticon is an offset from the first emoticon
+				int QuadOffset = QuadOffsetToEmoticon + GameClient()->m_aClients[ClientId].m_Emoticon;
+				Graphics()->TextureSet(GameClient()->m_EmoticonsSkin.m_aSpriteEmoticons[GameClient()->m_aClients[ClientId].m_Emoticon]);
+				Graphics()->RenderQuadContainerAsSprite(m_WeaponEmoteQuadContainerIndex, QuadOffset, Position.x, Position.y - 23.f - 32.f * h, 1.f, (64.f * h) / 64.f);
 
-			Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-			Graphics()->QuadsSetRotation(0);
+				Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+				Graphics()->QuadsSetRotation(0);
+			};
+			// ranbi: m_RcEmotionDeferredRender
+			if(g_Config.m_RcEmotionDeferredRender)
+				GameClient()->m_RenderProxy.AddProxy(Proxy, RenderProxyTrigger::NamePlatesAfter);
+			else
+				Proxy();
 		}
 	}
 }
@@ -1428,7 +1449,14 @@ void CPlayers::OnRender()
 			continue;
 		}
 
-		RenderHookCollLine(ScreenRect, &GameClient()->m_aClients[ClientId].m_RenderPrev, &GameClient()->m_aClients[ClientId].m_RenderCur, ClientId);
+		auto Proxy = [this, ClientId, ScreenRect]() {
+			RenderHookCollLine(ScreenRect, &GameClient()->m_aClients[ClientId].m_RenderPrev, &GameClient()->m_aClients[ClientId].m_RenderCur, ClientId);
+		};
+		// ranbi: m_RcHookCollDeferredRender
+		if(g_Config.m_RcHookCollDeferredRender)
+			GameClient()->m_RenderProxy.AddProxy(Proxy, RenderProxyTrigger::NamePlatesAfter);
+		else
+			Proxy();
 
 		const bool Frozen = GameClient()->m_aClients[ClientId].m_FreezeEnd > 0;
 		const bool HideGhost = (g_Config.m_TcHideFrozenGhosts && Frozen && !g_Config.m_TcSwapGhosts) ||
@@ -1445,7 +1473,14 @@ void CPlayers::OnRender()
 	if(RenderLastId != -1 && IsPlayerInfoAvailable(RenderLastId))
 	{
 		const CGameClient::CClientData *pClientData = &GameClient()->m_aClients[RenderLastId];
-		RenderHookCollLine(ScreenRect, &pClientData->m_RenderPrev, &pClientData->m_RenderCur, RenderLastId);
+		auto Proxy = [this, RenderLastId, pClientData, ScreenRect]() {
+			RenderHookCollLine(ScreenRect, &pClientData->m_RenderPrev, &pClientData->m_RenderCur, RenderLastId);
+		};
+		// ranbi: m_RcHookCollDeferredRender
+		if(g_Config.m_RcHookCollDeferredRender)
+			GameClient()->m_RenderProxy.AddProxy(Proxy, RenderProxyTrigger::NamePlatesAfter);
+		else
+			Proxy();
 		// bestclient
 		GameClient()->m_FlyingNamePlates.RenderRopeGame(pClientData->m_RenderPos, GameClient()->m_Snap.m_apPlayerInfos[RenderLastId], 1.0f);
 		// bestclient

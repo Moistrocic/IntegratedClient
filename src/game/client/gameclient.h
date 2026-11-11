@@ -105,6 +105,7 @@
 #include "components/particles.h"
 #include "components/players.h"
 #include "components/race_demo.h"
+#include "components/ranbi/render_proxy.h" // ranbi
 #include "components/scoreboard.h"
 #include "components/skins.h"
 #include "components/skins7.h"
@@ -303,6 +304,10 @@ public:
 	CTouchControls m_TouchControls;
 	CVoting m_Voting;
 	CSpectator m_Spectator;
+
+	// ranbi
+	CRenderProxy m_RenderProxy;
+	// ranbi
 
 	CPlayers m_Players;
 	CNamePlates m_NamePlates;

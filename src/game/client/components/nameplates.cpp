@@ -1671,7 +1671,11 @@ void CNamePlates::OnRender()
 		ShowDirection = g_Config.m_ClVideoShowDirection;
 #endif
 	if(!g_Config.m_ClNamePlates && !g_Config.m_ClNamePlatesOwn && ShowDirection == 0)
+	{
+		// ranbi: deferred callbacks must still run when nameplates are fully disabled
+		GameClient()->m_RenderProxy.ProxyTrigger(RenderProxyTrigger::NamePlatesAfter);
 		return;
+	}
 
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
@@ -1697,6 +1701,9 @@ void CNamePlates::OnRender()
 			RenderNamePlateGame(RenderPos, pInfo, 1.0f);
 		}
 	}
+
+	// ranbi: run deferred render callbacks after all nameplates are rendered
+	GameClient()->m_RenderProxy.ProxyTrigger(RenderProxyTrigger::NamePlatesAfter);
 }
 
 void CNamePlates::OnWindowResize()

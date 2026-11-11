@@ -3197,6 +3197,8 @@ if(CLIENT)
     components/race_demo.cpp
     components/race_demo.h
     components/ranbi/menus_ranbi.cpp
+    components/ranbi/render_proxy.cpp
+    components/ranbi/render_proxy.h
     components/scoreboard.cpp
     components/scoreboard.h
     components/skins.cpp
