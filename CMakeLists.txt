@@ -3149,6 +3149,7 @@ if(CLIENT)
     components/important_alert.h
     components/infomessages.cpp
     components/infomessages.h
+    components/integratedclient/menus_integratedclient.cpp
     components/items.cpp
     components/items.h
     components/key_binder.cpp

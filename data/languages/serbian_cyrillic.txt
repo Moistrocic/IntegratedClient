@@ -2397,6 +2397,9 @@ Credits
 Ranbi
 == 
 
+IntegratedClient
+== 
+
 Info Messages
 == 
 
@@ -4471,24 +4474,6 @@ Action
 slot %d
 == 
 
-Based on
-== 
-
-Source clients
-== 
-
-RanbiClient (GUI integration in progress)
-== 
-
-Links
-== 
-
-Integration registry
-== 
-
-BestClient information is on the second page.
-== 
-
 Mini games
 == 
 
@@ -5126,6 +5111,21 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+Based on
+== 
+
+Source clients
+== 
+
+RanbiClient (integrated)
+== 
+
+Links
+== 
+
+Integration registry
 == 
 
 Fixes

@@ -69,18 +69,22 @@ namespace BestClientUiTheme
 		SETTINGS_NAV_LEAF_RC_NOTIFY,
 		SETTINGS_NAV_LEAF_RC_WEAPONS,
 	};
+	static const int s_aIntegratedclientLeaves[] = {
+		SETTINGS_NAV_LEAF_IC_INFO,
+	};
 
 	static int LeafVisualRank(int Leaf)
 	{
-		const int *apLists[] = {s_aDdnetLeaves, s_aTclientLeaves, s_aBestclientLeaves, s_aRanbiLeaves};
+		const int *apLists[] = {s_aDdnetLeaves, s_aTclientLeaves, s_aBestclientLeaves, s_aRanbiLeaves, s_aIntegratedclientLeaves};
 		const int aCounts[] = {
 			(int)(sizeof(s_aDdnetLeaves) / sizeof(s_aDdnetLeaves[0])),
 			(int)(sizeof(s_aTclientLeaves) / sizeof(s_aTclientLeaves[0])),
 			(int)(sizeof(s_aBestclientLeaves) / sizeof(s_aBestclientLeaves[0])),
 			(int)(sizeof(s_aRanbiLeaves) / sizeof(s_aRanbiLeaves[0])),
+			(int)(sizeof(s_aIntegratedclientLeaves) / sizeof(s_aIntegratedclientLeaves[0])),
 		};
 		int Rank = 0;
-		for(int List = 0; List < 4; ++List)
+		for(int List = 0; List < 5; ++List)
 		{
 			for(int i = 0; i < aCounts[List]; ++i, ++Rank)
 			{
@@ -200,6 +204,9 @@ namespace BestClientUiTheme
 			Target.m_SettingsPage = CMenus::SETTINGS_RANBI;
 			Target.m_RanbiTab = CMenus::RANBI_TAB_WEAPONS;
 			break;
+		case SETTINGS_NAV_LEAF_IC_INFO: // integratedclient
+			Target.m_SettingsPage = CMenus::SETTINGS_INTEGRATEDCLIENT;
+			break;
 		// integratedclient
 		default:
 			Target.m_SettingsPage = CMenus::SETTINGS_GENERAL;
@@ -216,6 +223,8 @@ namespace BestClientUiTheme
 			return SETTINGS_NAV_GROUP_BESTCLIENT;
 		if(Leaf >= SETTINGS_NAV_LEAF_RC_GENERAL && Leaf <= SETTINGS_NAV_LEAF_RC_WEAPONS) // integratedclient
 			return SETTINGS_NAV_GROUP_RANBI;
+		if(Leaf == SETTINGS_NAV_LEAF_IC_INFO) // integratedclient
+			return SETTINGS_NAV_GROUP_INTEGRATEDCLIENT;
 		return SETTINGS_NAV_GROUP_DDNET;
 	}
 
@@ -280,6 +289,8 @@ namespace BestClientUiTheme
 			case CMenus::RANBI_TAB_WEAPONS: return SETTINGS_NAV_LEAF_RC_WEAPONS;
 			default: return SETTINGS_NAV_LEAF_RC_GENERAL;
 			}
+		case CMenus::SETTINGS_INTEGRATEDCLIENT: // integratedclient
+			return SETTINGS_NAV_LEAF_IC_INFO;
 		// integratedclient
 		default:
 			return SETTINGS_NAV_LEAF_GENERAL;
@@ -422,12 +433,14 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 	constexpr int TclientLeafCount = (int)(sizeof(s_aTclientLeaves) / sizeof(s_aTclientLeaves[0]));
 	constexpr int BestclientLeafCount = (int)(sizeof(s_aBestclientLeaves) / sizeof(s_aBestclientLeaves[0]));
 	constexpr int RanbiLeafCount = (int)(sizeof(s_aRanbiLeaves) / sizeof(s_aRanbiLeaves[0])); // integratedclient
+	constexpr int IntegratedclientLeafCount = (int)(sizeof(s_aIntegratedclientLeaves) / sizeof(s_aIntegratedclientLeaves[0])); // integratedclient
 
 	const char *apGroupNames[SETTINGS_NAV_GROUP_COUNT] = {
 		Localize("DDNet"),
 		TCLocalize("TClient"),
 		Localize("BestClient"),
 		Localize("Ranbi"), // integratedclient
+		Localize("IntegratedClient"), // integratedclient
 	};
 
 	auto LeafName = [&](int Leaf) -> const char * {
@@ -461,6 +474,8 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 		case SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD: return Localize("Chat & Scoreboard");
 		case SETTINGS_NAV_LEAF_RC_NOTIFY: return Localize("Notify");
 		case SETTINGS_NAV_LEAF_RC_WEAPONS: return Localize("Weapons");
+		case SETTINGS_NAV_LEAF_IC_INFO:
+			return Localize("Info"); // integratedclient
 		// integratedclient
 		default: return "";
 		}
@@ -494,7 +509,7 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 		const ColorRGBA *pGroupHover = NavOnLeft ? &GroupHover : nullptr;
 		if(DoButton_MenuTab(&s_aGroupButtons[Group], apGroupNames[Group], Expanded || CurGroup == Group, &GroupButton, NavCorners, nullptr, pGroupInactive, pGroupActive, pGroupHover, 10.0f, nullptr, true, IGraphics::CORNER_NONE, -1.0f, ExploreLock ? 0.35f : 1.0f) && !ExploreLock)
 		{
-			// integratedclient: single-open accordion so four groups fit the nav height
+			// integratedclient: single-open accordion so five groups fit the nav height
 			const bool NewExpanded = !s_aExpandedGroup[Group];
 			for(int OtherGroup = 0; OtherGroup < SETTINGS_NAV_GROUP_COUNT; ++OtherGroup)
 				s_aExpandedGroup[OtherGroup] = OtherGroup == Group && NewExpanded;
@@ -508,8 +523,10 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 					CollectVisibleLeaves(s_aTclientLeaves, TclientLeafCount, aFirstLeaves, FirstCount);
 				else if(Group == SETTINGS_NAV_GROUP_BESTCLIENT)
 					CollectVisibleLeaves(s_aBestclientLeaves, BestclientLeafCount, aFirstLeaves, FirstCount);
-				else
+				else if(Group == SETTINGS_NAV_GROUP_RANBI)
 					CollectVisibleLeaves(s_aRanbiLeaves, RanbiLeafCount, aFirstLeaves, FirstCount);
+				else
+					CollectVisibleLeaves(s_aIntegratedclientLeaves, IntegratedclientLeafCount, aFirstLeaves, FirstCount);
 				if(FirstCount > 0 && GroupForLeaf(CurLeaf) != Group)
 					ApplyLeaf(this, aFirstLeaves[0]);
 			}
@@ -522,8 +539,10 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 			CollectVisibleLeaves(s_aTclientLeaves, TclientLeafCount, aVisibleLeaves, VisibleCount);
 		else if(Group == SETTINGS_NAV_GROUP_BESTCLIENT)
 			CollectVisibleLeaves(s_aBestclientLeaves, BestclientLeafCount, aVisibleLeaves, VisibleCount);
-		else
+		else if(Group == SETTINGS_NAV_GROUP_RANBI)
 			CollectVisibleLeaves(s_aRanbiLeaves, RanbiLeafCount, aVisibleLeaves, VisibleCount);
+		else
+			CollectVisibleLeaves(s_aIntegratedclientLeaves, IntegratedclientLeafCount, aVisibleLeaves, VisibleCount);
 
 		const float TargetHeight = VisibleCount > 0 ? VisibleCount * (LeafH + LeafGap) : 0.0f;
 		const float RevealH = BCUiAnimations::ModuleReveal(s_aGroupPhase[Group], Expanded, TargetHeight, Dt);
@@ -653,6 +672,11 @@ void CMenus::RenderSettingsPage(CUIRect MainView)
 	{
 		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_RESERVED0);
 		RenderSettingsRanbi(MainView);
+	}
+	else if(g_Config.m_UiSettingsPage == SETTINGS_INTEGRATEDCLIENT)
+	{
+		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_RESERVED0);
+		RenderSettingsIntegratedClient(MainView);
 	}
 	// integratedclient
 	else if(g_Config.m_UiSettingsPage == SETTINGS_CREDITS)

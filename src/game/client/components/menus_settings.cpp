@@ -22,6 +22,8 @@
 // bestclient
 #include <game/localization.h>
 
+#include <algorithm>
+
 void CMenus::SetNeedSendInfo()
 {
 	if(m_Dummy)
@@ -151,16 +153,23 @@ void CMenus::RenderSettings(CUIRect MainView)
 			Localize("Profiles"), // TClient
 			Localize("Configs"), // TClient
 			Localize("Credits"),
-			Localize("Ranbi")}; // integratedclient
+			Localize("Ranbi"), // integratedclient
+			Localize("IntegratedClient")}; // integratedclient
 		static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 		const int TabCorners = NavOnLeft ? IGraphics::CORNER_L : IGraphics::CORNER_R;
+
+		// integratedclient: the legacy vertical tab bar has to fit an increasing number of
+		// entries. Shrink the per-tab gap/height instead of clipping the last tab on small windows.
+		constexpr int LegacyTabCount = SETTINGS_LENGTH - 2; // SETTINGS_LANGUAGE and SETTINGS_PLAYER are skipped
+		const float LegacyTabH = std::clamp(TabBar.h / (float)LegacyTabCount, 20.0f, 26.0f);
+		const float LegacyTabGap = std::clamp((TabBar.h - LegacyTabH * LegacyTabCount) / (float)LegacyTabCount, 0.0f, 10.0f);
 
 		for(int i = 0; i < SETTINGS_LENGTH; i++)
 		{
 			if(i == SETTINGS_LANGUAGE || i == SETTINGS_PLAYER) // bestclient
 				continue; // bestclient
-			TabBar.HSplitTop(10.0f, nullptr, &TabBar);
-			TabBar.HSplitTop(26.0f, &Button, &TabBar);
+			TabBar.HSplitTop(LegacyTabGap, nullptr, &TabBar);
+			TabBar.HSplitTop(LegacyTabH, &Button, &TabBar);
 			// bestclient
 			const bool ExploreLock = m_AssetsEditorState.m_Open && m_AssetsEditorState.m_ExploreSide >= 0;
 			const bool AssetsTab = i == SETTINGS_ASSETS;

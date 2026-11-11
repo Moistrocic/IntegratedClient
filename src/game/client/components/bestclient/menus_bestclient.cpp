@@ -36,7 +36,6 @@
 #include <game/client/ui_listbox.h>
 #include <game/client/ui_scrollregion.h>
 #include <game/localization.h>
-#include <game/version.h>
 
 #include <algorithm>
 #include <cmath>
@@ -4631,103 +4630,6 @@ CUi::EPopupMenuFunctionResult CMenus::PopupVoiceModeration(void *pContext, CUIRe
 }
 
 void CMenus::RenderSettingsBestClientInfo(CUIRect MainView)
-{
-	// integratedclient
-	static constexpr int BC_INFO_PAGE_PROJECT = 0;
-	static constexpr int BC_INFO_PAGE_BESTCLIENT = 1;
-	static constexpr int NUM_BC_INFO_PAGES = 2;
-	static int s_CurBestClientInfoPage = BC_INFO_PAGE_PROJECT;
-
-	static CButtonContainer s_aInfoPageTabs[NUM_BC_INFO_PAGES] = {};
-	const char *apInfoPageNames[NUM_BC_INFO_PAGES] = {
-		INTEGRATEDCLIENT_NAME,
-		"BestClient",
-	};
-
-	CUIRect InfoPager, InfoPageButton;
-	MainView.HSplitTop(24.0f, &InfoPager, &MainView);
-	const float InfoPageWidth = InfoPager.w / (float)NUM_BC_INFO_PAGES;
-	for(int Page = 0; Page < NUM_BC_INFO_PAGES; ++Page)
-	{
-		InfoPager.VSplitLeft(InfoPageWidth, &InfoPageButton, &InfoPager);
-		const int Corners = Page == 0 ? IGraphics::CORNER_L : IGraphics::CORNER_R;
-		if(DoButton_MenuTab(&s_aInfoPageTabs[Page], apInfoPageNames[Page], s_CurBestClientInfoPage == Page, &InfoPageButton, Corners, nullptr, nullptr, nullptr, nullptr, 4.0f))
-			s_CurBestClientInfoPage = Page;
-	}
-	MainView.HSplitTop(10.0f, nullptr, &MainView);
-
-	if(s_CurBestClientInfoPage == BC_INFO_PAGE_PROJECT)
-	{
-		RenderSettingsBestClientInfoProject(MainView);
-		return;
-	}
-	RenderSettingsBestClientInfoBestClient(MainView);
-	// integratedclient
-}
-
-void CMenus::RenderSettingsBestClientInfoProject(CUIRect MainView)
-{
-	const float LineSize = 20.0f;
-	const float MarginSmall = 5.0f;
-	const float MarginBetweenViews = 30.0f;
-	const float HeadlineFontSize = 20.0f;
-	const float HeadlineHeight = HeadlineFontSize;
-
-	CUIRect LeftView, RightView, Button, Label;
-	MainView.VSplitMid(&LeftView, &RightView, MarginBetweenViews);
-	LeftView.VSplitLeft(MarginSmall, nullptr, &LeftView);
-	RightView.VSplitRight(MarginSmall, &RightView, nullptr);
-
-	// Project information
-	LeftView.HSplitTop(HeadlineHeight, &Label, &LeftView);
-	Ui()->DoLabel(&Label, INTEGRATEDCLIENT_NAME, HeadlineFontSize, TEXTALIGN_ML);
-	LeftView.HSplitTop(MarginSmall, nullptr, &LeftView);
-
-	char aBuf[256];
-	LeftView.HSplitTop(LineSize, &Label, &LeftView);
-	str_format(aBuf, sizeof(aBuf), "%s %s", Localize("Version"), INTEGRATEDCLIENT_VERSION);
-	Ui()->DoLabel(&Label, aBuf, 14.0f, TEXTALIGN_ML);
-
-	LeftView.HSplitTop(MarginSmall, nullptr, &LeftView);
-	LeftView.HSplitTop(LineSize, &Label, &LeftView);
-	str_format(aBuf, sizeof(aBuf), "%s BestClient / TClient / DDNet", Localize("Based on"));
-	Ui()->DoLabel(&Label, aBuf, 14.0f, TEXTALIGN_ML);
-
-	LeftView.HSplitTop(MarginBetweenViews, nullptr, &LeftView);
-
-	LeftView.HSplitTop(HeadlineHeight, &Label, &LeftView);
-	Ui()->DoLabel(&Label, Localize("Source clients"), HeadlineFontSize, TEXTALIGN_ML);
-	LeftView.HSplitTop(MarginSmall, nullptr, &LeftView);
-
-	LeftView.HSplitTop(LineSize, &Label, &LeftView);
-	Ui()->DoLabel(&Label, "BestClient (base)", 14.0f, TEXTALIGN_ML);
-	LeftView.HSplitTop(LineSize, &Label, &LeftView);
-	Ui()->DoLabel(&Label, "TClient / DDNet (upstream)", 14.0f, TEXTALIGN_ML);
-	LeftView.HSplitTop(LineSize, &Label, &LeftView);
-	Ui()->DoLabel(&Label, Localize("RanbiClient (GUI integration in progress)"), 14.0f, TEXTALIGN_ML);
-
-	// Links
-	RightView.HSplitTop(HeadlineHeight, &Label, &RightView);
-	Ui()->DoLabel(&Label, Localize("Links"), HeadlineFontSize, TEXTALIGN_ML);
-	RightView.HSplitTop(MarginSmall, nullptr, &RightView);
-
-	RightView.HSplitTop(LineSize * 2.0f, &Button, &RightView);
-	static CButtonContainer s_GithubButton;
-	if(DoButtonLineSize_Menu(&s_GithubButton, "GitHub", 0, &Button, LineSize, false, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
-		Client()->ViewLink("https://github.com/Moistrocic/IntegratedClient");
-
-	RightView.HSplitTop(MarginSmall, nullptr, &RightView);
-	RightView.HSplitTop(LineSize * 2.0f, &Button, &RightView);
-	static CButtonContainer s_IntegrationRegistryButton;
-	if(DoButtonLineSize_Menu(&s_IntegrationRegistryButton, Localize("Integration registry"), 0, &Button, LineSize, false, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f)))
-		Client()->ViewLink("https://github.com/Moistrocic/IntegratedClient/blob/main/docs/integration.md");
-
-	RightView.HSplitTop(MarginBetweenViews, nullptr, &RightView);
-	RightView.HSplitTop(LineSize, &Label, &RightView);
-	Ui()->DoLabel(&Label, Localize("BestClient information is on the second page."), 14.0f, TEXTALIGN_ML);
-}
-
-void CMenus::RenderSettingsBestClientInfoBestClient(CUIRect MainView)
 {
 	const float LineSize = 20.0f;
 	const float MarginSmall = 5.0f;

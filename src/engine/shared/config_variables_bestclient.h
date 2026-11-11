@@ -237,7 +237,7 @@ MACRO_CONFIG_INT(BcMenuUiTabSide, bc_menu_ui_tab_side, 1, 0, 1, CFGFLAG_CLIENT |
 MACRO_CONFIG_INT(BcMenuUiNewColorPicker, bc_menu_ui_new_color_picker, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Use better color picker style when Better UI is enabled")
 MACRO_CONFIG_INT(BcMenuUiBetterFont, bc_menu_ui_better_font, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Use Better font (Actay Wide Bold) instead of default/TClient font")
 MACRO_CONFIG_INT(BcShowStylePicker, bc_show_style_picker, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show one-time menu UI style picker on first launch")
-MACRO_CONFIG_INT(BcSettingsNavExpanded, bc_settings_nav_expanded, 0, 0, 15, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Better settings nav expanded groups (bit 0 = DDNet, 1 = TClient, 2 = BestClient, 3 = Ranbi)")
+MACRO_CONFIG_INT(BcSettingsNavExpanded, bc_settings_nav_expanded, 0, 0, 31, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Better settings nav expanded groups (bit 0 = DDNet, 1 = TClient, 2 = BestClient, 3 = Ranbi, 4 = IntegratedClient)")
 
 // UI Themes
 MACRO_CONFIG_INT(BcUiThemes, bc_ui_themes, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable UI Themes")

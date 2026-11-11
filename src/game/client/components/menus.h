@@ -838,6 +838,7 @@ public:
 		SETTINGS_CONFIGS, // TClient
 		SETTINGS_CREDITS,
 		SETTINGS_RANBI, // integratedclient
+		SETTINGS_INTEGRATEDCLIENT, // integratedclient
 		SETTINGS_LENGTH,
 	};
 
@@ -1026,8 +1027,7 @@ private:
 	int DoButtonLineSize_Menu(CButtonContainer *pButtonContainer, const char *pText, int Checked, const CUIRect *pRect, float ButtonLineSize, bool Fake = false, const char *pImageName = nullptr, int Corners = IGraphics::CORNER_ALL, float Rounding = 5.0f, float FontFactor = 0.0f, ColorRGBA Color = ColorRGBA(1.0f, 1.0f, 1.0f, 0.5f));
 
 	// integratedclient
-	void RenderSettingsBestClientInfoProject(CUIRect MainView);
-	void RenderSettingsBestClientInfoBestClient(CUIRect MainView);
+	void RenderSettingsIntegratedClient(CUIRect MainView);
 	void RenderSettingsRanbi(CUIRect MainView);
 	void RenderSettingsRanbiGeneral(CUIRect MainView);
 	void RenderSettingsRanbiNameplates(CUIRect MainView);

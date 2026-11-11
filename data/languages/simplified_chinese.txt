@@ -2661,17 +2661,11 @@ Based on
 Source clients
 == 来源客户端
 
-RanbiClient (GUI integration in progress)
-== RanbiClient（GUI 整合中）
-
 Links
 == 链接
 
 Integration registry
 == 整合台账
-
-BestClient information is on the second page.
-== BestClient 信息位于第 2 页。
 
 Nameplates
 == 名称标签
@@ -2909,6 +2903,12 @@ DJ left arrow text
 
 DJ right arrow text
 == 分身右箭头文本
+
+IntegratedClient
+== IntegratedClient
+
+RanbiClient (integrated)
+== RanbiClient（已整合）
 
 BETA
 == 
