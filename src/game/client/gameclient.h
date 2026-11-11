@@ -106,6 +106,7 @@
 #include "components/players.h"
 #include "components/race_demo.h"
 #include "components/ranbi/render_proxy.h" // ranbi
+#include "components/ranbi/weapons.h" // ranbi
 #include "components/scoreboard.h"
 #include "components/skins.h"
 #include "components/skins7.h"
@@ -307,6 +308,7 @@ public:
 
 	// ranbi
 	CRenderProxy m_RenderProxy;
+	CWeapons m_Weapons;
 	// ranbi
 
 	CPlayers m_Players;

@@ -33,6 +33,7 @@
 #include "components/players.h"
 #include "components/race_demo.h"
 #include "components/ranbi/render_proxy.h" // ranbi
+#include "components/ranbi/weapons.h" // ranbi
 #include "components/scoreboard.h"
 #include "components/skins.h"
 #include "components/skins7.h"
@@ -206,6 +207,7 @@ void CGameClient::OnConsoleInit()
 					      &m_ClientIndicator, // bestclient
 					      &m_VoiceChat, // bestclient
 					      &m_Hud,
+					      &m_Weapons, // ranbi
 					      &m_BestClient, // bestclient
 					      &m_BcConfigPresets, // bestclient
 					      &m_Translate, // bestclient

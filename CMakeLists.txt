@@ -3199,6 +3199,8 @@ if(CLIENT)
     components/ranbi/menus_ranbi.cpp
     components/ranbi/render_proxy.cpp
     components/ranbi/render_proxy.h
+    components/ranbi/weapons.cpp
+    components/ranbi/weapons.h
     components/scoreboard.cpp
     components/scoreboard.h
     components/skins.cpp
