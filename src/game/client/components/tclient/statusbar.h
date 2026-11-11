@@ -60,6 +60,9 @@ public:
 	bool m_PingActive = false;
 
 private:
+	// integratedclient (task-32): practice ghost override helpers for position/velocity/angle.
+	int PracticeGhostClientId() const;
+
 	float m_FrameTimeAverage = 0.0f;
 	int m_PlayerId = 0;
 	float m_FontSize = 12.0f;

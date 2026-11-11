@@ -57,6 +57,23 @@ float CStatusBar::GetDurationWidth(int Duration)
 											    s_TextWidthM;
 }
 
+int CStatusBar::PracticeGhostClientId() const
+{
+	// integratedclient (task-32): the TClient status bar follows the fast-practice ghost (the HUD
+	// movement info override) only when the user enabled rc_fast_practice_ghost_coords, practice
+	// is active, we are not spectating, and the controlled practice client is valid.
+	if(!g_Config.m_RcFastPracticeGhostCoords || !GameClient()->m_FastPractice.Active())
+		return -1;
+	if(GameClient()->m_Snap.m_SpecInfo.m_Active)
+		return -1;
+	const int PracticeId = GameClient()->m_FastPractice.ControlledPracticeId();
+	if(PracticeId < 0 || PracticeId >= MAX_CLIENTS)
+		return -1;
+	if(!GameClient()->m_aClients[PracticeId].m_Active)
+		return -1;
+	return PracticeId;
+}
+
 float CStatusBar::AngleWidth()
 {
 	if(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW)
@@ -66,15 +83,20 @@ float CStatusBar::AngleWidth()
 }
 void CStatusBar::AngleRender()
 {
-	CNetObj_Character *pCharacter = &GameClient()->m_Snap.m_aCharacters[m_PlayerId].m_Cur;
 	float Angle = 0.0f;
-	if(GameClient()->m_Snap.m_aCharacters[m_PlayerId].m_HasExtendedDisplayInfo)
+	const int PracticeClientId = PracticeGhostClientId();
+	if(PracticeClientId >= 0)
+	{
+		// integratedclient (task-32): use the practice ghost's aim angle (core stores radians x256).
+		Angle = GameClient()->m_aClients[PracticeClientId].m_Predicted.m_Angle / 256.0f;
+	}
+	else if(GameClient()->m_Snap.m_aCharacters[m_PlayerId].m_HasExtendedDisplayInfo)
 	{
 		CNetObj_DDNetCharacter *pExtendedData = &GameClient()->m_Snap.m_aCharacters[m_PlayerId].m_ExtendedData;
 		Angle = atan2f(pExtendedData->m_TargetY, pExtendedData->m_TargetX);
 	}
 	else
-		Angle = pCharacter->m_Angle / 256.0f;
+		Angle = GameClient()->m_Snap.m_aCharacters[m_PlayerId].m_Cur.m_Angle / 256.0f;
 	if(Angle < 0)
 		Angle += 2.0f * pi;
 	char aBuf[32];
@@ -176,11 +198,24 @@ float CStatusBar::PositionWidth()
 }
 void CStatusBar::PositionRender()
 {
-	const CNetObj_Character *pPrevChar = &GameClient()->m_Snap.m_aCharacters[m_PlayerId].m_Prev;
-	const CNetObj_Character *pCurChar = &GameClient()->m_Snap.m_aCharacters[m_PlayerId].m_Cur;
-	const float IntraTick = Client()->IntraGameTick(g_Config.m_ClDummy);
-	// To make the player position relative to blocks we need to divide by the block size
-	const vec2 Pos = mix(vec2(pPrevChar->m_X, pPrevChar->m_Y), vec2(pCurChar->m_X, pCurChar->m_Y), IntraTick) / 32.0f;
+	vec2 Pos;
+	const int PracticeClientId = PracticeGhostClientId();
+	if(PracticeClientId >= 0)
+	{
+		// integratedclient (task-32): fast-practice ghost position (published predicted cores),
+		// smoothed with the prediction intra tick to match the HUD movement info override.
+		const CGameClient::CClientData &PracticeClient = GameClient()->m_aClients[PracticeClientId];
+		const float PredIntraTick = Client()->PredIntraGameTick(g_Config.m_ClDummy);
+		Pos = mix(PracticeClient.m_PrevPredicted.m_Pos, PracticeClient.m_Predicted.m_Pos, PredIntraTick) / 32.0f;
+	}
+	else
+	{
+		const CNetObj_Character *pPrevChar = &GameClient()->m_Snap.m_aCharacters[m_PlayerId].m_Prev;
+		const CNetObj_Character *pCurChar = &GameClient()->m_Snap.m_aCharacters[m_PlayerId].m_Cur;
+		const float IntraTick = Client()->IntraGameTick(g_Config.m_ClDummy);
+		// To make the player position relative to blocks we need to divide by the block size
+		Pos = mix(vec2(pPrevChar->m_X, pPrevChar->m_Y), vec2(pCurChar->m_X, pCurChar->m_Y), IntraTick) / 32.0f;
+	}
 	char aBuf[32];
 	str_format(aBuf, sizeof(aBuf), "%2.2f, %2.2f", Pos.x, Pos.y);
 	TextRender()->Text(m_CursorX, m_CursorY, m_FontSize, aBuf);
@@ -195,10 +230,21 @@ float CStatusBar::VelocityWidth()
 }
 void CStatusBar::VelocityRender()
 {
-	const CNetObj_Character *pPrevChar = &GameClient()->m_Snap.m_aCharacters[m_PlayerId].m_Prev;
-	const CNetObj_Character *pCurChar = &GameClient()->m_Snap.m_aCharacters[m_PlayerId].m_Cur;
-	const float IntraTick = Client()->IntraGameTick(g_Config.m_ClDummy);
-	const vec2 Vel = mix(vec2(pPrevChar->m_VelX, pPrevChar->m_VelY), vec2(pCurChar->m_VelX, pCurChar->m_VelY), IntraTick);
+	vec2 Vel;
+	const int PracticeClientId = PracticeGhostClientId();
+	if(PracticeClientId >= 0)
+	{
+		// integratedclient (task-32): the practice core m_Vel is in world units/tick; convert it to
+		// the snapshot net units (x256) so the rest of the status bar formula stays identical.
+		Vel = GameClient()->m_aClients[PracticeClientId].m_Predicted.m_Vel * 256.0f;
+	}
+	else
+	{
+		const CNetObj_Character *pPrevChar = &GameClient()->m_Snap.m_aCharacters[m_PlayerId].m_Prev;
+		const CNetObj_Character *pCurChar = &GameClient()->m_Snap.m_aCharacters[m_PlayerId].m_Cur;
+		const float IntraTick = Client()->IntraGameTick(g_Config.m_ClDummy);
+		Vel = mix(vec2(pPrevChar->m_VelX, pPrevChar->m_VelY), vec2(pCurChar->m_VelX, pCurChar->m_VelY), IntraTick);
+	}
 	float VelspeedX = Vel.x / 256.0f * Client()->GameTickSpeed();
 	if(Vel.x >= -1 && Vel.x <= 1)
 		VelspeedX = 0;
