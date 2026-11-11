@@ -2682,8 +2682,182 @@ Chat & Scoreboard
 Notify
 == HUD 提示
 
-Ranbi features are not integrated yet. This page is a placeholder.
-== Ranbi 功能尚未整合，此页为占位页。
+Points
+== 分数
+
+Color
+== 颜色
+
+Radius (tiles)
+== 半径（格）
+
+Fixes
+== 修复
+
+Fix unintended hammer on dummy switch
+== 修复切换分身时意外出锤
+
+Only applies while dummy copy moves is enabled.
+== 仅在启用“分身复制移动”时生效。
+
+Keep crosshair when switching dummy
+== 切换分身时保留准星
+
+Render
+== 渲染
+
+Deferred emoticon rendering
+== 表情延迟渲染
+
+Deferred hook collision line
+== 辅助线延迟渲染
+
+Renders above water and transparent tiles.
+== 在水面和透明方块之上渲染。
+
+Show DDNet points
+== 显示 DDNet 分数
+
+Requires a DDNet, EGO or Legit server and the name to be shown.
+== 需要 DDNet、EGO 或 Legit 服务器，并显示玩家名称。
+
+Completed
+== 完成状态
+
+Show finished map marker
+== 显示地图完成标记
+
+Marker size
+== 标记大小
+
+Dummy status
+== 分身状态
+
+Show dummy copy status
+== 显示分身复制状态
+
+Dummy copy status size
+== 分身复制状态字号
+
+Show hammer fly status
+== 显示锤飞状态
+
+Hammer fly status size
+== 锤飞状态字号
+
+Show dummy reset status
+== 显示分身重开状态
+
+Dummy reset status size
+== 分身重开状态字号
+
+Dummy status icons are only shown on your own nameplates.
+== 分身状态图标只显示在你自己的名称标签上。
+
+Range hidden
+== 范围隐藏
+
+Hide nameplate parts by range
+== 按范围隐藏名称标签部件
+
+Hide name
+== 隐藏名称
+
+Hide points
+== 隐藏分数
+
+Hide tee coordinates
+== 隐藏坐标
+
+Hide finished marker
+== 隐藏完成标记
+
+Hide dummy status icons
+== 隐藏分身状态图标
+
+Hide hook strong/weak
+== 隐藏钩子强弱
+
+Hide friend mark
+== 隐藏好友标记
+
+Hide other parts
+== 隐藏其他部件
+
+Angle start (degrees)
+== 起始角度（度）
+
+Angle end (degrees)
+== 结束角度（度）
+
+Applies to other players around the player you are viewing; your own nameplate is never hidden.
+== 仅影响你当前观察玩家周围的其他玩家；你自己的名称标签永远不会被隐藏。
+
+Matched position
+== 匹配位置
+
+Highlight players with matching position X
+== 高亮 X 坐标相同的玩家
+
+Matched color
+== 匹配颜色
+
+Colors the tee coordinate part and requires BestClient 'Show tee coordinates' (bc_show_tee_coords).
+== 为坐标显示上色，需要开启 BestClient 的“显示坐标”（bc_show_tee_coords）。
+
+Ranbi chat and scoreboard features are not integrated yet. They will be added in a later batch.
+== Ranbi 聊天与计分板功能尚未整合，将在后续批次加入。
+
+Ranbi notify features are not integrated yet. They will be added in a later batch.
+== Ranbi 提示功能尚未整合，将在后续批次加入。
+
+Gun
+== 手枪
+
+Ninja
+== 忍者
+
+Weapon angle display
+== 武器角度显示
+
+Switch recent weapon key
+== 切换最近武器按键
+
+Show weapon angle markers
+== 显示武器角度标记
+
+Inner radius
+== 内半径
+
+Outer radius
+== 外半径
+
+Note font size
+== 备注字号
+
+Weapon angle list
+== 武器角度列表
+
+Entries are saved to ranbi_weapons_angle.cfg when the client exits.
+== 条目会在客户端退出时保存到 ranbi_weapons_angle.cfg。
+
+Angle start
+== 起始角度
+
+Angle end
+== 结束角度
+
+Note
+== 备注
+
+Modify
+== 修改
+
+No weapon angle entries yet. Use Add on the left to create one.
+== 还没有武器角度条目。使用左侧的“添加”创建一个。
+
+Angle range
+== 角度范围
 
 BETA
 == 
@@ -2941,9 +3115,6 @@ Choose country flag
 == 
 
 Telegram
-== 
-
-Points
 == 
 
 not bound
@@ -3475,9 +3646,6 @@ Checkbox
 == 
 
 Sample text Aa
-== 
-
-Color
 == 
 
 Legacy
@@ -4214,9 +4382,6 @@ Radius
 == 
 
 Zoom %
-== 
-
-Radius (tiles)
 == 
 
 Visible area (%)

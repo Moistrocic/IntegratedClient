@@ -5128,7 +5128,172 @@ You are muted. Your voice was muted by a moderator.
 Voice chat is only for the original BestClient. Your client was detected as fake.
 == 
 
-Ranbi features are not integrated yet. This page is a placeholder.
+Fixes
+== 
+
+Fix unintended hammer on dummy switch
+== 
+
+Only applies while dummy copy moves is enabled.
+== 
+
+Keep crosshair when switching dummy
+== 
+
+Render
+== 
+
+Deferred emoticon rendering
+== 
+
+Deferred hook collision line
+== 
+
+Renders above water and transparent tiles.
+== 
+
+Show DDNet points
+== 
+
+Requires a DDNet, EGO or Legit server and the name to be shown.
+== 
+
+Completed
+== 
+
+Show finished map marker
+== 
+
+Marker size
+== 
+
+Dummy status
+== 
+
+Show dummy copy status
+== 
+
+Dummy copy status size
+== 
+
+Show hammer fly status
+== 
+
+Hammer fly status size
+== 
+
+Show dummy reset status
+== 
+
+Dummy reset status size
+== 
+
+Dummy status icons are only shown on your own nameplates.
+== 
+
+Range hidden
+== 
+
+Hide nameplate parts by range
+== 
+
+Hide name
+== 
+
+Hide points
+== 
+
+Hide tee coordinates
+== 
+
+Hide finished marker
+== 
+
+Hide dummy status icons
+== 
+
+Hide hook strong/weak
+== 
+
+Hide friend mark
+== 
+
+Hide other parts
+== 
+
+Angle start (degrees)
+== 
+
+Angle end (degrees)
+== 
+
+Applies to other players around the player you are viewing; your own nameplate is never hidden.
+== 
+
+Matched position
+== 
+
+Highlight players with matching position X
+== 
+
+Matched color
+== 
+
+Colors the tee coordinate part and requires BestClient 'Show tee coordinates' (bc_show_tee_coords).
+== 
+
+Ranbi chat and scoreboard features are not integrated yet. They will be added in a later batch.
+== 
+
+Ranbi notify features are not integrated yet. They will be added in a later batch.
+== 
+
+Gun
+== 
+
+Ninja
+== 
+
+Weapon angle display
+== 
+
+Switch recent weapon key
+== 
+
+Show weapon angle markers
+== 
+
+Inner radius
+== 
+
+Outer radius
+== 
+
+Note font size
+== 
+
+Weapon angle list
+== 
+
+Entries are saved to ranbi_weapons_angle.cfg when the client exits.
+== 
+
+Angle start
+== 
+
+Angle end
+== 
+
+Note
+== 
+
+Modify
+== 
+
+No weapon angle entries yet. Use Add on the left to create one.
+== 
+
+Angle range
 == 
 
 [bgdraw]
