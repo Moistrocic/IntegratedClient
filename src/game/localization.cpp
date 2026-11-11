@@ -32,6 +32,12 @@ const char *BcLocalize(const char *pStr)
 }
 // bestclient
 
+// ranbi
+const char *RCLocalize(const char *pStr, const char *pContext)
+{
+	return Localize(pStr, pContext);
+}
+
 void CLocalizationDatabase::LoadIndexfile(IStorage *pStorage, IConsole *pConsole)
 {
 	m_vLanguages.clear();

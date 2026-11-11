@@ -71,4 +71,7 @@ extern CLocalizationDatabase g_Localization;
 [[gnu::format_arg(1)]] extern const char *BcLocalize(const char *pStr);
 // bestclient
 
+// ranbi
+[[gnu::format_arg(1)]] extern const char *RCLocalize(const char *pStr, const char *pContext = "");
+
 #endif

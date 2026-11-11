@@ -2586,6 +2586,7 @@ set_src(ENGINE_SHARED GLOB_RECURSE src/engine/shared
   config_includes.h
   config_variables.h
   config_variables_bestclient.h
+  config_variables_ranbi.h # ranbi
   config_variables_tclient.h
   console.cpp
   console.h

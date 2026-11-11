@@ -12,3 +12,5 @@ CONFIG_DOMAIN(HUDLAYOUT, "BestClient/hud_layout.cfg", false) // bestclient
 CONFIG_DOMAIN(TCLIENTPROFILES, "tclient_profiles.cfg", false)
 CONFIG_DOMAIN(TCLIENTCHATBINDS, "tclient_chatbinds.cfg", false)
 CONFIG_DOMAIN(TCLIENTWARLIST, "tclient_warlist.cfg", false)
+CONFIG_DOMAIN(RANBI, "settings_ranbi.cfg", true) // ranbi
+CONFIG_DOMAIN(RANBIWEAPONS, "ranbi_weapons_angle.cfg", false) // ranbi

@@ -442,6 +442,10 @@ int CControls::SnapInput(int *pData)
 			}
 
 			m_aInputData[!g_Config.m_ClDummy] = *pDummyInput;
+
+			// ranbi: m_RcHammerFix (RanbiClient 1.0.2 controls.cpp:315-317)
+			if(g_Config.m_RcHammerFix && g_Config.m_ClDummyCopyMoves == 1)
+				m_aLastData[!g_Config.m_ClDummy] = *pDummyInput;
 		}
 
 		if(g_Config.m_ClDummyControl)

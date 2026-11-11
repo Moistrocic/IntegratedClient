@@ -1,0 +1,83 @@
+// This file can be included several times.
+
+// ranbi: ported from RanbiClient 1.0.2 (DDNet 19.8 / TClient 10.8.7).
+// All variables belong to ConfigDomain::RANBI (settings_ranbi.cfg); help texts
+// are filled in when the corresponding Ranbi settings page is ported.
+
+#ifndef MACRO_CONFIG_INT
+#error "The config macros must be defined"
+#define MACRO_CONFIG_INT(Rcme, ScriptName, Def, Min, Max, Save, Desc) ;
+#define MACRO_CONFIG_COL(Rcme, ScriptName, Def, Save, Desc) ;
+#define MACRO_CONFIG_STR(Rcme, ScriptName, Len, Def, Save, Desc) ;
+#endif
+
+MACRO_CONFIG_INT(RcHammerFix, rc_hammer_fix, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+
+MACRO_CONFIG_INT(RcCursorCopy, rc_cursor_copy, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+
+MACRO_CONFIG_INT(RcEmotionDeferredRender, rc_emotion_deferred_render, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcHookCollDeferredRender, rc_hook_coll_deferred_render, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+
+MACRO_CONFIG_INT(RcTalkingHidden, rc_talking_hidden, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+
+MACRO_CONFIG_INT(RcScoreboardShowLove, rc_scoreboard_show_love, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcScoreboardShowPoints, rc_scoreboard_show_points, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcScoreboardCopyName, rc_scoreboard_copy_name, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+
+MACRO_CONFIG_INT(RcNameplatesShowPoints, rc_nameplates_show_points, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesShowPositionX, rc_nameplates_show_position_x, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesShowPositionXMatched, rc_nameplates_show_position_x_matched, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_COL(RcNameplatesShowPositionXMatchedColor, rc_nameplates_show_position_x_matched_color, 0, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesShowFinished, rc_nameplates_show_finished, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesShowFinishedSize, rc_nameplates_show_finished_size, 18, 0, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesShowDummyCopyStatus, rc_nameplates_show_dummy_copy_status, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesShowDummyCopyStatusSize, rc_nameplates_show_dummy_copy_status_size, 18, 0, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesShowHammerFlyStatus, rc_nameplates_show_hammer_fly_status, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesShowHammerFlyStatusSize, rc_nameplates_show_hammer_fly_status_size, 18, 0, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesShowDummyResetStatus, rc_nameplates_show_dummy_reset_status, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesShowDummyResetStatusSize, rc_nameplates_show_dummy_reset_status_size, 18, 0, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesRangeHidden, rc_nameplates_range_hidden, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesRangeHiddenName, rc_nameplates_range_hidden_name, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesRangeHiddenPoints, rc_nameplates_range_hidden_points, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesRangeHiddenPositionX, rc_nameplates_range_hidden_position_x, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesRangeHiddenFinished, rc_nameplates_range_hidden_finished, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesRangeHiddenStatus, rc_nameplates_range_hidden_status, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesRangeHiddenHookStatus, rc_nameplates_range_hidden_hook_status, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesRangeHiddenLove, rc_nameplates_range_hidden_love, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesRangeHiddenOthers, rc_nameplates_range_hidden_others, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesRangeHiddenRadius, rc_nameplates_range_hidden_radius, 10, 0, 20, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesRangeHiddenAngleStart, rc_nameplates_range_hidden_angle_start, 0, 0, 360, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesRangeHiddenAngleEnd, rc_nameplates_range_hidden_angle_end, 360, 0, 360, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+
+MACRO_CONFIG_INT(RcChatNoDuplicateHistory, rc_chat_no_duplicate_history, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcChatShowPoints, rc_chat_show_points, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+
+MACRO_CONFIG_INT(RcShowWeaponsAngle, rc_show_weapons_angle, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcWeaponsAngleInnerRadius, rc_weapons_angle_inner_radius, 16, 0, 800, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcWeaponsAngleRadius, rc_weapons_angle_radius, 64, 0, 800, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcWeaponsAngleFontSize, rc_weapons_angle_font_size, 12, 6, 24, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcShowEnableSkipThreeTiles, rc_show_enable_skip_three_tiles, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcShowEnableSkipThreeTilesInfoSize, rc_show_enable_skip_three_tiles_info_size, 10, 0, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_COL(RcShowEnableSkipThreeTilesInfoColor, rc_show_enable_skip_three_tiles_info_color, 8191872, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcShowEnableSkipThreeTilesInfoPositionX, rc_show_enable_skip_three_tiles_info_position_x, 20, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcShowEnableSkipThreeTilesInfoPositionY, rc_show_enable_skip_three_tiles_info_position_y, 94, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_STR(RcShowEnableSkipThreeTilesInfoPositionLeftText, rc_show_enable_skip_three_tiles_info_position_left_text, 128, "←", CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_STR(RcShowEnableSkipThreeTilesInfoPositionRightText, rc_show_enable_skip_three_tiles_info_position_right_text, 128, "→", CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_STR(RcShowEnableSkipThreeTilesInfoPositionDJLeftText, rc_show_enable_skip_three_tiles_info_position_dj_left_text, 128, "↖", CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_STR(RcShowEnableSkipThreeTilesInfoPositionDJRightText, rc_show_enable_skip_three_tiles_info_position_dj_right_text, 128, "↗", CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcAutoChangeSkin, rc_auto_change_skin, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcShowSpectatorSkin, rc_show_spectator_skin, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcShowAllPlayers, rc_show_all_players, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+
+MACRO_CONFIG_STR(RcAiBaseUrl, rc_ai_base_url, 256, "https://api.openai.com/v1", CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_STR(RcAiModel, rc_ai_model, 128, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_STR(RcAiToken, rc_ai_token, 256, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcAiAutoReply, rc_ai_auto_reply, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+
+MACRO_CONFIG_INT(RcAiReplyInterval, rc_ai_reply_interval, 2, 1, 60, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcAiMaxSentenceLength, rc_ai_max_sentence_length, 20, 1, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcAiMinSentenceLength, rc_ai_min_sentence_length, 5, 1, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcAiTemperature, rc_ai_temperature, 10, 0, 20, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcAiContextCount, rc_ai_context_count, 5, 0, 20, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+
+MACRO_CONFIG_STR(RcAiSystemPrompt, rc_ai_system_prompt, 512, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "")

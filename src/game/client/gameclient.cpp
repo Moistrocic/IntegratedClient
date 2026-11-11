@@ -647,6 +647,11 @@ void CGameClient::OnDummySwap()
 	const int PrevDummyFire = m_DummyInput.m_Fire;
 	m_DummyInput = m_Controls.m_aInputData[!g_Config.m_ClDummy];
 	m_Controls.m_aInputData[g_Config.m_ClDummy].m_Fire = PrevDummyFire;
+
+	// ranbi: m_RcCursorCopy (RanbiClient 1.0.2 gameclient.cpp:558-560)
+	if(g_Config.m_RcCursorCopy)
+		m_Controls.m_aMousePos[g_Config.m_ClDummy] = m_Controls.m_aMousePos[!g_Config.m_ClDummy];
+
 	m_IsDummySwapping = 1;
 }
 
@@ -4251,6 +4256,23 @@ void CGameClient::ConchainSpecialDummy(IConsole::IResult *pResult, void *pUserDa
 	{
 		if(g_Config.m_ClDummy && !((CGameClient *)pUserData)->Client()->DummyConnected())
 			g_Config.m_ClDummy = 0;
+
+		// ranbi: m_RcHammerFix (RanbiClient 1.0.2 gameclient.cpp:3736-3751)
+		if(g_Config.m_RcHammerFix && g_Config.m_ClDummyCopyMoves)
+		{
+			auto *pControls = &((CGameClient *)pUserData)->m_Controls;
+			int *apCounters[] = {
+				&pControls->m_aInputData[g_Config.m_ClDummy].m_Fire,
+				&pControls->m_aInputData[!g_Config.m_ClDummy].m_Fire,
+				&pControls->m_aLastData[g_Config.m_ClDummy].m_Fire,
+				&pControls->m_aLastData[!g_Config.m_ClDummy].m_Fire};
+			for(int *pFire : apCounters)
+			{
+				if(*pFire & 1)
+					(*pFire)++;
+				*pFire &= INPUT_STATE_MASK;
+			}
+		}
 	}
 }
 

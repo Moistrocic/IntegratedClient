@@ -18,12 +18,14 @@
 
 | 功能 | 来源（客户端 / 文件） | 底座目标位置 | 状态 | 负责人 | 验收/备注 |
 | --- | --- | --- | --- | --- | --- |
-| 示例：占位 | RanbiClient / `src/game/client/components/ranbi/...` | `src/game/client/components/<source>/...` | 待评估 | — | 示例行，整合开始后替换 |
+| Ranbi 基础设施（`RANBI` 配置域、60 个 `rc_*`、`RCLocalize`） | RanbiClient 1.0.2 / `src/engine/shared/config_variables_ranbi.h`、`config_domains.h` | `src/engine/shared/config_variables_ranbi.h`、`config_domains.h`、`config_includes.h`、`src/game/localization.*` | 待验证 | ranbi-porter | task-5；配置域追加末尾；翻译已确认并入 `data/languages`（`RCLocalize` 由 `update_all.py` 提取） |
+| 分身切换修复（`rc_hammer_fix` / `rc_cursor_copy`） | RanbiClient 1.0.2 / `components/controls.cpp:315-317`、`gameclient.cpp:558-560,3736-3751` | `src/game/client/components/controls.cpp`、`src/game/client/gameclient.cpp` | 待验证 | ranbi-porter | task-5；默认关闭，关闭时与底座行为一致 |
 
 ## 整合批次
 
-- **第一批**：待用户确认（建议从渲染/观感类低风险功能开始）。
-- **后续批次**：见 RanbiClient 功能清单分析报告（`_work/ranbi-inventory/report.md`，本地工作区）。
+- **批次 0（基础设施）**：Ranbi 配置域/配置变量、`RCLocalize`、翻译并入 `data/languages`、构建登记 — 待验证（task-5）。
+- **批次 1（第一批功能）**：分身切换修复（`rc_hammer_fix` + `rc_cursor_copy`）— 待验证（task-5）；表情/辅助线滞后渲染、武器角度标记为后续批次。
+- **后续批次**：见 RanbiClient 功能清单分析报告（`_work/ranbi-inventory/report.md`，本地工作区）与批次 0+1 移植报告（`_work/ranbi/batch0-1/report.md`）。
 
 ## 流程
 
