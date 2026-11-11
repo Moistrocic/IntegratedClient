@@ -3123,6 +3123,27 @@ Hit player color
 Hit player width
 == 命中玩家粗细
 
+Send BestClient client identity
+== 发送 BestClient 客户端标识
+
+Announce your client as BestClient to game servers and other players. Required for BestClient server features (server-side client badges and statistics). Off by default: your client is then indistinguishable from vanilla DDNet. Changes take effect on the next connection.
+== 将你的客户端作为 BestClient 向游戏服务器和其他玩家公布。BestClient 服务器功能（服务器端客户端徽标与统计）需要此项。默认关闭：此时你的客户端与原生 DDNet 无法区分。更改将在下次连接时生效。
+
+Client identity is sent.
+== 已发送客户端标识。
+
+Not sending client identity.
+== 未发送客户端标识。
+
+BestClient server features are unavailable.
+== BestClient 服务器功能不可用。
+
+Client Indicator
+== 客户端标识
+
+Show indicator in name plates
+== 在名称标签中显示客户端标识
+
 BETA
 == 
 
@@ -4859,12 +4880,6 @@ Mute microphone
 == 
 
 Mute headphones
-== 
-
-Client Indicator
-== 
-
-Show indicator in name plates
 == 
 
 Show above yourself

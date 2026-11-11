@@ -241,6 +241,7 @@
 	{"Voice", SETTINGS_NAV_LEAF_BC_OTHERS, "Others", &g_Config.m_BcVoiceChatEnable, nullptr},
 
 	{"Client Indicator", SETTINGS_NAV_LEAF_BC_OTHERS, "Others", &g_Config.m_BcClientIndicatorInNamePlate, nullptr},
+	{"Send BestClient client identity", SETTINGS_NAV_LEAF_BC_OTHERS, "Client Indicator", &g_Config.m_BcSendClientIdentity, nullptr},
 	{"Show indicator in scoreboard", SETTINGS_NAV_LEAF_BC_OTHERS, "Client Indicator", &g_Config.m_BcClientIndicatorInScoreboard, nullptr},
 
 	{"Save unsent messages", SETTINGS_NAV_LEAF_BC_OTHERS, "Chat QoL", &g_Config.m_ClChatReset, nullptr},

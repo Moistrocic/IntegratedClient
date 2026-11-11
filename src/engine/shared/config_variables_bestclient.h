@@ -337,6 +337,7 @@ MACRO_CONFIG_INT(BcServerMapPreview, bc_server_map_preview, 1, 0, 1, CFGFLAG_CLI
 MACRO_CONFIG_INT(BrFilterBestclient, br_filter_bestclient, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Filter out servers with no BestClient users")
 
 // Client Indicator
+MACRO_CONFIG_INT(BcSendClientIdentity, bc_send_client_identity, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Announce this client as BestClient to game servers and other players (required for BestClient server features; off by default)")
 MACRO_CONFIG_INT(BcClientIndicatorVersions, bc_client_indicator_versions, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show versions tab in BestClient server browser panel")
 MACRO_CONFIG_INT(DbgClientIndicator, dbg_client_indicator, 0, 0, 2, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Debug logging for BestClient indicator (1=verbose, 2=dump all UDP packet bytes sent/received)")
 MACRO_CONFIG_INT(BcNameplateClientIndicatorOffsetX, bc_nameplate_client_indicator_offset_x, 0, -400, 400, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Horizontal offset for the client indicator in nameplates")

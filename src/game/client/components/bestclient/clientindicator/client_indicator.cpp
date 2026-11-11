@@ -70,10 +70,14 @@ namespace
 	constexpr const char *NEW_BC_TOKEN_URL = "https://150.241.70.188:8779/token.json";
 	constexpr int PACKET_DUMP_BYTES_PER_LINE = 64;
 
-	// integratedclient (task-26): this client must not announce its BestClient identity, version,
-	// official code or presence to other players. All outbound indicator packets are gated here;
-	// the receive/parsing side, the passive browser cache and the server-browser flags stay intact.
-	constexpr bool SEND_CLIENT_IDENTITY_PACKETS = false;
+	// integratedclient (task-33): the BestClient identity announcements are user controlled via
+	// `bc_send_client_identity`. Off by default, which keeps the receive-only behaviour: no
+	// identity/version/official code/presence packets are sent, while the receive/parsing side,
+	// the passive browser cache and the server-browser flags stay intact.
+	bool SendClientIdentityPackets()
+	{
+		return g_Config.m_BcSendClientIdentity != 0;
+	}
 
 	void TrimConfigString(char *pValue, int Size)
 	{
@@ -129,6 +133,11 @@ namespace
 	{
 		str_copy(pVersion, pRaw ? pRaw : "", VersionSize);
 		StripVersionProof(pVersion);
+	}
+
+	bool HasOfficialCode()
+	{
+		return BESTCLIENT_OFFICIAL_CODE[0] != '\0';
 	}
 
 	bool BuildVersionAnnounceFields(char *pVersionOut, int VersionOutSize, char *pOfficialCodeOut, int OfficialCodeOutSize)
@@ -251,12 +260,12 @@ bool CClientIndicator::IsPlayerBestClient(int ClientId) const
 {
 	if(Client()->State() != IClient::STATE_ONLINE)
 		return false;
-	// integratedclient (task-26): never label the local player as BestClient. The passive
-	// browser cache / server info may still resolve our own name, so exit before those checks.
+	// integratedclient (task-33): the local player is only labelled as BestClient while identity
+	// announcements are enabled; in the default receive-only mode the own badge is hidden.
 	for(const int LocalId : GameClient()->m_aLocalIds)
 	{
 		if(LocalId >= 0 && ClientId == LocalId)
-			return false;
+			return SendClientIdentityPackets();
 	}
 	if(m_PresenceCache.IsPresent(ClientId))
 		return true;
@@ -331,7 +340,7 @@ bool CClientIndicator::IsPlayerFakeVersion(int ClientId) const
 	for(const int LocalId : GameClient()->m_aLocalIds)
 	{
 		if(LocalId >= 0 && ClientId == LocalId)
-			return false; // integratedclient (task-26): local player is never shown as a fake BestClient
+			return SendClientIdentityPackets() && !HasOfficialCode();
 	}
 
 	if(m_FakeClientIds.find(ClientId) != m_FakeClientIds.end())
@@ -417,7 +426,13 @@ bool CClientIndicator::GetPlayerVersionLabel(int ClientId, char *pVersion, int V
 	for(const int LocalId : GameClient()->m_aLocalIds)
 	{
 		if(LocalId >= 0 && ClientId == LocalId)
-			return false; // integratedclient (task-26): local player no longer shows a BestClient version badge
+		{
+			// integratedclient (task-33): own version badge only while identity announcements are enabled
+			if(!SendClientIdentityPackets())
+				return false;
+			str_copy(pVersion, BESTCLIENT_VERSION, VersionSize);
+			return true;
+		}
 	}
 
 	const char *pPlayerName = PlayerNameForClient(ClientId);
@@ -487,10 +502,9 @@ void CClientIndicator::RefreshToken(bool Force)
 	(void)Force;
 	return;
 #endif
-	// integratedclient (task-26): the web token is only used to sign outbound identity packets,
-	// which are disabled. Skip the token request entirely; the passive receive path does not need
-	// it and this avoids an unnecessary request to the token endpoint.
-	if(!SEND_CLIENT_IDENTITY_PACKETS)
+	// integratedclient (task-33): the web token is only used to sign outbound identity packets.
+	// Skip the request in the default receive-only mode; the passive receive path does not need it.
+	if(!SendClientIdentityPackets())
 		return;
 	NormalizeBestClientIndicatorConfig();
 	if(g_Config.m_BcClientIndicatorTokenUrl[0] == '\0')
@@ -776,8 +790,9 @@ const char *CClientIndicator::PlayerNameForClient(int ClientId) const
 
 void CClientIndicator::SendPresencePacket(int ClientId, int PacketType)
 {
-	// integratedclient (task-26): outbound BestClient presence is disabled (receive-only mode).
-	if(!SEND_CLIENT_IDENTITY_PACKETS)
+	// integratedclient (task-33): outbound BestClient presence is disabled unless the user enables
+	// `bc_send_client_identity` (receive-only mode is the default).
+	if(!SendClientIdentityPackets())
 		return;
 	if(!m_Socket || !m_HasServerAddr || ClientId < 0 || ClientId >= MAX_CLIENTS)
 		return;
@@ -809,8 +824,9 @@ void CClientIndicator::SendPresencePacket(int ClientId, int PacketType)
 
 void CClientIndicator::SendDevAuthPacket(int ClientId)
 {
-	// integratedclient (task-26): outbound BestClient developer auth is disabled (receive-only mode).
-	if(!SEND_CLIENT_IDENTITY_PACKETS)
+	// integratedclient (task-33): outbound BestClient developer auth is disabled unless the user
+	// enables `bc_send_client_identity` (receive-only mode is the default).
+	if(!SendClientIdentityPackets())
 		return;
 	NormalizeBestClientIndicatorConfig();
 	if(!m_Socket || !m_HasServerAddr || ClientId < 0 || ClientId >= MAX_CLIENTS)
@@ -842,8 +858,9 @@ void CClientIndicator::SendDevAuthPacket(int ClientId)
 
 void CClientIndicator::SendVersionPacket(int ClientId)
 {
-	// integratedclient (task-26): outbound BestClient version/official-code announce is disabled.
-	if(!SEND_CLIENT_IDENTITY_PACKETS)
+	// integratedclient (task-33): outbound BestClient version/official-code announce is disabled
+	// unless the user enables `bc_send_client_identity` (receive-only mode is the default).
+	if(!SendClientIdentityPackets())
 		return;
 	if(!m_Socket || !m_HasServerAddr)
 		return;
@@ -883,8 +900,9 @@ void CClientIndicator::SendVersionPacket(int ClientId)
 
 void CClientIndicator::SendLeaveForAll()
 {
-	// integratedclient (task-26): no leave packets are sent because nothing is registered/broadcast.
-	if(!SEND_CLIENT_IDENTITY_PACKETS)
+	// integratedclient (task-33): no leave packets are sent while identity announcements are
+	// disabled (receive-only mode is the default).
+	if(!SendClientIdentityPackets())
 		return;
 	if(!m_Socket || !m_HasServerAddr)
 		return;
@@ -1072,11 +1090,10 @@ void CClientIndicator::ProcessIncomingPackets(bool Force)
 
 void CClientIndicator::SyncLocalRegistrations(bool Force)
 {
-	// integratedclient (task-26): local clients are no longer registered or announced to the
-	// indicator server, so there is nothing to sync. Incoming packets are still processed by
-	// ProcessIncomingPackets() from UpdatePresence().
-	(void)Force;
-	if(!SEND_CLIENT_IDENTITY_PACKETS)
+	// integratedclient (task-33): local clients are only registered/announced while identity
+	// announcements are enabled. Incoming packets are still processed by ProcessIncomingPackets()
+	// from UpdatePresence(), independent of this setting.
+	if(!SendClientIdentityPackets())
 		return;
 	if(!m_Socket || !m_HasServerAddr)
 		return;
@@ -1135,10 +1152,16 @@ void CClientIndicator::UpdatePresence()
 		return;
 	}
 
-	// integratedclient (task-26): no shared token is required anymore because this client does not
-	// send presence/version packets. Keep the socket and receive processing alive so incoming peer
-	// indicators (if the server ever sends them) are still parsed; the passive browser cache and
-	// server-browser flags keep working without any outbound packet.
+	// integratedclient (task-33): without identity announcements no shared token is needed. Keep the
+	// socket and receive processing alive so incoming peer indicators are still parsed and the
+	// passive browser cache keeps working. With announcements enabled the original behaviour is
+	// preserved: a missing shared token blocks presence updates.
+	if(SendClientIdentityPackets() && EffectiveSharedToken()[0] == '\0')
+	{
+		SetPresenceBlockReason("presence update skipped: effective shared token is empty");
+		m_WasPresenceEnabled = true;
+		return;
+	}
 	EnsurePresenceSocket();
 	if(!m_Socket || !m_HasServerAddr)
 	{
@@ -1182,9 +1205,9 @@ void CClientIndicator::UpdatePresence()
 		SyncLocalRegistrations(false);
 		ProcessIncomingPackets(false);
 	}
-	// integratedclient (task-26): heartbeat/registration packets are only sent in broadcast mode.
+	// integratedclient (task-33): heartbeat packets are only sent when identity announcements are enabled.
 	const bool HeartbeatDue = m_LastHeartbeatTick == 0 || Now - m_LastHeartbeatTick > time_freq() * 5;
-	if(SEND_CLIENT_IDENTITY_PACKETS && HeartbeatDue)
+	if(SendClientIdentityPackets() && HeartbeatDue)
 	{
 		const bool SendDevAuth = g_Config.m_BcClientIndicatorSecretKey[0] != '\0';
 		for(const int ClientId : m_RegisteredClientIds)

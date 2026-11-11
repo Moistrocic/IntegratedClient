@@ -4432,9 +4432,13 @@ void CMenus::RenderSettingsBestClientOthers(CUIRect MainView)
 	RightColumn.HSplitTop(MarginBetweenViews, nullptr, &RightColumn);
 	const bool ShowNamePlateSettings = g_Config.m_BcClientIndicatorInNamePlate != 0;
 	const bool ShowScoreboardSettings = g_Config.m_BcClientIndicatorInScoreboard != 0;
+	const bool SendClientIdentity = g_Config.m_BcSendClientIdentity != 0;
 	const float NamePlateSettingsHeight = ShowNamePlateSettings ? 2.0f * LineSize : 0.0f;
 	const float ScoreboardSettingsHeight = ShowScoreboardSettings ? LineSize : 0.0f;
-	const float ClientIndicatorBlockHeight = LineSize + MarginSmall + 2.0f * LineSize + NamePlateSettingsHeight + ScoreboardSettingsHeight;
+	// integratedclient (task-33): one checkbox row plus status rows (one when enabled, two when the
+	// identity is not sent so the "features are unavailable" warning fits in the column).
+	const float SendClientIdentityStatusHeight = SendClientIdentity ? LineSize : 2.0f * LineSize;
+	const float ClientIndicatorBlockHeight = LineSize + MarginSmall + 3.0f * LineSize + SendClientIdentityStatusHeight + NamePlateSettingsHeight + ScoreboardSettingsHeight;
 
 	CUIRect ClientIndicatorBlock;
 	RightColumn.HSplitTop(ClientIndicatorBlockHeight, &ClientIndicatorBlock, &RightColumn);
@@ -4446,10 +4450,34 @@ void CMenus::RenderSettingsBestClientOthers(CUIRect MainView)
 	ClientIndicatorBlockBg.y -= BlockPadding * 0.5f;
 	BestClientUiTheme::DrawUiBlock(&ClientIndicatorBlockBg, IGraphics::CORNER_ALL, 10.0f);
 	BestClientSettingsSearch::DrawBlockHighlight(&g_Config.m_BcClientIndicatorInNamePlate, &ClientIndicatorBlockBg);
+	BestClientSettingsSearch::DrawBlockHighlight(&g_Config.m_BcSendClientIdentity, &ClientIndicatorBlockBg);
 
 	ClientIndicatorBlock.HSplitTop(LineSize, &Label, &ClientIndicatorBlock);
 	Ui()->DoLabel(&Label, BcLocalize("Client Indicator"), HeadlineFontSize, TEXTALIGN_ML);
 	ClientIndicatorBlock.HSplitTop(MarginSmall, nullptr, &ClientIndicatorBlock);
+
+	// integratedclient (task-33): user controlled BestClient identity announcements. Off by default;
+	// without them BestClient-aware servers cannot recognise this client, so related server
+	// features are unavailable.
+	ClientIndicatorBlock.HSplitTop(LineSize, &Content, &ClientIndicatorBlock);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcSendClientIdentity, Localize("Send BestClient client identity"), &g_Config.m_BcSendClientIdentity, &Content, LineSize);
+	GameClient()->m_Tooltips.DoToolTip(&g_Config.m_BcSendClientIdentity, &Content, Localize("Announce your client as BestClient to game servers and other players. Required for BestClient server features (server-side client badges and statistics). Off by default: your client is then indistinguishable from vanilla DDNet. Changes take effect on the next connection."));
+	if(SendClientIdentity)
+	{
+		ClientIndicatorBlock.HSplitTop(LineSize, &Content, &ClientIndicatorBlock);
+		TextRender()->TextColor(ColorRGBA(0.55f, 1.0f, 0.55f, 1.0f));
+		Ui()->DoLabel(&Content, Localize("Client identity is sent."), 11.0f, TEXTALIGN_ML);
+		TextRender()->TextColor(TextRender()->DefaultTextColor());
+	}
+	else
+	{
+		ClientIndicatorBlock.HSplitTop(LineSize, &Content, &ClientIndicatorBlock);
+		TextRender()->TextColor(ColorRGBA(1.0f, 0.45f, 0.4f, 1.0f));
+		Ui()->DoLabel(&Content, Localize("Not sending client identity."), 11.0f, TEXTALIGN_ML);
+		ClientIndicatorBlock.HSplitTop(LineSize, &Content, &ClientIndicatorBlock);
+		Ui()->DoLabel(&Content, Localize("BestClient server features are unavailable."), 11.0f, TEXTALIGN_ML);
+		TextRender()->TextColor(TextRender()->DefaultTextColor());
+	}
 
 	ClientIndicatorBlock.HSplitTop(LineSize, &Content, &ClientIndicatorBlock);
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcClientIndicatorInNamePlate, BcLocalize("Show indicator in name plates"), &g_Config.m_BcClientIndicatorInNamePlate, &Content, LineSize);

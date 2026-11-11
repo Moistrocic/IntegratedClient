@@ -4438,6 +4438,21 @@ Mute headphones
 Client Indicator
 == 
 
+Send BestClient client identity
+== 
+
+Announce your client as BestClient to game servers and other players. Required for BestClient server features (server-side client badges and statistics). Off by default: your client is then indistinguishable from vanilla DDNet. Changes take effect on the next connection.
+== 
+
+Client identity is sent.
+== 
+
+Not sending client identity.
+== 
+
+BestClient server features are unavailable.
+== 
+
 Show indicator in name plates
 == 
 
@@ -5443,12 +5458,6 @@ Hit player color
 Hit player width
 == 
 
-Weapon angle list
-== 
-
-Entries are saved to ranbi_weapons_angle.cfg when the client exits.
-== 
-
 Angle start
 == 
 
@@ -5459,6 +5468,12 @@ Note
 == 
 
 Modify
+== 
+
+Weapon angle list
+== 
+
+Entries are saved to ranbi_weapons_angle.cfg when the client exits.
 == 
 
 No weapon angle entries yet. Use Add on the left to create one.

@@ -2610,6 +2610,21 @@ Prediction margin
 Predict events (experimental)
 == 預測事件（實驗性）
 
+Send BestClient client identity
+== 傳送 BestClient 用戶端識別
+
+Announce your client as BestClient to game servers and other players. Required for BestClient server features (server-side client badges and statistics). Off by default: your client is then indistinguishable from vanilla DDNet. Changes take effect on the next connection.
+== 將你的用戶端作為 BestClient 向遊戲伺服器及其他玩家公布。BestClient 伺服器功能（伺服器端用戶端徽章與統計）需要此項。預設關閉：此時你的用戶端與原生 DDNet 無異。變更將於下次連線時生效。
+
+Client identity is sent.
+== 已傳送用戶端識別。
+
+Not sending client identity.
+== 未傳送用戶端識別。
+
+BestClient server features are unavailable.
+== BestClient 伺服器功能不可用。
+
 BETA
 == 
 
@@ -5449,12 +5464,6 @@ Hit player color
 Hit player width
 == 
 
-Weapon angle list
-== 
-
-Entries are saved to ranbi_weapons_angle.cfg when the client exits.
-== 
-
 Angle start
 == 
 
@@ -5465,6 +5474,12 @@ Note
 == 
 
 Modify
+== 
+
+Weapon angle list
+== 
+
+Entries are saved to ranbi_weapons_angle.cfg when the client exits.
 == 
 
 No weapon angle entries yet. Use Add on the left to create one.

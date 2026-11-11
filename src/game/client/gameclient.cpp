@@ -98,7 +98,15 @@ const char *CGameClient::Version() const { return GAME_VERSION; }
 const char *CGameClient::NetVersion() const { return GAME_NETVERSION; }
 const char *CGameClient::NetVersion7() const { return GAME_NETVERSION7; }
 int CGameClient::DDNetVersion() const { return DDNET_VERSION_NUMBER; }
-const char *CGameClient::DDNetVersionStr() const { return m_aDDNetVersionStr; }
+const char *CGameClient::DDNetVersionStr() const
+{
+	// integratedclient (task-33): the version string sent to game servers in NETMSG_CLIENTVER is
+	// neutral "DDNet <version>" unless the user explicitly enables sending the BestClient client
+	// identity. It is read at connection time, so a settings change takes effect with the next
+	// connection. Other UI/console strings are not affected.
+	static constexpr char s_aNeutralDDNetVersionStr[] = GAME_NAME " " GAME_RELEASE_VERSION;
+	return g_Config.m_BcSendClientIdentity ? m_aDDNetVersionStr : s_aNeutralDDNetVersionStr;
+}
 int CGameClient::ClientVersion7() const { return CLIENT_VERSION7; }
 const char *CGameClient::GetItemName(int Type) const { return m_NetObjHandler.GetObjName(Type); }
 
@@ -447,11 +455,16 @@ void CGameClient::OnInit()
 	// m_RenderTools.Init(Graphics(), TextRender());
 	m_RenderMap.Init(Graphics(), TextRender());
 
-	// integratedclient: report a neutral DDNet version string to game servers
-	// (NETMSG_CLIENTVER) instead of CLIENT_NAME/CLIENT_RELEASE_VERSION with the
-	// git hash, so that the client cannot be identified as BestClient in server
-	// logs and TeeHistorian. UI/console/user-agent strings stay unchanged.
-	str_format(m_aDDNetVersionStr, sizeof(m_aDDNetVersionStr), "%s %s", GAME_NAME, GAME_RELEASE_VERSION);
+	// integratedclient (task-33): full BestClient version string. It is only reported to game
+	// servers when the user enables `bc_send_client_identity`, see DDNetVersionStr().
+	if(GIT_SHORTREV_HASH)
+	{
+		str_format(m_aDDNetVersionStr, sizeof(m_aDDNetVersionStr), "%s %s (%s)", CLIENT_NAME, CLIENT_RELEASE_VERSION, GIT_SHORTREV_HASH);
+	}
+	else
+	{
+		str_format(m_aDDNetVersionStr, sizeof(m_aDDNetVersionStr), "%s %s", CLIENT_NAME, CLIENT_RELEASE_VERSION);
+	}
 
 	// TODO: this should be different
 	// setup item sizes
