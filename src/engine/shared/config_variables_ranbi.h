@@ -87,3 +87,12 @@ MACRO_CONFIG_INT(RcWeaponAimLines, rc_weapon_aim_lines, 0, 0, 1, CFGFLAG_CLIENT 
 MACRO_CONFIG_INT(RcLockFinishedName, rc_lock_finished_name, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Use a fixed player name for the official server list map completion query")
 MACRO_CONFIG_STR(RcLockFinishedNameId, rc_lock_finished_name_id, 128, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Player name/ID used for the locked map completion query")
 MACRO_CONFIG_INT(RcFastPracticeGhostCoords, rc_fast_practice_ghost_coords, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "In BestClient fast practice, show the controlled practice character's position in the HUD movement info")
+
+MACRO_CONFIG_COL(RcWeaponAimLaserColor, rc_weapon_aim_laser_color, 0x9900FF9FU, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_COLALPHA, "Weapon aim lines: laser color")
+MACRO_CONFIG_INT(RcWeaponAimLaserWidth, rc_weapon_aim_laser_width, 1, 1, 8, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Weapon aim lines: laser width")
+MACRO_CONFIG_COL(RcWeaponAimShotgunColor, rc_weapon_aim_shotgun_color, 0x8C24FFACU, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_COLALPHA, "Weapon aim lines: shotgun color")
+MACRO_CONFIG_INT(RcWeaponAimShotgunWidth, rc_weapon_aim_shotgun_width, 1, 1, 8, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Weapon aim lines: shotgun width")
+MACRO_CONFIG_COL(RcWeaponAimGrenadeColor, rc_weapon_aim_grenade_color, 0x9915FF8CU, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_COLALPHA, "Weapon aim lines: grenade color")
+MACRO_CONFIG_INT(RcWeaponAimGrenadeWidth, rc_weapon_aim_grenade_width, 1, 1, 8, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Weapon aim lines: grenade width")
+MACRO_CONFIG_COL(RcWeaponAimPlayerColor, rc_weapon_aim_player_color, 0xFF0000FFU, CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_COLALPHA, "Weapon aim lines: color when the trajectory hits a player")
+MACRO_CONFIG_INT(RcWeaponAimPlayerWidth, rc_weapon_aim_player_width, 2, 1, 10, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Weapon aim lines: width when the trajectory hits a player")

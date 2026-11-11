@@ -5404,6 +5404,36 @@ Show weapon aim lines
 Draws a predicted laser line, shotgun spread lines or grenade trajectory for your own tee.
 == 
 
+Aim line style
+== 
+
+Colors and thickness for each weapon; the hit player style is used when the trajectory hits another player.
+== 
+
+Laser color
+== 
+
+Laser width
+== 
+
+Shotgun color
+== 
+
+Shotgun width
+== 
+
+Grenade color
+== 
+
+Grenade width
+== 
+
+Hit player color
+== 
+
+Hit player width
+== 
+
 Weapon angle list
 == 
 

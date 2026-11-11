@@ -3093,6 +3093,36 @@ Use practice ghost coordinates
 In BC fast practice, show the controlled practice character's position instead of the frozen body.
 == 在 BC 快速练习模式下，显示当前操控的练习虚影位置，而不是被固定的本体位置。
 
+Aim line style
+== 辅助线样式
+
+Colors and thickness for each weapon; the hit player style is used when the trajectory hits another player.
+== 为每种武器设置颜色与粗细；轨迹命中其他玩家时使用“命中玩家”样式。
+
+Laser color
+== 激光颜色
+
+Laser width
+== 激光粗细
+
+Shotgun color
+== 霰弹颜色
+
+Shotgun width
+== 霰弹粗细
+
+Grenade color
+== 榴弹颜色
+
+Grenade width
+== 榴弹粗细
+
+Hit player color
+== 命中玩家颜色
+
+Hit player width
+== 命中玩家粗细
+
 BETA
 == 
 
