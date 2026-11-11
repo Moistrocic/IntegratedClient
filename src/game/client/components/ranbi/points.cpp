@@ -265,7 +265,7 @@ bool CPoints::ParseJson(const json_value *pObj, const std::string &TargetName, i
 	}
 
 	const json_value *PlayerName = json_object_get(pObj, "player");
-	if(PlayerName == nullptr)
+	if(PlayerName == nullptr || PlayerName->type == json_none)
 	{
 		// task-52: ddnet.org returns {} for a player without any finished maps.
 		// That is a valid "0 points" result, not a failed request.
