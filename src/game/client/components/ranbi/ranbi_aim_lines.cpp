@@ -377,11 +377,21 @@ void CRanbiAimLines::OnRender()
 		const ColorRGBA OuterColor = color_cast<ColorRGBA>(ColorHSLA(ColorOut).WithAlpha(1.0f));
 		const ColorRGBA InnerColor = color_cast<ColorRGBA>(ColorHSLA(ColorIn).WithAlpha(1.0f));
 		const float TicksHead = (float)Client()->GameTick(g_Config.m_ClDummy) + Client()->PredIntraGameTick(g_Config.m_ClDummy);
+		// The real fired beam is rendered with the laser's age, so its width has already
+		// started fading (RenderWeaponLaser/CItems::RenderLaser width = 1 - age/bounceDelay).
+		// A preview with TicksBody = 0 is therefore about twice as wide as the real beam.
+		// Use the same trick as the settings laser preview (TicksBody = 4 for a thin,
+		// aligned beam) but derive it from the tuning so the requested 0.5 width factor
+		// holds in every tune zone.
+		constexpr float PREVIEW_WIDTH_FACTOR = 0.5f;
+		const int PreviewTuneZone = (Client()->State() == IClient::STATE_ONLINE && GameClient()->m_GameWorld.m_WorldConfig.m_UseTuneZones) ? Collision()->IsTune(Collision()->GetMapIndex(Buf.m_pSegments[0].m_From)) : 0;
+		const float PreviewBounceDelay = GameClient()->GetTuning(PreviewTuneZone)->m_LaserBounceDelay;
+		const float PreviewTicksBody = (1.0f - PREVIEW_WIDTH_FACTOR) * PreviewBounceDelay * Client()->GameTickSpeed() / 1000.0f;
 		for(int i = 0; i < Buf.m_Num; i++)
 		{
 			if(Buf.m_pSegments[i].m_To == Buf.m_pSegments[i].m_From)
 				continue;
-			GameClient()->m_Items.RenderLaser(Buf.m_pSegments[i].m_From, Buf.m_pSegments[i].m_To, OuterColor, InnerColor, 0.0f, TicksHead, LaserType);
+			GameClient()->m_Items.RenderLaser(Buf.m_pSegments[i].m_From, Buf.m_pSegments[i].m_To, OuterColor, InnerColor, PreviewTicksBody, TicksHead, LaserType);
 		}
 	}
 	else
