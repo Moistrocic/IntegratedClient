@@ -1794,7 +1794,7 @@ void CHud::RenderMovementInformation(bool ForcePreview)
 	// Replaces the whole HUD movement info (position/speed/angle) with the predicted
 	// practice core while fast practice is active; the HUD editor preview keeps its
 	// fixed demo values and all other states keep the original snapshot logic.
-	if(!ForcePreview && g_Config.m_RcFastPracticeGhostCoords && GameClient()->m_FastPractice.Active())
+	if(!ForcePreview && g_Config.m_RcFastPracticeGhostCoords && GameClient()->m_FastPractice.Active() && !GameClient()->m_Snap.m_SpecInfo.m_Active)
 	{
 		const int PracticeId = GameClient()->m_FastPractice.ControlledPracticeId();
 		if(PracticeId >= 0 && PracticeId < MAX_CLIENTS && GameClient()->m_aClients[PracticeId].m_Active)

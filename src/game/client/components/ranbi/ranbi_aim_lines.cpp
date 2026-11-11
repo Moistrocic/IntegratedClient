@@ -265,11 +265,15 @@ void CRanbiAimLines::OnRender()
 	if(!GetAimDirection(GameClient(), pLocalChar, LocalClient, LocalId, Direction) || length(Direction) < 0.001f)
 		return;
 
+	// character.cpp:413-467: CProjectile shots (vanilla shotgun, grenade) start at
+	// ProjStartPos, but CLaser shots (laser, DDRace shotgun) start at the character
+	// center (m_Pos). Keep both so the preview starts exactly where the real shot does.
 	vec2 StartPos = LocalClient.m_Predicted.m_Pos;
 	if(pLocalChar != nullptr)
 		StartPos = pLocalChar->Core()->m_Pos + Direction * pLocalChar->GetProximityRadius() * PROJECTILE_START_OFFSET;
 	else
 		StartPos = LocalClient.m_Predicted.m_Pos + Direction * CCharacterCore::PhysicalSize() * PROJECTILE_START_OFFSET;
+	const vec2 LaserStartPos = pLocalChar != nullptr ? pLocalChar->Core()->m_Pos : LocalClient.m_Predicted.m_Pos;
 
 	CCollision *pCollision = Collision();
 	IGraphics::CLineItem aLines[MAX_AIM_LINES];
@@ -280,11 +284,11 @@ void CRanbiAimLines::OnRender()
 	{
 		// character.cpp:469-475: laser is a CLaser in every mode
 		const int FireTuneZone = pLocalChar != nullptr ? ClampTuneZone(pLocalChar->GetOverriddenTuneZone()) : SpawnTuneZone(World, pCollision, StartPos);
-		const int LaserTuneZone = SpawnTuneZone(World, pCollision, StartPos);
+		const int LaserTuneZone = SpawnTuneZone(World, pCollision, LaserStartPos);
 		const CTuningParams *pFireTuning = World.GetTuning(FireTuneZone);
 		const CTuningParams *pTuning = World.GetTuning(LaserTuneZone);
 		Color = ColorRGBA(1.0f, 0.25f, 0.25f, 0.6f);
-		SimulateLaser(Buf, World, pCollision, pLocalChar, LocalId, WEAPON_LASER, pTuning, StartPos, Direction, (float)pFireTuning->m_LaserReach);
+		SimulateLaser(Buf, World, pCollision, pLocalChar, LocalId, WEAPON_LASER, pTuning, LaserStartPos, Direction, (float)pFireTuning->m_LaserReach);
 	}
 	else if(Weapon == WEAPON_SHOTGUN)
 	{
@@ -311,10 +315,10 @@ void CRanbiAimLines::OnRender()
 		{
 			// character.cpp:438-443: DDRace shotgun = one CLaser (no 5 spread shots)
 			const int FireTuneZone = pLocalChar != nullptr ? ClampTuneZone(pLocalChar->GetOverriddenTuneZone()) : SpawnTuneZone(World, pCollision, StartPos);
-			const int LaserTuneZone = SpawnTuneZone(World, pCollision, StartPos);
+			const int LaserTuneZone = SpawnTuneZone(World, pCollision, LaserStartPos);
 			const CTuningParams *pFireTuning = World.GetTuning(FireTuneZone);
 			const CTuningParams *pTuning = World.GetTuning(LaserTuneZone);
-			SimulateLaser(Buf, World, pCollision, pLocalChar, LocalId, WEAPON_SHOTGUN, pTuning, StartPos, Direction, (float)pFireTuning->m_LaserReach);
+			SimulateLaser(Buf, World, pCollision, pLocalChar, LocalId, WEAPON_SHOTGUN, pTuning, LaserStartPos, Direction, (float)pFireTuning->m_LaserReach);
 		}
 		else
 		{
