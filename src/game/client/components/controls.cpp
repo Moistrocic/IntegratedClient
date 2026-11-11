@@ -25,36 +25,6 @@
 
 #include <algorithm>
 
-namespace
-{
-	// ranbi: task-38 - swallow the fire press of the Fast Practice toggle source
-	// (the in-game button is mouse1, which is also the +fire bind).
-	bool s_aFastPracticeFireSuppressed[NUM_DUMMIES] = {};
-	int64_t s_aFastPracticeFireSuppressUntil[NUM_DUMMIES] = {};
-
-	void RanbiSuppressFireState(CControls *pControls, int Conn)
-	{
-		int Released = pControls->m_aLastData[Conn].m_Fire & INPUT_STATE_MASK;
-		if((Released & 1) != 0)
-			Released = (Released + 1) & INPUT_STATE_MASK;
-		pControls->m_aInputData[Conn].m_Fire = Released;
-		pControls->m_aLastData[Conn].m_Fire = Released;
-	}
-
-	void ConRanbiSuppressFireUntilRelease(IConsole::IResult *pResult, void *pUserData)
-	{
-		(void)pResult;
-		auto *pControls = static_cast<CControls *>(pUserData);
-		const int64_t Until = time_get() + time_freq() / 2;
-		for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
-		{
-			s_aFastPracticeFireSuppressed[Conn] = true;
-			s_aFastPracticeFireSuppressUntil[Conn] = Until;
-			RanbiSuppressFireState(pControls, Conn);
-		}
-	}
-} // namespace
-
 CControls::CControls()
 {
 	mem_zero(&m_aLastData, sizeof(m_aLastData));
@@ -218,24 +188,10 @@ void CControls::ConKeyInputCounter(IConsole::IResult *pResult, void *pUserData)
 
 	int *pVariable = pState->m_apVariables[g_Config.m_ClDummy];
 	const bool Pressed = pResult->GetInteger(0) != 0;
-	const bool IsFire = pVariable == &pState->m_pControls->m_aInputData[g_Config.m_ClDummy].m_Fire;
-	if(IsFire && s_aFastPracticeFireSuppressed[g_Config.m_ClDummy])
-	{
-		const int Conn = g_Config.m_ClDummy;
-		if(!Pressed || time_get() > s_aFastPracticeFireSuppressUntil[Conn])
-			s_aFastPracticeFireSuppressed[Conn] = false;
-		// swallowed toggle press/release: keep the fire ring released
-		int Released = (*pVariable) & INPUT_STATE_MASK;
-		if((Released & 1) != 0)
-			Released = (Released + 1) & INPUT_STATE_MASK;
-		*pVariable = Released;
-		pState->m_pControls->GameClient()->m_BestClient.OnGoresFireInput(0);
-		return;
-	}
 	if(((*pVariable) & 1) != Pressed)
 		(*pVariable)++;
 	*pVariable &= INPUT_STATE_MASK;
-	if(IsFire)
+	if(pVariable == &pState->m_pControls->m_aInputData[g_Config.m_ClDummy].m_Fire)
 		pState->m_pControls->GameClient()->m_BestClient.OnGoresFireInput(pResult->GetInteger(0));
 	// bestclient
 }
@@ -265,9 +221,6 @@ void CControls::ConKeyInputNextPrevWeapon(IConsole::IResult *pResult, void *pUse
 
 void CControls::OnConsoleInit()
 {
-	// ranbi: task-38 fire guard used by Fast Practice toggles
-	Console()->Register("ranbi_suppress_fire_until_release", "", CFGFLAG_CLIENT, ConRanbiSuppressFireUntilRelease, this, "Suppress fire input until the next physical release (Fast Practice toggle)");
-
 	// game commands
 	{
 		// bestclient
@@ -522,23 +475,6 @@ int CControls::SnapInput(int *pData)
 			m_aInputData[g_Config.m_ClDummy].m_WantedWeapon = ((int)t) % NUM_WEAPONS;
 			m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)(std::sin(t * 3) * 100.0f);
 			m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)(std::cos(t * 3) * 100.0f);
-		}
-
-		// ranbi: task-38 - keep fire released while the toggle-source guard is active
-		for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
-		{
-			if(!s_aFastPracticeFireSuppressed[Conn])
-				continue;
-			if(time_get() > s_aFastPracticeFireSuppressUntil[Conn])
-			{
-				s_aFastPracticeFireSuppressed[Conn] = false;
-				continue;
-			}
-			int Released = m_aLastData[Conn].m_Fire & INPUT_STATE_MASK;
-			if((Released & 1) != 0)
-				Released = (Released + 1) & INPUT_STATE_MASK;
-			m_aInputData[Conn].m_Fire = Released;
-			m_aLastData[Conn].m_Fire = Released;
 		}
 
 		// check if we need to send input
