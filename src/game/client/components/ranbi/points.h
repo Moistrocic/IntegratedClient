@@ -43,6 +43,8 @@ public:
 
 	int GetPoints(const std::string &Name);
 	void RemovePoints(const std::string &Name);
+	// task-55: only true when a request completed successfully (0 is a valid value).
+	bool TryGetPoints(const char *pName, int *pPoints) const;
 
 private:
 	std::string EncodePlayerName(const std::string &Name);

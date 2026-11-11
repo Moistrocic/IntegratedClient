@@ -204,6 +204,18 @@ int CPoints::GetPoints(const std::string &Name)
 	return -1;
 }
 
+bool CPoints::TryGetPoints(const char *pName, int *pPoints) const
+{
+	if(!pName || !pName[0] || !pPoints)
+		return false;
+	std::unique_lock LockPoints(m_PointsMutex);
+	const auto It = m_PointsCache.find(pName);
+	if(It == m_PointsCache.end() || !It->second.m_Fetched)
+		return false;
+	*pPoints = It->second.m_Points;
+	return true;
+}
+
 void CPoints::RemovePoints(const std::string &Name)
 {
 	std::unique_lock LockPoints(m_PointsMutex);

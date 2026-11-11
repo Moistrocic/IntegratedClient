@@ -220,11 +220,15 @@ bool CShowPoints::TryGetPoints(const char *pName, int *pPoints) const
 	if(!pName || !pName[0] || !pPoints)
 		return false;
 
-	// task-47: delegate all servers to Ranbi/DDNet when the replacement is enabled.
+	// task-47/55: delegate all servers to Ranbi/DDNet when the replacement is enabled.
+	// GetPoints triggers the lazy request (with task-50 de-dupe/backoff); TryGetPoints
+	// reports whether a request already completed successfully, where 0 is a valid
+	// score (new player / no finished maps), so BC shows 0 instead of hiding it.
 	if(g_Config.m_RcReplaceBcPoints)
 	{
-		const int Points = GameClient()->m_RanbiPoints.GetPoints(pName);
-		if(Points > 0)
+		GameClient()->m_RanbiPoints.GetPoints(pName);
+		int Points = 0;
+		if(GameClient()->m_RanbiPoints.TryGetPoints(pName, &Points))
 		{
 			*pPoints = Points;
 			return true;
