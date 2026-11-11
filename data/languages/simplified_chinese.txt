@@ -2899,10 +2899,10 @@ Right arrow text
 == 右箭头文本
 
 DJ left arrow text
-== 分身左箭头文本
+== 二段左箭头文本
 
 DJ right arrow text
-== 分身右箭头文本
+== 二段右箭头文本
 
 IntegratedClient
 == IntegratedClient
