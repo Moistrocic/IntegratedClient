@@ -98,6 +98,7 @@ TEST(Thread, Lock)
 }
 
 #include <engine/external/readerwriterqueue/ReaderWriterQueue.h>
+
 #include <memory>
 #include <thread>
 
@@ -177,14 +178,8 @@ TEST(Thread, SeqlockVisualizerConcurrentReadWrite)
 		do
 		{
 			Seq1 = Seq.load(std::memory_order_acquire);
-			int Spins = 0;
 			while(Seq1 & 1)
 			{
-				if(++Spins > 32)
-				{
-					std::this_thread::yield();
-					break;
-				}
 #if defined(_MSC_VER)
 				_mm_pause();
 #elif defined(__x86_64__) || defined(__i386__)
@@ -192,6 +187,7 @@ TEST(Thread, SeqlockVisualizerConcurrentReadWrite)
 #else
 				std::atomic_thread_fence(std::memory_order_relaxed);
 #endif
+				std::this_thread::yield();
 				Seq1 = Seq.load(std::memory_order_acquire);
 			}
 			LocalCopy = SharedData;
@@ -211,4 +207,3 @@ TEST(Thread, SeqlockVisualizerConcurrentReadWrite)
 	Writer.join();
 	EXPECT_GT(SuccessfulReads, 0);
 }
-
