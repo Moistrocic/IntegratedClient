@@ -92,7 +92,7 @@ Lead:
 
 ## 5. 构建、运行与验证
 
-当前开发/验证平台：Windows 10/11 + Visual Studio 2022（C++ 桌面开发）；上游代码本身跨平台，其他平台构建按上游文档。依赖：CMake、Ninja、Rust stable（含 cargo，MSRV 1.85）、Python 3。Ninja 构建需在 VS Developer PowerShell（或已执行 vcvars 的终端）中运行；rustup 已安装但 cargo 未在 PATH 时，把 `%USERPROFILE%\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin` 放到 PATH 最前。
+当前开发/验证平台：Windows 10/11 + Visual Studio 2022（C++ 桌面开发）；上游代码本身跨平台，其他平台构建按上游文档。依赖：CMake、Ninja、Rust stable（含 cargo，MSRV 1.85）、Python 3。Ninja 构建需在 VS Developer PowerShell（或已执行 vcvars 的终端）中运行；Rust 的 shims 位于 `%USERPROFILE%\.cargo\bin`，该目录必须在 PATH（本机已配置）；若缺失，可临时把 `%USERPROFILE%\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin` 放到 PATH 最前。
 
 首次准备（根目录）：
 
