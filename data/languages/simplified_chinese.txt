@@ -3081,6 +3081,18 @@ Show weapon aim lines
 Draws a predicted laser line, shotgun spread lines or grenade trajectory for your own tee.
 == 为你的 Tee 绘制激光射线、霰弹扩散线或榴弹轨迹预测。
 
+Stop practice
+== 停止练习
+
+Fast practice
+== 快速练习
+
+Use practice ghost coordinates
+== 使用练习虚影坐标
+
+In BC fast practice, show the controlled practice character's position instead of the frozen body.
+== 在 BC 快速练习模式下，显示当前操控的练习虚影位置，而不是被固定的本体位置。
+
 BETA
 == 
 
@@ -3179,12 +3191,6 @@ Could not open the demo in a second client
 
 Open the selected demo in a second client
 == 
-
-Stop practice
-== 停止练习
-
-Fast practice
-== 快速练习
 
 Profiles
 == 

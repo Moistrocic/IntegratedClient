@@ -1790,6 +1790,39 @@ void CHud::RenderMovementInformation(bool ForcePreview)
 		Info = GetMovementInformation(ClientId, g_Config.m_ClDummy);
 	}
 
+	// ranbi: rc_fast_practice_ghost_coords (use the controlled practice ghost's core)
+	// Replaces the whole HUD movement info (position/speed/angle) with the predicted
+	// practice core while fast practice is active; the HUD editor preview keeps its
+	// fixed demo values and all other states keep the original snapshot logic.
+	if(!ForcePreview && g_Config.m_RcFastPracticeGhostCoords && GameClient()->m_FastPractice.Active())
+	{
+		const int PracticeId = GameClient()->m_FastPractice.ControlledPracticeId();
+		if(PracticeId >= 0 && PracticeId < MAX_CLIENTS && GameClient()->m_aClients[PracticeId].m_Active)
+		{
+			const CCharacterCore &Core = GameClient()->m_aClients[PracticeId].m_Predicted;
+			Info.m_Pos = GameClient()->m_aClients[PracticeId].m_RenderPos / 32.0f;
+
+			// Same formulas as GetMovementInformation(), but from the predicted core.
+			// Core m_Vel is in world units/tick; the snapshot net values are x256.
+			float VelspeedX = Core.m_Vel.x * Client()->GameTickSpeed();
+			if(Core.m_Vel.x >= -1.0f / 256.0f && Core.m_Vel.x <= 1.0f / 256.0f)
+				VelspeedX = 0.0f;
+			float VelspeedY = Core.m_Vel.y * Client()->GameTickSpeed();
+			if(Core.m_Vel.y >= -128.0f / 256.0f && Core.m_Vel.y <= 128.0f / 256.0f)
+				VelspeedY = 0.0f;
+			Info.m_Speed.x = VelspeedX / 32.0f;
+			const float VelspeedLength = length(Core.m_Vel) * Client()->GameTickSpeed();
+			const float Ramp = VelocityRamp(VelspeedLength, GameClient()->m_aTuning[g_Config.m_ClDummy].m_VelrampStart, GameClient()->m_aTuning[g_Config.m_ClDummy].m_VelrampRange, GameClient()->m_aTuning[g_Config.m_ClDummy].m_VelrampCurvature);
+			Info.m_Speed.x *= Ramp;
+			Info.m_Speed.y = VelspeedY / 32.0f;
+
+			float Angle = Core.m_Angle / 256.0f;
+			if(Angle < 0.0f)
+				Angle += 2.0f * pi;
+			Info.m_Angle = Angle * 180.0f / pi;
+		}
+	}
+
 	const float LeftX = Rect.x + 2.0f * Scale;
 
 	const int CurTick = Client()->GameTick(g_Config.m_ClDummy);

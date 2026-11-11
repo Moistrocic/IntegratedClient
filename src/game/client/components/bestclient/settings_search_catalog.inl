@@ -317,6 +317,7 @@
 	{"Deferred hook collision line", SETTINGS_NAV_LEAF_RC_GENERAL, "Render", &g_Config.m_RcHookCollDeferredRender, nullptr},
 	{"Lock map finish name", SETTINGS_NAV_LEAF_RC_GENERAL, "Official server list", &g_Config.m_RcLockFinishedName, nullptr},
 	{"Locked map finish player name", SETTINGS_NAV_LEAF_RC_GENERAL, "Official server list", &g_Config.m_RcLockFinishedNameId, &g_Config.m_RcLockFinishedName},
+	{"Use practice ghost coordinates", SETTINGS_NAV_LEAF_RC_GENERAL, "Fast practice", &g_Config.m_RcFastPracticeGhostCoords, nullptr},
 
 	{"Show DDNet points", SETTINGS_NAV_LEAF_RC_NAMEPLATES, "Points", &g_Config.m_RcNameplatesShowPoints, nullptr},
 	{"Show finished map marker", SETTINGS_NAV_LEAF_RC_NAMEPLATES, "Completed", &g_Config.m_RcNameplatesShowFinished, nullptr},

@@ -5191,6 +5191,12 @@ Requires 'Indicate map finish' in the server browser filters; the lock has no ef
 Map finishes refresh automatically about one second after changing this setting.
 == 
 
+Use practice ghost coordinates
+== 
+
+In BC fast practice, show the controlled practice character's position instead of the frozen body.
+== 
+
 Risky features
 == 
 

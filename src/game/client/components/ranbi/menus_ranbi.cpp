@@ -191,6 +191,11 @@ void CMenus::RenderSettingsRanbiGeneral(CUIRect MainView)
 	}
 
 	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Fast practice"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcFastPracticeGhostCoords, Localize("Use practice ghost coordinates"), &g_Config.m_RcFastPracticeGhostCoords, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("In BC fast practice, show the controlled practice character's position instead of the frozen body."));
+
+	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
 	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Risky features"));
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcAutoChangeSkin, Localize("Auto change skin on collision"), &g_Config.m_RcAutoChangeSkin, &Column, s_LineSize);
 	RenderRanbiHint(Ui(), &Column, Localize("Copies the closest player's skin within collision range (0.6 skin or 0.7 skin parts)."));
