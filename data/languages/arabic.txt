@@ -4450,6 +4450,9 @@ Announce your client as BestClient to game servers and other players. Required f
 Client identity is sent.
 == 
 
+You will be marked as a fake BC client.
+== 
+
 Not sending client identity.
 == 
 

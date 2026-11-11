@@ -4462,6 +4462,9 @@ Mute headphones
 Client Indicator
 == 
 
+You will be marked as a fake BC client.
+== 你會被標記為偽 BC 端。
+
 Show indicator in name plates
 == 
 

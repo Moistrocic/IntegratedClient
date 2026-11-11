@@ -4437,7 +4437,7 @@ void CMenus::RenderSettingsBestClientOthers(CUIRect MainView)
 	const float ScoreboardSettingsHeight = ShowScoreboardSettings ? LineSize : 0.0f;
 	// integratedclient (task-33): one checkbox row plus status rows (one when enabled, two when the
 	// identity is not sent so the "features are unavailable" warning fits in the column).
-	const float SendClientIdentityStatusHeight = SendClientIdentity ? LineSize : 2.0f * LineSize;
+	const float SendClientIdentityStatusHeight = 2.0f * LineSize;
 	const float ClientIndicatorBlockHeight = LineSize + MarginSmall + 3.0f * LineSize + SendClientIdentityStatusHeight + NamePlateSettingsHeight + ScoreboardSettingsHeight;
 
 	CUIRect ClientIndicatorBlock;
@@ -4467,6 +4467,9 @@ void CMenus::RenderSettingsBestClientOthers(CUIRect MainView)
 		ClientIndicatorBlock.HSplitTop(LineSize, &Content, &ClientIndicatorBlock);
 		TextRender()->TextColor(ColorRGBA(0.55f, 1.0f, 0.55f, 1.0f));
 		Ui()->DoLabel(&Content, Localize("Client identity is sent."), 11.0f, TEXTALIGN_ML);
+		ClientIndicatorBlock.HSplitTop(LineSize, &Content, &ClientIndicatorBlock);
+		TextRender()->TextColor(ColorRGBA(1.0f, 0.75f, 0.35f, 1.0f));
+		Ui()->DoLabel(&Content, Localize("You will be marked as a fake BC client."), 11.0f, TEXTALIGN_ML);
 		TextRender()->TextColor(TextRender()->DefaultTextColor());
 	}
 	else

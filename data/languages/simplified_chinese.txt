@@ -4882,6 +4882,9 @@ Mute microphone
 Mute headphones
 == 
 
+You will be marked as a fake BC client.
+== 你会被标记为伪 BC 端。
+
 Show above yourself
 == 
 
