@@ -1,7 +1,12 @@
 name: Build
 
 on:
+  # TEMP(quota): push trigger disabled while GitHub Actions quota is exceeded; revert this commit to re-enable.
   push:
+    # TEMP(quota): push trigger disabled while GitHub Actions quota is exceeded.
+    # Revert this commit to re-enable CI on push.
+    paths-ignore:
+      - '**'
     branches-ignore:
       - gh-readonly-queue/**
   pull_request:

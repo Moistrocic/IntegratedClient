@@ -10,9 +10,12 @@ name: Release Assets
 # start a second workflow. No gate job / concurrency (those queued behind stuck
 # GitHub hosted-runner failures).
 on:
+  # TEMP(quota): push trigger disabled while GitHub Actions quota is exceeded; revert this commit to re-enable.
   push:
+    # TEMP(quota): tag pushes ignore path filters, so use a never-matching tag pattern
+    # instead of paths-ignore. Revert this commit to re-enable release builds.
     tags:
-      - "build-*"
+      - "ci-paused-never-match"
   workflow_dispatch:
     inputs:
       tag_name:
