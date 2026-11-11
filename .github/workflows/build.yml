@@ -60,7 +60,10 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        submodules: recursive
+        submodules: false
+
+    - name: Init ddnet-libs submodule
+      run: git submodule update --init --recursive ddnet-libs
 
     - name: Prepare Linux
       if: contains(matrix.os, 'ubuntu')
@@ -337,7 +340,10 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        submodules: recursive
+        submodules: false
+
+    - name: Init ddnet-libs submodule
+      run: git submodule update --init --recursive ddnet-libs
 
     - name: Validate Gradle Wrapper
       uses: gradle/actions/wrapper-validation@v5
@@ -398,7 +404,10 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        submodules: recursive
+        submodules: false
+
+    - name: Init ddnet-libs submodule
+      run: git submodule update --init --recursive ddnet-libs
 
     - name: Prepare Linux
       run: |
@@ -464,7 +473,10 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        submodules: recursive
+        submodules: false
+
+    - name: Init ddnet-libs submodule
+      run: git submodule update --init --recursive ddnet-libs
 
     - name: Prepare macOS
       run: |

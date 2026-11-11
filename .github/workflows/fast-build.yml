@@ -35,7 +35,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: true
+        submodules: false
+
+    - name: Init ddnet-libs submodule
+      run: git submodule update --init --recursive ddnet-libs
 
     - name: Prepare Linux
       if: contains(matrix.os, 'ubuntu')
@@ -122,7 +125,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: true
+        submodules: false
+
+    - name: Init ddnet-libs submodule
+      run: git submodule update --init --recursive ddnet-libs
 
     - name: Prepare
       run: |

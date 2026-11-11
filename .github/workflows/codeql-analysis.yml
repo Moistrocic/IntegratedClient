@@ -42,7 +42,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v5
       with:
-        submodules: recursive
+        submodules: false
+
+    - name: Init ddnet-libs submodule
+      run: git submodule update --init --recursive ddnet-libs
 
     - name: Prepare Linux
       if: matrix.language == 'cpp'
