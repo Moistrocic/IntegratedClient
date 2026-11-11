@@ -967,7 +967,7 @@ void CMenus::RenderSettingsBestClientVisuals(CUIRect MainView)
 	if(g_Config.m_BcShowPointsInTab)
 	{
 		VisualsQoLBlock.HSplitTop(LineSize, &Button, &VisualsQoLBlock);
-		Ui()->DoScrollbarOption(&g_Config.m_BcShowPointsMaxConcurrency, &g_Config.m_BcShowPointsMaxConcurrency, &Button, BcLocalize("Max concurrent point requests"), 1, 32, &CUi::ms_LinearScrollbarScale, CUi::SCROLLBAR_OPTION_DELAYUPDATE);
+		Ui()->DoScrollbarOption(&g_Config.m_BcShowPointsMaxConcurrency, &g_Config.m_BcShowPointsMaxConcurrency, &Button, BcLocalize("Max concurrent point requests"), 1, 5, &CUi::ms_LinearScrollbarScale, CUi::SCROLLBAR_OPTION_DELAYUPDATE);
 	}
 	{
 		CUIRect FriendMarkRow;

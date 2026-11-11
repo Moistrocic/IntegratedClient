@@ -33,7 +33,7 @@
 | Ranbi 批次 6：聊天历史去重/聊天分数/旁观皮肤名/三格水提示 | RanbiClient / `chat.cpp`、`hud.cpp` | `components/chat.cpp`、`hud.cpp` 等 | 待验证 | ranbi-porter | `213a3cd`；三格水为独立实现 |
 | Ranbi 批次 7：高风险功能（自动换肤/全图玩家/记分板改名） | RanbiClient / `gameclient.cpp`、`scoreboard.cpp` | `gameclient.cpp`、`scoreboard.cpp` | 待验证 | ranbi-porter | `57f1ffb`；默认关闭 + 风险提示 + 二次确认 |
 | Ranbi 批次 8：AI 自动回复（默认关闭） | RanbiClient / `ai_client.cpp` | `components/ranbi/ai_client.*`、`RANBI_TAB_AI` | 待验证 | ranbi-porter | `0593901`；Token 明文/隐私/规则警告；仅建议测试服务器验证 |
-| R3：`CShowPoints` 并发获取加速 + 并发上限输入框 | RanbiClient `points.cpp` 思路 + 用户需求 | `bestclient/show_points.*`、`menus_bestclient.cpp` | 待验证 | ranbi-porter | `7aa938a`；`bc_show_points_max_concurrency` 默认 8（1–32） |
+| R3：`CShowPoints` 并发获取加速 + 并发上限输入框 | RanbiClient `points.cpp` 思路 + 用户需求 | `bestclient/show_points.*`、`menus_bestclient.cpp` | 待验证 | ranbi-porter | `7aa938a`；`bc_show_points_max_concurrency` 默认 5（1–5） |
 | 本地 GitHub Actions 复刻（Linux + Windows） | CI 配额问题 | `scripts/ci-local/` | 已完成 | ci-validator | `35b042c`；act + catthehacker/扩展 runner，Linux/Windows PASS |
 
 ## 整合批次

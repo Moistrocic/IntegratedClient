@@ -3033,6 +3033,9 @@ Knowledge base
 Text files in ranbi/knowledge/*.txt are used as extra context; ddnet_wiki.txt is created on first start.
 == ranbi/knowledge/*.txt 中的文本文件会作为额外上下文；ddnet_wiki.txt 会在首次启动时创建。
 
+Max concurrent point requests
+== 分数请求最大并发数
+
 BETA
 == 
 
@@ -3902,9 +3905,6 @@ Show current checkpoint in hud
 
 Show points in tab
 == 
-
-Max concurrent point requests
-== 分数请求最大并发数
 
 Show friend icon in scoreboard
 == 

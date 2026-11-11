@@ -378,11 +378,11 @@ void CShowPoints::ProcessInFlight()
 }
 
 // ranbi: bc_show_points_max_concurrency (R3: configurable in-flight request limit)
-// The config value is clamped to 1..32 so a broken config cannot disable or
+// The config value is clamped to 1..5 so a broken config cannot disable or
 // unboundedly raise the concurrency.
 int CShowPoints::MaxConcurrency() const
 {
-	return std::clamp((int)g_Config.m_BcShowPointsMaxConcurrency, 1, 32);
+	return std::clamp((int)g_Config.m_BcShowPointsMaxConcurrency, 1, 5);
 }
 
 void CShowPoints::PumpQueue()
