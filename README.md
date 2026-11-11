@@ -1,3 +1,17 @@
+# IntegratedClient
+
+> 以 **BestClient** 为底座、整合多个 DDNet/TClient 系客户端功能的客户端项目。
+> 本仓库根目录是**整合客户端主仓**（BestClient 3.1.1 / DDNet 20.1.1 / TClient 10.9.0）；
+> `clientsSource/` 下是只读来源客户端（git submodule 固定）。
+>
+> - 开发约定与团队流程：[AGENTS.md](AGENTS.md)
+> - 整合进度台账：[docs/integration.md](docs/integration.md)
+> - 本地复刻 GitHub Actions：[scripts/ci-local/README.md](scripts/ci-local/README.md)
+>
+> 下方内容为底座 BestClient 的原始 README，整合功能以台账为准。
+
+---
+
 <div align="center">
   <img src="https://badges4noxy.vercel.app/badges/bestclient/bc_logo.webp" alt="BestClient" width="640" />
   <p>Custom DDNet client fork focused on comfort, customization, native tooling, and competitive quality-of-life features.</p>
