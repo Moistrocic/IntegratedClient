@@ -21,7 +21,7 @@
 
 namespace
 {
-	constexpr int64_t TRANSLATE_TIMEOUT = 20;
+	constexpr int64_t TRANSLATE_TIMEOUT = 30;
 
 	void UrlEncode(const char *pText, char *pOut, size_t Length)
 	{
@@ -266,6 +266,32 @@ const char *ITranslateBackend::EncodeTarget(const char *pTarget) const
 	return pTarget && pTarget[0] ? pTarget : DefaultConfig::TcTranslateTarget;
 }
 
+// Accepts either a base URL (https://api.deepseek.com, .../v1) or a full
+// OpenAI-compatible chat completions endpoint. OpenAI SDK style base URLs need
+// "/chat/completions" appended, otherwise the request hits the API root and the
+// response is not JSON (or an unrelated error), which surfaces as
+// "Unexpected response format" in chat.
+void ResolveOpenAiChatEndpoint(const char *pEndpoint, const char *pDefaultBase, char *pOut, size_t OutSize)
+{
+	char aUrl[256] = "";
+	str_copy(aUrl, pEndpoint && pEndpoint[0] ? pEndpoint : pDefaultBase, sizeof(aUrl));
+	char *pStart = aUrl;
+	while(*pStart == ' ' || *pStart == '\t')
+		++pStart;
+	int Len = str_length(pStart);
+	while(Len > 0 && (pStart[Len - 1] == ' ' || pStart[Len - 1] == '\t' || pStart[Len - 1] == '/'))
+		pStart[--Len] = '\0';
+	if(!pStart[0])
+	{
+		str_copy(pOut, pDefaultBase, OutSize);
+		return;
+	}
+	if(str_endswith_nocase(pStart, "/chat/completions"))
+		str_copy(pOut, pStart, OutSize);
+	else
+		str_format(pOut, OutSize, "%s/chat/completions", pStart);
+}
+
 class ITranslateBackendHttp : public ITranslateBackend
 {
 protected:
@@ -326,7 +352,7 @@ protected:
 		auto pRequest = HttpGet(aUrl);
 		pRequest->LogProgress(HTTPLOG::FAILURE);
 		pRequest->FailOnErrorStatus(false);
-		pRequest->Timeout(CTimeout{20000, 0, 500, 10});
+		pRequest->Timeout(CTimeout{25000, 0, 500, 10});
 		pRequest->AllowHttp(true);
 		if(pAuthorization && pAuthorization[0])
 			pRequest->HeaderString("Authorization", pAuthorization);
@@ -481,7 +507,7 @@ class CTranslateBackendDeepL : public ITranslateBackendHttp
 		json_value *pRoot = m_pHttpRequest->ResultJson();
 		if(!pRoot || pRoot->type != json_object)
 		{
-			str_copy(Out.m_Text, "Unexpected response format");
+			str_format(Out.m_Text, sizeof(Out.m_Text), "HTTP %d: unexpected response format", m_pHttpRequest->StatusCode());
 			json_value_free(pRoot);
 			return false;
 		}
@@ -689,10 +715,21 @@ public:
 		Json.WriteBoolValue(false);
 		Json.EndObject();
 
+		char aEndpoint[256];
+		ResolveOpenAiChatEndpoint(g_Config.m_TcTranslateEndpoint, "https://api.deepseek.com", aEndpoint, sizeof(aEndpoint));
+
+		char aKey[280] = "";
+		str_copy(aKey, g_Config.m_TcTranslateKey, sizeof(aKey));
+		char *pKey = aKey;
+		while(*pKey == ' ' || *pKey == '\t')
+			++pKey;
+		int KeyLen = str_length(pKey);
+		while(KeyLen > 0 && (pKey[KeyLen - 1] == ' ' || pKey[KeyLen - 1] == '\t'))
+			pKey[--KeyLen] = '\0';
 		char aAuthorization[280] = "";
-		if(g_Config.m_TcTranslateKey[0])
-			str_format(aAuthorization, sizeof(aAuthorization), "Bearer %s", g_Config.m_TcTranslateKey);
-		CreateHttpRequestJson(Http, g_Config.m_TcTranslateEndpoint[0] ? g_Config.m_TcTranslateEndpoint : "https://api.deepseek.com/chat/completions", Json.GetOutputString().c_str(), aAuthorization);
+		if(pKey[0])
+			str_format(aAuthorization, sizeof(aAuthorization), "Bearer %s", pKey);
+		CreateHttpRequestJson(Http, aEndpoint, Json.GetOutputString().c_str(), aAuthorization);
 	}
 };
 
