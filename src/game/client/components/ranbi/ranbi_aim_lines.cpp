@@ -217,27 +217,6 @@ namespace
 		AddHitMarker(Buf, Last, false);
 	}
 
-	// character.cpp:268: Direction = normalize(vec2(LatestInput.m_TargetX, m_TargetY))
-	vec2 SmoothAimDirection(const CCharacterCore &PrevCore, const CCharacterCore &CurCore, float IntraTick)
-	{
-		const vec2 PrevTarget((float)PrevCore.m_Input.m_TargetX, (float)PrevCore.m_Input.m_TargetY);
-		const vec2 CurTarget((float)CurCore.m_Input.m_TargetX, (float)CurCore.m_Input.m_TargetY);
-		const vec2 Target = mix(PrevTarget, CurTarget, IntraTick);
-		if(length(Target) > 0.001f)
-			return normalize(Target);
-
-		// fall back to the interpolated body angle (predicted cores are quantized to
-		// the game tick; the angle must wrap smoothly across +-pi).
-		float PrevAngle = PrevCore.m_Angle / 256.0f * 2.0f * pi;
-		float CurAngle = CurCore.m_Angle / 256.0f * 2.0f * pi;
-		float Delta = CurAngle - PrevAngle;
-		while(Delta > pi)
-			Delta -= 2.0f * pi;
-		while(Delta < -pi)
-			Delta += 2.0f * pi;
-		return direction(PrevAngle + Delta * IntraTick);
-	}
-
 	ColorRGBA AimLineColor(unsigned int HslaColor)
 	{
 		return color_cast<ColorRGBA>(ColorHSLA(HslaColor, true));
@@ -247,7 +226,7 @@ namespace
 void CRanbiAimLines::OnRender()
 {
 	// task-30: this component is re-simulated on *every render frame* with the
-	// current PredIntraGameTick() (see SmoothAimDirection below). There is no game
+	// current PredIntraGameTick() (position only; direction uses the current input target). There is no game
 	// tick cache / throttle / fps cap here; only the defensive segment and step caps
 	// limit simulation complexity (they are not a frame-rate limit).
 	if(!g_Config.m_RcWeaponAimLines)
@@ -303,7 +282,17 @@ void CRanbiAimLines::OnRender()
 	if(Weapon != WEAPON_LASER && Weapon != WEAPON_SHOTGUN && Weapon != WEAPON_GRENADE)
 		return;
 
-	vec2 Direction = SmoothAimDirection(PrevCore, CurCore, IntraTick);
+	// task-37: FireWeapon aims with the *current* input target
+	// (character.cpp:268: normalize(vec2(m_LatestInput.m_TargetX, m_TargetY))).
+	// Interpolating Prev/Cur targets made the preview lag/deflect from the actual
+	// shot, which diverges visibly on long laser lines. Use the current core input
+	// directly (practice: the published practice core / practice world core); only
+	// the position above stays render-frame smoothed.
+	vec2 Direction;
+	if(CurCore.m_Input.m_TargetX != 0 || CurCore.m_Input.m_TargetY != 0)
+		Direction = normalize(vec2((float)CurCore.m_Input.m_TargetX, (float)CurCore.m_Input.m_TargetY));
+	else
+		Direction = direction(CurCore.m_Angle / 256.0f * 2.0f * pi);
 	if(length(Direction) < 0.001f)
 		return;
 
@@ -451,8 +440,8 @@ void CRanbiAimLines::OnRender()
 					Miter = NextNormal;
 				else
 					Miter = normalize(Miter);
-				const float Denom = std::max(dot(Miter, NextNormal), 0.25f);
-				const float Scale = std::min(HalfWidth / Denom, HalfWidth * 4.0f);
+				const float Denom = std::max(dot(Miter, NextNormal), 0.5f);
+				const float Scale = std::min(HalfWidth / Denom, HalfWidth * 2.0f);
 				aOffsets[k] = Miter * Scale;
 			}
 
