@@ -4,7 +4,7 @@
 
 class CChat;
 class CGameClient;
-class CNetObj_PlayerInput;
+struct CNetObj_PlayerInput;
 class CTextCursor;
 class ITextRender;
 

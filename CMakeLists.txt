@@ -218,6 +218,13 @@ if(TARGET_OS STREQUAL "android")
   set(STEAM OFF)
 endif()
 
+# Mobile/web platforms do not ship the Discord SDK; BestClient enables Discord by
+# default, which would otherwise fail configuration on these targets.
+if(TARGET_OS STREQUAL "ios" OR TARGET_OS STREQUAL "emscripten")
+  set(DISCORD OFF)
+  set(STEAM OFF)
+endif()
+
 if(TARGET_OS STREQUAL "emscripten")
   include(${PROJECT_SOURCE_DIR}/cmake/toolchains/Emscripten.toolchain)
 endif()

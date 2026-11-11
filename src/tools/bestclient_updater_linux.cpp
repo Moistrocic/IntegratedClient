@@ -204,7 +204,10 @@ static int WorkerThreadFn(void *pData)
 	const pid_t Child = fork();
 	if(Child == 0)
 	{
-		chdir(pArgs->InstallDir.c_str());
+		if(chdir(pArgs->InstallDir.c_str()) != 0)
+		{
+			// The executable path is absolute, so the launch can still succeed.
+		}
 		char *apArgv[] = {(char *)pArgs->ExePath.c_str(), nullptr};
 		execvp(pArgs->ExePath.c_str(), apArgv);
 		_exit(1);
