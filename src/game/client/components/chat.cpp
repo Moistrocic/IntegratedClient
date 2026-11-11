@@ -328,6 +328,13 @@ static bool TranslateBackendNeedsEndpoint(int BackendIndex)
 	return g_aTranslateBackends[BackendIndex].m_NeedsEndpointConfig;
 }
 
+static bool TranslateBackendNeedsModel(int BackendIndex)
+{
+	if(BackendIndex < 0 || BackendIndex >= (int)g_aTranslateBackends.size())
+		return false;
+	return str_comp_nocase(g_aTranslateBackends[BackendIndex].m_pValue, "deepseek") == 0;
+}
+
 static int TranslateBackendIndex()
 {
 	for(size_t i = 0; i < g_aTranslateBackends.size(); ++i)
@@ -336,22 +343,24 @@ static int TranslateBackendIndex()
 	return 0;
 }
 
-static float TranslateSettingsPopupHeight(bool NeedsEndpointConfig)
+static float TranslateSettingsPopupHeight(int BackendIndex)
 {
 	constexpr float RowHeight = 20.0f;
 	constexpr float Gap = 3.0f;
 	constexpr float BottomPadding = 12.0f;
 	constexpr float RowsWithGap = RowHeight + Gap;
 	float Height = RowsWithGap * 6 + Gap + RowHeight;
-	if(NeedsEndpointConfig)
+	if(TranslateBackendNeedsEndpoint(BackendIndex))
 		Height += RowHeight + Gap + RowHeight;
+	if(TranslateBackendNeedsModel(BackendIndex))
+		Height += RowHeight + Gap;
 	return Height + BottomPadding;
 }
 
 void CChat::OpenTranslateSettingsPopup()
 {
 	const float PopupWidth = 330.0f;
-	const float PopupHeight = TranslateSettingsPopupHeight(TranslateBackendNeedsEndpoint(TranslateBackendIndex()));
+	const float PopupHeight = TranslateSettingsPopupHeight(TranslateBackendIndex());
 	const float PopupX = std::clamp(m_TranslateButtonUiRect.x + m_TranslateButtonUiRect.w / 2.0f - PopupWidth / 2.0f, 0.0f, Ui()->Screen()->w - PopupWidth);
 	const float PopupY = std::max(0.0f, m_TranslateButtonUiRect.y - PopupHeight - 4.0f);
 	Ui()->DoPopupMenu(&m_TranslateSettingsPopupId, PopupX, PopupY, PopupWidth, PopupHeight, this, PopupTranslateSettings);
@@ -397,7 +406,7 @@ CUi::EPopupMenuFunctionResult CChat::PopupTranslateSettings(void *pContext, CUIR
 	static std::vector<const char *> SourceNames;
 
 	if(Active)
-		pChat->Ui()->SetPopupMenuHeight(&pChat->m_TranslateSettingsPopupId, TranslateSettingsPopupHeight(TranslateBackendNeedsEndpoint(BackendIndex)));
+		pChat->Ui()->SetPopupMenuHeight(&pChat->m_TranslateSettingsPopupId, TranslateSettingsPopupHeight(BackendIndex));
 
 	const STranslateBackendInfo &Backend = g_aTranslateBackends[BackendIndex];
 	std::vector<const char *> TargetNames;
@@ -451,11 +460,22 @@ CUi::EPopupMenuFunctionResult CChat::PopupTranslateSettings(void *pContext, CUIR
 	{
 		static CLineInput s_TranslateEndpoint(g_Config.m_TcTranslateEndpoint, sizeof(g_Config.m_TcTranslateEndpoint));
 		static CLineInput s_TranslateKey(g_Config.m_TcTranslateKey, sizeof(g_Config.m_TcTranslateKey));
+		static CLineInput s_TranslateModel(g_Config.m_TcTranslateModel, sizeof(g_Config.m_TcTranslateModel));
 		const bool IsDeepLBackend = str_comp_nocase(BackendConfig.m_pValue, "deepl") == 0;
-		s_TranslateEndpoint.SetEmptyText(IsDeepLBackend ? "https://api-free.deepl.com/v2/translate" : "http://localhost:5000/translate");
-		s_TranslateKey.SetEmptyText(IsDeepLBackend ? "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx" : "optional API key");
-		View.HSplitTop(RowHeight, &Row, &View);
+		const bool IsDeepSeekBackend = TranslateBackendNeedsModel(BackendIndex);
+		if(IsDeepSeekBackend)
+		{
+			s_TranslateEndpoint.SetEmptyText("https://api.deepseek.com/chat/completions");
+			s_TranslateKey.SetEmptyText("sk-...");
+			s_TranslateModel.SetEmptyText("deepseek-chat");
+		}
+		else
+		{
+			s_TranslateEndpoint.SetEmptyText(IsDeepLBackend ? "https://api-free.deepl.com/v2/translate" : "http://localhost:5000/translate");
+			s_TranslateKey.SetEmptyText(IsDeepLBackend ? "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx" : "optional API key");
+		}
 		CUIRect Label;
+		View.HSplitTop(RowHeight, &Row, &View);
 		Row.VSplitLeft(90.0f, &Label, &Row);
 		pChat->Ui()->DoLabel(&Label, Localize("Endpoint"), FontSize, TEXTALIGN_ML);
 		pChat->Ui()->DoEditBox(&s_TranslateEndpoint, &Row, FontSize);
@@ -465,8 +485,16 @@ CUi::EPopupMenuFunctionResult CChat::PopupTranslateSettings(void *pContext, CUIR
 		pChat->Ui()->DoLabel(&Label, Localize("API key"), FontSize, TEXTALIGN_ML);
 		pChat->Ui()->DoEditBox(&s_TranslateKey, &Row, FontSize);
 		View.HSplitTop(Gap, nullptr, &View);
-		pChat->m_TranslateSettingsInputActive = s_TranslateEndpoint.IsActive() || s_TranslateKey.IsActive() ||
-							pChat->Ui()->ActiveItem() == &s_TranslateEndpoint || pChat->Ui()->ActiveItem() == &s_TranslateKey;
+		if(IsDeepSeekBackend)
+		{
+			View.HSplitTop(RowHeight, &Row, &View);
+			Row.VSplitLeft(90.0f, &Label, &Row);
+			pChat->Ui()->DoLabel(&Label, Localize("Model"), FontSize, TEXTALIGN_ML);
+			pChat->Ui()->DoEditBox(&s_TranslateModel, &Row, FontSize);
+			View.HSplitTop(Gap, nullptr, &View);
+		}
+		pChat->m_TranslateSettingsInputActive = s_TranslateEndpoint.IsActive() || s_TranslateKey.IsActive() || s_TranslateModel.IsActive() ||
+							pChat->Ui()->ActiveItem() == &s_TranslateEndpoint || pChat->Ui()->ActiveItem() == &s_TranslateKey || pChat->Ui()->ActiveItem() == &s_TranslateModel;
 	}
 	else
 		pChat->m_TranslateSettingsInputActive = false;
@@ -477,7 +505,7 @@ CUi::EPopupMenuFunctionResult CChat::PopupTranslateSettings(void *pContext, CUIR
 		str_copy(g_Config.m_TcTranslateBackend, g_aTranslateBackends[NewBackendIndex].m_pValue);
 	const int DisplayBackendIndex = NewBackendIndex != BackendIndex ? NewBackendIndex : BackendIndex;
 	if(Active)
-		pChat->Ui()->SetPopupMenuHeight(&pChat->m_TranslateSettingsPopupId, TranslateSettingsPopupHeight(TranslateBackendNeedsEndpoint(DisplayBackendIndex)));
+		pChat->Ui()->SetPopupMenuHeight(&pChat->m_TranslateSettingsPopupId, TranslateSettingsPopupHeight(DisplayBackendIndex));
 
 	return CUi::POPUP_KEEP_OPEN;
 }

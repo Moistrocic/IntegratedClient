@@ -165,6 +165,22 @@ namespace
 			str_copy(pText, Decoded.c_str(), Size);
 	}
 
+	void CopyTrimmedString(char *pOut, size_t OutSize, const char *pText)
+	{
+		if(!pOut || OutSize == 0)
+			return;
+		pOut[0] = '\0';
+		if(!pText)
+			return;
+		while(*pText && isspace((unsigned char)*pText))
+			++pText;
+		size_t Length = str_length(pText);
+		while(Length > 0 && isspace((unsigned char)pText[Length - 1]))
+			--Length;
+		if(Length > 0)
+			str_copy(pOut, std::string(pText, Length).c_str(), OutSize);
+	}
+
 	bool ExtractOutgoingCommand(const char *pText, const char *pCommand, const char **ppArguments)
 	{
 		if(!pText || pText[0] != '/' || !ppArguments)
@@ -297,6 +313,24 @@ protected:
 		pRequest->AllowHttp(true);
 		pRequest->HeaderString("Content-Type", "application/x-www-form-urlencoded");
 		pRequest->Post((const unsigned char *)pBody, str_length(pBody));
+		m_pHttpRequest = std::move(pRequest);
+		Http.Run(m_pHttpRequest);
+	}
+
+	// Posts a JSON body with an optional bearer authorization header. The body is
+	// set before the request is queued so the HTTP thread always sees it.
+	void CreateHttpRequestJson(IHttp &Http, const char *pUrl, const char *pJson, const char *pAuthorization)
+	{
+		char aUrl[256];
+		NormalizeEndpointUrl(pUrl, aUrl, sizeof(aUrl));
+		auto pRequest = HttpGet(aUrl);
+		pRequest->LogProgress(HTTPLOG::FAILURE);
+		pRequest->FailOnErrorStatus(false);
+		pRequest->Timeout(CTimeout{20000, 0, 500, 10});
+		pRequest->AllowHttp(true);
+		if(pAuthorization && pAuthorization[0])
+			pRequest->HeaderString("Authorization", pAuthorization);
+		pRequest->PostJson(pJson);
 		m_pHttpRequest = std::move(pRequest);
 		Http.Run(m_pHttpRequest);
 	}
@@ -574,6 +608,94 @@ public:
 	}
 };
 
+class CTranslateBackendDeepSeek : public ITranslateBackendHttp
+{
+	bool ParseResponse(CTranslateResponse &Out) override
+	{
+		json_value *pRoot = m_pHttpRequest->ResultJson();
+		if(!pRoot || pRoot->type != json_object)
+		{
+			str_copy(Out.m_Text, "Unexpected response format");
+			json_value_free(pRoot);
+			return false;
+		}
+		const json_value *pError = json_object_get(pRoot, "error");
+		if(pError != &json_value_none && pError->type == json_object)
+		{
+			const json_value *pMessage = json_object_get(pError, "message");
+			if(pMessage != &json_value_none && pMessage->type == json_string)
+				str_copy(Out.m_Text, pMessage->u.string.ptr);
+			else
+				str_copy(Out.m_Text, "DeepSeek API error");
+			json_value_free(pRoot);
+			return false;
+		}
+		const json_value *pChoices = json_object_get(pRoot, "choices");
+		if(pChoices == &json_value_none || pChoices->type != json_array || json_array_length(pChoices) < 1)
+		{
+			str_copy(Out.m_Text, "No translation choices");
+			json_value_free(pRoot);
+			return false;
+		}
+		const json_value *pChoice = json_array_get(pChoices, 0);
+		const json_value *pMessage = pChoice && pChoice->type == json_object ? json_object_get(pChoice, "message") : &json_value_none;
+		const json_value *pContent = pMessage != &json_value_none && pMessage->type == json_object ? json_object_get(pMessage, "content") : &json_value_none;
+		if(pContent == &json_value_none || pContent->type != json_string)
+		{
+			str_copy(Out.m_Text, "No translation content");
+			json_value_free(pRoot);
+			return false;
+		}
+		CopyTrimmedString(Out.m_Text, sizeof(Out.m_Text), pContent->u.string.ptr);
+		json_value_free(pRoot);
+		if(Out.m_Text[0] == '\0')
+		{
+			str_copy(Out.m_Text, "Empty translation");
+			return false;
+		}
+		return true;
+	}
+
+	bool ParseHttpError() const override { return true; }
+
+public:
+	CTranslateBackendDeepSeek(IHttp &Http, const char *pText, const char *pSource, const char *pTarget, const char *pName) :
+		ITranslateBackendHttp(pName)
+	{
+		(void)pSource;
+		char aSystem[160];
+		str_format(aSystem, sizeof(aSystem), "Translate the following text to %s. Return only the translation.", EncodeTarget(pTarget));
+
+		CJsonStringWriter Json;
+		Json.BeginObject();
+		Json.WriteAttribute("model");
+		Json.WriteStrValue(g_Config.m_TcTranslateModel[0] ? g_Config.m_TcTranslateModel : "deepseek-chat");
+		Json.WriteAttribute("messages");
+		Json.BeginArray();
+		Json.BeginObject();
+		Json.WriteAttribute("role");
+		Json.WriteStrValue("system");
+		Json.WriteAttribute("content");
+		Json.WriteStrValue(aSystem);
+		Json.EndObject();
+		Json.BeginObject();
+		Json.WriteAttribute("role");
+		Json.WriteStrValue("user");
+		Json.WriteAttribute("content");
+		Json.WriteStrValue(pText);
+		Json.EndObject();
+		Json.EndArray();
+		Json.WriteAttribute("stream");
+		Json.WriteBoolValue(false);
+		Json.EndObject();
+
+		char aAuthorization[280] = "";
+		if(g_Config.m_TcTranslateKey[0])
+			str_format(aAuthorization, sizeof(aAuthorization), "Bearer %s", g_Config.m_TcTranslateKey);
+		CreateHttpRequestJson(Http, g_Config.m_TcTranslateEndpoint[0] ? g_Config.m_TcTranslateEndpoint : "https://api.deepseek.com/chat/completions", Json.GetOutputString().c_str(), aAuthorization);
+	}
+};
+
 static const std::vector<STranslateLanguage> s_vGoogleLanguages = {
 	{"Arabic", "ar"},
 	{"Bulgarian", "bg"},
@@ -675,10 +797,11 @@ static const std::vector<STranslateLanguage> s_vDeepLLanguages = {
 	{"Ukrainian", "uk"},
 };
 
-const std::array<STranslateBackendInfo, 3> g_aTranslateBackends = {{
+const std::array<STranslateBackendInfo, 4> g_aTranslateBackends = {{
 	{"google", "Google", s_vGoogleLanguages, false},
 	{"libretranslate", "LibreTranslate", s_vLibretranslateLanguages, true},
 	{"deepl", "DeepL", s_vDeepLLanguages, true},
+	{"deepseek", "DeepSeek", s_vGoogleLanguages, true},
 }};
 
 int TranslateLanguageIndex(const std::vector<STranslateLanguage> &vLanguages, const char *pCode)
@@ -706,6 +829,8 @@ std::unique_ptr<ITranslateBackend> CTranslate::CreateBackend(const char *pText, 
 			return std::make_unique<CTranslateBackendDeepL>(*Http(), pText, pSourceLanguage, pTargetLanguage, Backend.m_pName);
 		if(str_comp_nocase(Backend.m_pValue, "libretranslate") == 0)
 			return std::make_unique<CTranslateBackendLibretranslate>(*Http(), pText, pSourceLanguage, pTargetLanguage, Backend.m_pName);
+		if(str_comp_nocase(Backend.m_pValue, "deepseek") == 0)
+			return std::make_unique<CTranslateBackendDeepSeek>(*Http(), pText, pSourceLanguage, pTargetLanguage, Backend.m_pName);
 	}
 	return nullptr;
 }

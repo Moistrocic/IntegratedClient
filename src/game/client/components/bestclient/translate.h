@@ -40,7 +40,7 @@ struct STranslateBackendInfo
 	bool m_NeedsEndpointConfig;
 };
 
-extern const std::array<STranslateBackendInfo, 3> g_aTranslateBackends;
+extern const std::array<STranslateBackendInfo, 4> g_aTranslateBackends;
 
 int TranslateLanguageIndex(const std::vector<STranslateLanguage> &vLanguages, const char *pCode);
 
