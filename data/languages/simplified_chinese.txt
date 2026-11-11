@@ -3181,10 +3181,10 @@ Open the selected demo in a second client
 == 
 
 Stop practice
-== 
+== 停止练习
 
 Fast practice
-== 
+== 快速练习
 
 Profiles
 == 
