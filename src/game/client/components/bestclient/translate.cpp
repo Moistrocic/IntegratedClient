@@ -283,7 +283,7 @@ void ResolveOpenAiChatEndpoint(const char *pEndpoint, const char *pDefaultBase, 
 		pStart[--Len] = '\0';
 	if(!pStart[0])
 	{
-		str_copy(pOut, pDefaultBase, OutSize);
+		str_format(pOut, OutSize, "%s/chat/completions", pDefaultBase);
 		return;
 	}
 	if(str_endswith_nocase(pStart, "/chat/completions"))
@@ -507,7 +507,7 @@ class CTranslateBackendDeepL : public ITranslateBackendHttp
 		json_value *pRoot = m_pHttpRequest->ResultJson();
 		if(!pRoot || pRoot->type != json_object)
 		{
-			str_format(Out.m_Text, sizeof(Out.m_Text), "HTTP %d: unexpected response format", m_pHttpRequest->StatusCode());
+			str_copy(Out.m_Text, "Unexpected response format");
 			json_value_free(pRoot);
 			return false;
 		}
@@ -641,7 +641,7 @@ class CTranslateBackendDeepSeek : public ITranslateBackendHttp
 		json_value *pRoot = m_pHttpRequest->ResultJson();
 		if(!pRoot || pRoot->type != json_object)
 		{
-			str_copy(Out.m_Text, "Unexpected response format");
+			str_format(Out.m_Text, sizeof(Out.m_Text), "HTTP %d: unexpected response format", m_pHttpRequest->StatusCode());
 			json_value_free(pRoot);
 			return false;
 		}
