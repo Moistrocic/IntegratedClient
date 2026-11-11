@@ -3200,6 +3200,10 @@ if(CLIENT)
     components/ranbi/ai_client.cpp
     components/ranbi/ai_client.h
     components/ranbi/menus_ranbi.cpp
+    components/ranbi/ranbi_aim_lines.cpp
+    components/ranbi/ranbi_aim_lines.h
+    components/ranbi/ranbi_repeat.cpp
+    components/ranbi/ranbi_repeat.h
     components/ranbi/render_proxy.cpp
     components/ranbi/render_proxy.h
     components/ranbi/weapons.cpp

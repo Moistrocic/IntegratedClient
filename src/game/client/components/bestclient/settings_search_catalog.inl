@@ -315,6 +315,8 @@
 	{"Keep crosshair when switching dummy", SETTINGS_NAV_LEAF_RC_GENERAL, "Dummy", &g_Config.m_RcCursorCopy, nullptr},
 	{"Deferred emoticon rendering", SETTINGS_NAV_LEAF_RC_GENERAL, "Render", &g_Config.m_RcEmotionDeferredRender, nullptr},
 	{"Deferred hook collision line", SETTINGS_NAV_LEAF_RC_GENERAL, "Render", &g_Config.m_RcHookCollDeferredRender, nullptr},
+	{"Lock map finish name", SETTINGS_NAV_LEAF_RC_GENERAL, "Official server list", &g_Config.m_RcLockFinishedName, nullptr},
+	{"Locked map finish player name", SETTINGS_NAV_LEAF_RC_GENERAL, "Official server list", &g_Config.m_RcLockFinishedNameId, &g_Config.m_RcLockFinishedName},
 
 	{"Show DDNet points", SETTINGS_NAV_LEAF_RC_NAMEPLATES, "Points", &g_Config.m_RcNameplatesShowPoints, nullptr},
 	{"Show finished map marker", SETTINGS_NAV_LEAF_RC_NAMEPLATES, "Completed", &g_Config.m_RcNameplatesShowFinished, nullptr},
@@ -375,3 +377,5 @@
 	{"Auto change skin on collision", SETTINGS_NAV_LEAF_RC_GENERAL, "Risky features", &g_Config.m_RcAutoChangeSkin, nullptr},
 	{"Receive all players outside the view", SETTINGS_NAV_LEAF_RC_GENERAL, "Risky features", &g_Config.m_RcShowAllPlayers, nullptr},
 	{"Take player name from scoreboard", SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD, "Risky features", &g_Config.m_RcScoreboardCopyName, nullptr},
+	{"Repeat last player message", SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD, "Repeat", nullptr, nullptr},
+	{"Show weapon aim lines", SETTINGS_NAV_LEAF_RC_WEAPONS, "Weapon aim lines", &g_Config.m_RcWeaponAimLines, nullptr},

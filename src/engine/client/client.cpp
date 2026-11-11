@@ -3211,6 +3211,9 @@ void CClient::Update()
 		}
 	}
 
+	// integratedclient: refresh the DDNet info when the locked map finish name changed
+	UpdateDDNetInfoQuery();
+
 	if(State() == IClient::STATE_ONLINE)
 	{
 		if(!m_EditJobs.empty())
@@ -5566,21 +5569,82 @@ bool CClient::RaceRecord_IsRecording()
 	return DemoRecorder(RECORDER_RACE)->IsRecording();
 }
 
+// integratedclient: locked map finish query name
+//
+// The DDNet info API returns the map finishes of the player name given in the
+// `?name=` parameter (parsed by CServerBrowser::ParseCommunityFinishes), which
+// the server browser uses to show whether a map was already finished, see
+// `br_indicate_finished`. With `rc_lock_finished_name` and
+// `rc_lock_finished_name_id`, a fixed name is queried instead of the current
+// in-game name, so the finishes of the main account are shown no matter which
+// name is currently used.
+
+// Minimum time a changed locked finish name must be stable before the DDNet
+// info is requested again, to avoid a request storm while typing a name.
+static constexpr int DDNET_INFO_QUERY_DEBOUNCE_SECONDS = 1;
+// Minimum time between two console warnings about an enabled but empty locked
+// finish name.
+static constexpr int DDNET_INFO_EMPTY_LOCK_NAME_WARN_SECONDS = 60;
+
+static unsigned DDNetInfoQueryConfigHash()
+{
+	unsigned Hash = g_Config.m_BrIndicateFinished ? 1u : 0u;
+	Hash = Hash * 31u + (g_Config.m_RcLockFinishedName ? 2u : 0u);
+	Hash = Hash * 31u + str_quickhash(g_Config.m_RcLockFinishedNameId);
+	return Hash;
+}
+
+void CClient::GetDDNetInfoQueryName(char *pName, int NameSize) const
+{
+	const bool IndicateFinished = g_Config.m_BrIndicateFinished != 0;
+	const bool Locked = IndicateFinished && g_Config.m_RcLockFinishedName != 0 && g_Config.m_RcLockFinishedNameId[0] != '\0';
+	if(Locked)
+		str_copy(pName, g_Config.m_RcLockFinishedNameId, NameSize);
+	else if(IndicateFinished)
+		str_copy(pName, PlayerName(), NameSize);
+	else
+		pName[0] = '\0';
+}
+
+void CClient::WarnDDNetInfoEmptyLockName()
+{
+	const int64_t Now = time_get();
+	if(m_DDNetInfoEmptyLockNameWarnTime != 0 &&
+		Now - m_DDNetInfoEmptyLockNameWarnTime < time_freq() * DDNET_INFO_EMPTY_LOCK_NAME_WARN_SECONDS)
+	{
+		return;
+	}
+	m_DDNetInfoEmptyLockNameWarnTime = Now;
+	log_info("client/info", "locked map finish name is enabled but no name is set, falling back to the player name");
+}
+
 void CClient::RequestDDNetInfo()
 {
 	if(m_pDDNetInfoTask && !m_pDDNetInfoTask->Done())
 		return;
 
-	char aUrl[256];
+	// integratedclient: use the locked name for the map finish query if enabled
+	char aName[sizeof(g_Config.m_RcLockFinishedNameId)];
+	GetDDNetInfoQueryName(aName, sizeof(aName));
+
+	char aUrl[512];
 	str_copy(aUrl, DDNET_INFO_URL);
 
-	if(g_Config.m_BrIndicateFinished)
+	if(aName[0] != '\0')
 	{
-		char aEscaped[128];
-		EscapeUrl(aEscaped, PlayerName());
+		// A name of up to 127 bytes can expand to 381 percent-encoded characters.
+		char aEscaped[sizeof(aName) * 3];
+		EscapeUrl(aEscaped, sizeof(aEscaped), aName);
 		str_append(aUrl, "?name=");
 		str_append(aUrl, aEscaped);
 	}
+
+	// integratedclient: remember the queried name and configuration, so that
+	// changes of the locked name can trigger exactly one follow-up request
+	str_copy(m_aDDNetInfoQueryName, aName, sizeof(m_aDDNetInfoQueryName));
+	m_DDNetInfoQueriedConfigHash = DDNetInfoQueryConfigHash();
+	m_DDNetInfoQueriedIndicateFinished = g_Config.m_BrIndicateFinished != 0;
+	m_DDNetInfoQueried = true;
 
 	m_pDDNetInfoTask = HttpGetFile(aUrl, Storage(), DDNET_INFO_FILE, IStorage::TYPE_SAVE);
 	m_pDDNetInfoTask->Timeout(CTimeout{10000, 0, 500, 10});
@@ -5589,6 +5653,83 @@ void CClient::RequestDDNetInfo()
 	m_pDDNetInfoTask->IpResolve(IPRESOLVE::V4);
 	Http()->Run(m_pDDNetInfoTask);
 	m_InfoState = EInfoState::LOADING;
+}
+
+void CClient::UpdateDDNetInfoQuery()
+{
+	// integratedclient: keep the downloaded map finishes in sync with the locked
+	// name. When `rc_lock_finished_name`/`rc_lock_finished_name_id` (or
+	// `br_indicate_finished`) change, the DDNet info is requested again once the
+	// setting has been stable for a moment. Regular player name changes keep the
+	// vanilla behaviour and are picked up by the next regular request.
+	const int64_t Now = time_get();
+
+	// Warn about an enabled but empty locked name, so users do not wonder why
+	// their current player name is still used. Rate-limited, and repeated once
+	// per re-enable.
+	if(g_Config.m_BrIndicateFinished && g_Config.m_RcLockFinishedName && g_Config.m_RcLockFinishedNameId[0] == '\0')
+	{
+		WarnDDNetInfoEmptyLockName();
+	}
+	else
+	{
+		m_DDNetInfoEmptyLockNameWarnTime = 0;
+	}
+
+	if(!m_DDNetInfoQueried)
+	{
+		// The DDNet info was not downloaded yet in this session, so there is
+		// nothing to refresh. The next regular request uses the current name.
+		m_aDDNetInfoPendingName[0] = '\0';
+		m_DDNetInfoQueryNameChangeTime = 0;
+		return;
+	}
+
+	char aName[sizeof(g_Config.m_RcLockFinishedNameId)];
+	GetDDNetInfoQueryName(aName, sizeof(aName));
+
+	if(str_comp(m_aDDNetInfoQueryName, aName) == 0)
+	{
+		// The downloaded info matches the effective query name. Remember the
+		// current configuration, so that later changes caused by the locked
+		// name can be told apart from regular player name changes.
+		m_DDNetInfoQueriedConfigHash = DDNetInfoQueryConfigHash();
+		m_DDNetInfoQueriedIndicateFinished = g_Config.m_BrIndicateFinished != 0;
+		m_aDDNetInfoPendingName[0] = '\0';
+		m_DDNetInfoQueryNameChangeTime = 0;
+		return;
+	}
+
+	const bool IndicateFinished = g_Config.m_BrIndicateFinished != 0;
+	const bool IndicateFinishedChanged = IndicateFinished != m_DDNetInfoQueriedIndicateFinished;
+	const bool LockConfigChanged = DDNetInfoQueryConfigHash() != m_DDNetInfoQueriedConfigHash;
+	// Only refresh when the change was caused by the locked name feature or by
+	// toggling `br_indicate_finished`. A plain player name change must keep the
+	// vanilla behaviour. While `br_indicate_finished` is disabled the map
+	// finishes are not shown at all, so downloading the info would be pointless.
+	if(!IndicateFinished || !(LockConfigChanged || IndicateFinishedChanged))
+	{
+		m_aDDNetInfoPendingName[0] = '\0';
+		m_DDNetInfoQueryNameChangeTime = 0;
+		return;
+	}
+
+	// Restart the debounce timer whenever the pending name changes, so typing a
+	// name into the settings results in a single request.
+	if(str_comp(m_aDDNetInfoPendingName, aName) != 0)
+	{
+		str_copy(m_aDDNetInfoPendingName, aName, sizeof(m_aDDNetInfoPendingName));
+		m_DDNetInfoQueryNameChangeTime = Now;
+	}
+
+	if(m_pDDNetInfoTask)
+		return;
+	if(Now < m_DDNetInfoQueryNameChangeTime + time_freq() * DDNET_INFO_QUERY_DEBOUNCE_SECONDS)
+		return;
+
+	m_aDDNetInfoPendingName[0] = '\0';
+	m_DDNetInfoQueryNameChangeTime = 0;
+	RequestDDNetInfo();
 }
 
 int CClient::GetPredictionTime()

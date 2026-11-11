@@ -81,3 +81,8 @@ MACRO_CONFIG_INT(RcAiTemperature, rc_ai_temperature, 10, 0, 20, CFGFLAG_CLIENT |
 MACRO_CONFIG_INT(RcAiContextCount, rc_ai_context_count, 5, 0, 20, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
 
 MACRO_CONFIG_STR(RcAiSystemPrompt, rc_ai_system_prompt, 512, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+
+// integratedclient new features
+MACRO_CONFIG_INT(RcWeaponAimLines, rc_weapon_aim_lines, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show predicted aim lines for laser, shotgun and grenade")
+MACRO_CONFIG_INT(RcLockFinishedName, rc_lock_finished_name, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Use a fixed player name for the official server list map completion query")
+MACRO_CONFIG_STR(RcLockFinishedNameId, rc_lock_finished_name_id, 128, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Player name/ID used for the locked map completion query")

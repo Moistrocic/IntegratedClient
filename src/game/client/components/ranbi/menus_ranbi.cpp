@@ -169,6 +169,28 @@ void CMenus::RenderSettingsRanbiGeneral(CUIRect MainView)
 	RenderRanbiHint(Ui(), &Column, Localize("Renders above water and transparent tiles."));
 
 	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Official server list"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcLockFinishedName, Localize("Lock map finish name"), &g_Config.m_RcLockFinishedName, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("Queries the official server list map finishes with a fixed player name, independent of your current in-game name."));
+	if(g_Config.m_RcLockFinishedName)
+	{
+		CUIRect EditBox, Label;
+		Column.HSplitTop(s_LineSize + s_MarginExtraSmall, &EditBox, &Column);
+		EditBox.VSplitMid(&Label, &EditBox);
+		Ui()->DoLabel(&Label, Localize("Player name"), s_FontSize, TEXTALIGN_ML);
+		static CLineInput s_LockFinishedNameInput(g_Config.m_RcLockFinishedNameId, sizeof(g_Config.m_RcLockFinishedNameId));
+		s_LockFinishedNameInput.SetEmptyText(Client()->PlayerName());
+		Ui()->DoEditBox(&s_LockFinishedNameInput, &EditBox, s_EditBoxFontSize);
+
+		if(g_Config.m_RcLockFinishedNameId[0] == '\0')
+			RenderRanbiWarning(Ui(), &Column, Localize("No locked player name set, falling back to your current player name."));
+		if(!g_Config.m_BrIndicateFinished)
+			RenderRanbiWarning(Ui(), &Column, Localize("Requires 'Indicate map finish' in the server browser filters; the lock has no effect while it is disabled."));
+		if(g_Config.m_RcLockFinishedNameId[0] != '\0' && g_Config.m_BrIndicateFinished)
+			RenderRanbiHint(Ui(), &Column, Localize("Map finishes refresh automatically about one second after changing this setting."));
+	}
+
+	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
 	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Risky features"));
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcAutoChangeSkin, Localize("Auto change skin on collision"), &g_Config.m_RcAutoChangeSkin, &Column, s_LineSize);
 	RenderRanbiHint(Ui(), &Column, Localize("Copies the closest player's skin within collision range (0.6 skin or 0.7 skin parts)."));
@@ -275,6 +297,12 @@ void CMenus::RenderSettingsRanbiChatScoreboard(CUIRect MainView)
 	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Chat"));
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcChatNoDuplicateHistory, Localize("Skip duplicate messages in chat history"), &g_Config.m_RcChatNoDuplicateHistory, &Column, s_LineSize);
 	RenderRanbiHint(Ui(), &Column, Localize("Pressing Up or Down in the chat input skips repeated consecutive messages."));
+
+	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Repeat"));
+	static CButtonContainer s_RepeatKeyReader, s_RepeatKeyClear;
+	DoLine_KeyReader(Column, s_RepeatKeyReader, s_RepeatKeyClear, Localize("Repeat last player message"), "ranbi_repeat_last");
+	RenderRanbiHint(Ui(), &Column, Localize("Repeats the most recent message from another player in the same chat channel; does nothing when nobody spoke yet."));
 
 	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
 	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Points"));
@@ -415,6 +443,11 @@ void CMenus::RenderSettingsRanbiWeapons(CUIRect MainView)
 		Column.HSplitTop(s_LineSize, &Slider, &Column);
 		Ui()->DoScrollbarOption(&g_Config.m_RcWeaponsAngleFontSize, &g_Config.m_RcWeaponsAngleFontSize, &Slider, Localize("Note font size"), 6, 24);
 	}
+
+	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Weapon aim lines"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcWeaponAimLines, Localize("Show weapon aim lines"), &g_Config.m_RcWeaponAimLines, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("Draws a predicted laser line, shotgun spread lines or grenade trajectory for your own tee."));
 
 	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
 	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Weapon angle list"));

@@ -166,6 +166,15 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	EInfoState m_InfoState = EInfoState::ERROR;
 	std::shared_ptr<IHttpRequest> m_pDDNetInfoTask = nullptr;
 
+	// integratedclient: locked map finish query name for the DDNet info request
+	char m_aDDNetInfoQueryName[sizeof(g_Config.m_RcLockFinishedNameId)] = "";
+	char m_aDDNetInfoPendingName[sizeof(g_Config.m_RcLockFinishedNameId)] = "";
+	unsigned m_DDNetInfoQueriedConfigHash = 0;
+	int64_t m_DDNetInfoQueryNameChangeTime = 0;
+	int64_t m_DDNetInfoEmptyLockNameWarnTime = 0;
+	bool m_DDNetInfoQueried = false;
+	bool m_DDNetInfoQueriedIndicateFinished = false;
+
 	// time
 	CSmoothTime m_aGameTime[NUM_DUMMIES];
 	CSmoothTime m_PredictedTime;
@@ -404,6 +413,10 @@ public:
 	void RequestDDNetInfo() override;
 	void ResetDDNetInfoTask();
 	void LoadDDNetInfo();
+	// integratedclient: locked map finish query name for the DDNet info request
+	void GetDDNetInfoQueryName(char *pName, int NameSize) const;
+	void WarnDDNetInfoEmptyLockName();
+	void UpdateDDNetInfoQuery();
 
 	bool IsSixup() const override { return m_Sixup; }
 
