@@ -429,6 +429,10 @@ void CMenus::RenderSettingsRanbiWeapons(CUIRect MainView)
 	LeftView.VSplitLeft(s_MarginSmall, nullptr, &LeftView);
 	RightView.VSplitRight(s_MarginSmall, &RightView, nullptr);
 
+	CUIRect LeftViewRect = LeftView;
+	static CScrollRegion s_LeftScrollRegion;
+	BeginRanbiPageScroll(s_LeftScrollRegion, LeftView);
+
 	CUIRect Column = LeftView;
 	Column.HSplitTop(s_Margin, nullptr, &Column);
 	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Weapon angle display"));
@@ -480,8 +484,6 @@ void CMenus::RenderSettingsRanbiWeapons(CUIRect MainView)
 	}
 
 	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
-	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Weapon angle list"));
-	RenderRanbiHint(Ui(), &Column, Localize("Entries are saved to ranbi_weapons_angle.cfg when the client exits."));
 
 	if(s_RanbiSelectedWeapon != s_RanbiLastSelectedWeapon)
 	{
@@ -579,8 +581,16 @@ void CMenus::RenderSettingsRanbiWeapons(CUIRect MainView)
 		ResetRanbiWeaponEditor();
 	}
 
-	CUIRect ListView = RightView;
-	ListView.HSplitTop(s_Margin, nullptr, &ListView);
+	EndRanbiPageScroll(s_LeftScrollRegion, LeftViewRect, Column);
+
+	// task-32: list header and list are anchored at the top-right view; the left
+	// editor column scrolls independently and can no longer overlap the list.
+	CUIRect RightColumn = RightView;
+	RightColumn.HSplitTop(s_Margin, nullptr, &RightColumn);
+	RenderRanbiSectionHeadline(Ui(), &RightColumn, Localize("Weapon angle list"));
+	RenderRanbiHint(Ui(), &RightColumn, Localize("Entries are saved to ranbi_weapons_angle.cfg when the client exits."));
+
+	CUIRect ListView = RightColumn;
 
 	static CScrollRegion s_ListScrollRegion;
 	CScrollRegionParams ListScrollParams;
