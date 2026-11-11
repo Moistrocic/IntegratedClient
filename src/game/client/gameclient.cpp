@@ -1036,8 +1036,8 @@ void CGameClient::OnRender()
 			{
 				double AvgRenderUs = (vCompTimings[Index].m_RenderTicks / 1000.0) / m_PerfFrames;
 				double AvgUpdateUs = (vCompTimings[Index].m_UpdateTicks / 1000.0) / m_PerfFrames;
-				log_info("perf", "  #%zu: %-25s | Render: %6.1f us | Update: %6.1f us | Total: %6.1f us",
-					Index + 1, vCompTimings[Index].m_pName ? vCompTimings[Index].m_pName : "Unknown", AvgRenderUs, AvgUpdateUs, AvgRenderUs + AvgUpdateUs);
+				log_info("perf", "  #%d: %-25s | Render: %6.1f us | Update: %6.1f us | Total: %6.1f us",
+					(int)Index + 1, vCompTimings[Index].m_pName ? vCompTimings[Index].m_pName : "Unknown", AvgRenderUs, AvgUpdateUs, AvgRenderUs + AvgUpdateUs);
 			}
 			m_mCompTiming.clear();
 			m_PerfFrames = 0;
