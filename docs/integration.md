@@ -43,7 +43,9 @@
 | Ranbi 批次 6：聊天历史去重/聊天分数/旁观皮肤名/三格水提示 | RanbiClient / `chat.cpp`、`hud.cpp` | `components/chat.cpp`、`hud.cpp` 等 | 待实机 | ranbi-porter | `213a3cd`；三格水为独立实现 |
 | Ranbi 批次 7：高风险功能（自动换肤/全图玩家/记分板改名） | RanbiClient / `gameclient.cpp`、`scoreboard.cpp` | `gameclient.cpp`、`scoreboard.cpp` | 待实机 | ranbi-porter | `57f1ffb`；默认关闭 + 风险提示 + 二次确认 |
 | Ranbi 批次 8：AI 自动回复（默认关闭） | RanbiClient / `ai_client.cpp` | `components/ranbi/ai_client.*`、`RANBI_TAB_AI` | 待实机 | ranbi-porter | `0593901`；Token 明文/隐私/规则警告；仅建议测试服务器验证 |
-| R3：`CShowPoints` 并发获取加速 + 并发上限输入框 | RanbiClient `points.cpp` 思路 + 用户需求 | `bestclient/show_points.*`、`menus_bestclient.cpp` | 待实机 | ranbi-porter | `7aa938a`；`bc_show_points_max_concurrency` 默认 5（1–5） |
+| R3：`CShowPoints` 并发获取加速 + 并发上限输入框（**已于 task-47 移除**） | RanbiClient `points.cpp` 思路 + 用户需求 | `bestclient/show_points.*`、`menus_bestclient.cpp` | 已回退 | ranbi-porter | `7aa938a` 已由 `d6cd3f4` 回退：`bc_show_points_max_concurrency` 配置/GUI 删除，恢复 `MAX_CONCURRENT=3` |
+| Ranbi 分数获取替换（BC 计分板/nameplate/chat，所有服务器 ddnet.org 数据） | RanbiClient 1.0.2 `points.{h,cpp}` | `components/ranbi/points.*`、`bestclient/show_points.*`、`menus_ranbi.cpp` | 待实机 | ranbi-porter | `d6cd3f4`；`rc_replace_bc_points` 默认 0；开关开启时所有服务器（含 EGO/Legit）走 Ranbi/DDNet 取数；verifier task-49（docs 修复后复验） |
+| Fast Practice 开关残留真实 fire 修复（底座 BestClient 问题） | 用户实机/A-B 结论 | `components/bestclient/fast_practice.cpp/.h`、`controls.cpp` | 待实机 | ranbi-porter | `3d30063`；发送层 fire guard/even 状态同步/菜单吞 fire；verifier PASS（task-48） |
 | 本地 GitHub Actions 复刻（Linux + Windows） | CI 配额问题 | `scripts/ci-local/` | 已完成 | ci-validator | `35b042c`；act + catthehacker/扩展 runner，Linux/Windows PASS |
 | DeepSeek 翻译后端（OpenAI 兼容 /chat/completions + Model 设置） | 本项目新功能 | `bestclient/translate.*`、`chat.cpp`、`config_variables_tclient.h` | 待实机 | translate-porter | `7b93601`；默认后端仍为 google |
 | 复读上一个玩家（快捷键 + Ranbi GUI） | 本项目新功能 | `components/ranbi/ranbi_repeat.*`、`menus_ranbi.cpp` | 待实机 | ranbi-porter | `6b2d953`；无消息静默 no-op，同频道复读 |
@@ -64,7 +66,9 @@
 - **批次 6（聊天/HUD）**：历史去重、聊天分数、旁观皮肤名、三格水提示 — `213a3cd`。
 - **批次 7（高风险，默认关闭）**：自动换肤、全图玩家、记分板改名 — `57f1ffb`。
 - **批次 8（AI，默认关闭）**：AI 自动回复 + `RANBI_TAB_AI` — `0593901`。
-- **R3（分数并发）**：`bc_show_points_max_concurrency` + 并发加速 — `7aa938a`。
+- **R3（分数并发，已回退）**：`bc_show_points_max_concurrency` + 并发加速 — `7aa938a`；由 `d6cd3f4` 移除，恢复 BC 原并发 3。
+- **Ranbi 分数替换（task-47）**：移植 Ranbi `CPoints`，`rc_replace_bc_points` 默认关闭；开启后 BC 计分板/nameplate/chat 在所有服务器使用 ddnet.org 分数 — `d6cd3f4`。
+- **Fast Practice 发送层 fire 修复（task-46/48）**：开关练习不再残留真实 fire 攻击 — `3d30063`。
 - 来源分析报告：`_work/ranbi-inventory/report.md`（本地工作区，778 行）。
 - 各批次移植报告：`_work/ranbi/batch*/report.md`（本地工作区）。
 
