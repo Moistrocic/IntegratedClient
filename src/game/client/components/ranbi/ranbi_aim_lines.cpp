@@ -246,6 +246,10 @@ namespace
 
 void CRanbiAimLines::OnRender()
 {
+	// task-30: this component is re-simulated on *every render frame* with the
+	// current PredIntraGameTick() (see SmoothAimDirection below). There is no game
+	// tick cache / throttle / fps cap here; only the defensive segment and step caps
+	// limit simulation complexity (they are not a frame-rate limit).
 	if(!g_Config.m_RcWeaponAimLines)
 		return;
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
@@ -392,43 +396,87 @@ void CRanbiAimLines::OnRender()
 	if(Buf.m_Num == 0)
 		return;
 
-	// Draw in world coordinates with the actual camera zoom; widths are given in
-	// world units and converted to quads so they are not limited to 1px LinesDraw.
+	// Draw in world coordinates with the actual camera zoom; width is scaled by the
+	// camera zoom like the hook collision line (players.cpp:442-490). Contiguous
+	// segments are converted to a shared-vertex miter strip: the same joint offset is
+	// used by both adjacent quads, so there is neither a gap at corners (no separate
+	// unjoined segments) nor area overlap (alpha does not accumulate/darken at joints).
 	const vec2 CameraPos = GameClient()->m_Camera.m_Center;
+	const float CameraZoom = GameClient()->m_Camera.m_Zoom;
 	const CScreenRect SavedScreen = Graphics()->GetScreen();
 	const CScreenRect WorldScreen = Graphics()->MapScreenToWorld(
 		CameraPos.x, CameraPos.y, 100.0f, 100.0f, 100.0f, 0, 0,
-		Graphics()->ScreenAspect(), GameClient()->m_Camera.m_Zoom);
+		Graphics()->ScreenAspect(), CameraZoom);
 	Graphics()->MapScreen(WorldScreen);
 
 	Graphics()->TextureClear();
-	auto DrawSegments = [&](bool HitStyle) {
+	auto DrawStrip = [&](bool HitStyle, const ColorRGBA &Color, float Width) {
 		IGraphics::CFreeformItem aQuads[MAX_AIM_SEGMENTS];
+		vec2 aPoints[MAX_AIM_SEGMENTS + 2];
+		vec2 aOffsets[MAX_AIM_SEGMENTS + 2];
 		int NumQuads = 0;
-		const float Width = HitStyle ? PlayerWidth : WeaponWidth;
-		for(int i = 0; i < Buf.m_Num; i++)
+		const float HalfWidth = Width * CameraZoom * 0.5f;
+
+		int i = 0;
+		while(i < Buf.m_Num && NumQuads < MAX_AIM_SEGMENTS)
 		{
-			const SAimSegment &Seg = aSegments[i];
-			if(Seg.m_HitPlayer != HitStyle)
+			if(aSegments[i].m_HitPlayer != HitStyle)
+			{
+				i++;
 				continue;
-			const vec2 Diff = Seg.m_To - Seg.m_From;
-			const float Len = length(Diff);
-			if(Len < 0.001f)
-				continue;
-			const vec2 Normal = vec2(-Diff.y, Diff.x) / Len * (Width * 0.5f);
-			aQuads[NumQuads++] = IGraphics::CFreeformItem(
-				Seg.m_From + Normal, Seg.m_To + Normal,
-				Seg.m_To - Normal, Seg.m_From - Normal);
+			}
+
+			// Collect one contiguous chain of same-style segments (a new shotgun
+			// projectile or a break in the chain starts a new strip).
+			int j = i;
+			while(j + 1 < Buf.m_Num && aSegments[j + 1].m_HitPlayer == HitStyle &&
+				distance(aSegments[j].m_To, aSegments[j + 1].m_From) < 0.01f)
+				j++;
+
+			int NumPoints = 0;
+			aPoints[NumPoints++] = aSegments[i].m_From;
+			for(int k = i; k <= j; k++)
+				aPoints[NumPoints++] = aSegments[k].m_To;
+
+			// Miter offsets: at an interior joint both adjacent quads share this exact
+			// offset, which keeps a continuous strip and avoids double blending.
+			for(int k = 0; k < NumPoints; k++)
+			{
+				const vec2 PrevDir = k > 0 ? normalize(aPoints[k] - aPoints[k - 1]) : normalize(aPoints[1] - aPoints[0]);
+				const vec2 NextDir = k + 1 < NumPoints ? normalize(aPoints[k + 1] - aPoints[k]) : PrevDir;
+				const vec2 PrevNormal(-PrevDir.y, PrevDir.x);
+				const vec2 NextNormal(-NextDir.y, NextDir.x);
+				vec2 Miter = PrevNormal + NextNormal;
+				if(length(Miter) < 0.001f)
+					Miter = NextNormal;
+				else
+					Miter = normalize(Miter);
+				const float Denom = std::max(dot(Miter, NextNormal), 0.25f);
+				const float Scale = std::min(HalfWidth / Denom, HalfWidth * 4.0f);
+				aOffsets[k] = Miter * Scale;
+			}
+
+			for(int k = i; k <= j && NumQuads < MAX_AIM_SEGMENTS; k++)
+			{
+				const int Local = k - i;
+				aQuads[NumQuads++] = IGraphics::CFreeformItem(
+					aPoints[Local] + aOffsets[Local],
+					aPoints[Local + 1] + aOffsets[Local + 1],
+					aPoints[Local + 1] - aOffsets[Local + 1],
+					aPoints[Local] - aOffsets[Local]);
+			}
+			i = j + 1;
 		}
+
 		if(NumQuads == 0)
 			return;
 		Graphics()->QuadsBegin();
-		Graphics()->SetColor(HitStyle ? PlayerColor : WeaponColor);
+		Graphics()->SetColor(Color);
 		Graphics()->QuadsDrawFreeform(aQuads, NumQuads);
 		Graphics()->QuadsEnd();
 	};
-	DrawSegments(false);
-	DrawSegments(true);
+	DrawStrip(false, WeaponColor, WeaponWidth);
+	DrawStrip(true, PlayerColor, PlayerWidth);
 
 	Graphics()->MapScreen(SavedScreen);
 }
