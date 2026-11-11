@@ -2,3 +2,11 @@
 	path = ddnet-libs
 	url = https://github.com/ddnet/ddnet-libs
 	shallow = true
+[submodule "clientsSource/BestClient"]
+	path = clientsSource/BestClient
+	url = https://github.com/BestProjectTeam/BestClient.git
+	shallow = true
+[submodule "clientsSource/RanbiClient"]
+	path = clientsSource/RanbiClient
+	url = https://github.com/Moistrocic/RanbiClient.git
+	shallow = true

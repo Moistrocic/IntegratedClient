@@ -164,8 +164,5 @@ tags
 # TClient
 !steam_api.dll
 
-# IntegratedClient: 来源客户端源码（只读上游参考，不提交）
-/clientsSource
-
 # IntegratedClient: 智能体团队工作目录（报告/补丁证据，不提交）
 /_work/

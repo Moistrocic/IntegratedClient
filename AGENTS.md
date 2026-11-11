@@ -7,7 +7,7 @@
 术语：
 
 - **底座**：根目录下的客户端代码主线（源自 BestClient，基于 DDNet/TClient）。
-- **来源**：`clientsSource/<Name>/` 下只读的上游客户端源码。
+- **来源**：`clientsSource/<Name>/` 下由 git submodule 固定的只读上游客户端源码。
 - **移植**：把来源中的功能实现按底座版本重写并合入根目录。
 - **验收**：构建 0 error、独立 verifier 复核、用户实机验证，三者缺一不可。
 
@@ -65,15 +65,15 @@ Lead:
 ## 3. 仓库结构与来源客户端
 
 - 根目录 = 整合客户端代码、文档、构建脚本的主仓；git 只跟踪这里的内容。
-- `clientsSource/` = 只读的上游客户端源码，已被 `.gitignore` 忽略。**只读：不修改、不提交、不在其中切分支或拉取**；同步来源由用户决定，作为单独任务执行。
-- 新增来源客户端：完整源码放到 `clientsSource/<Name>/`，在下方登记表登记，并在任务里说明用途；不要纳入 git。
+- `clientsSource/` = 只读的上游客户端源码，以 **git submodule** 管理（`.gitmodules` 记录固定 commit，`.gitignore` 不再忽略）。**只读：不修改、不在其中提交或切分支**；来源更新由用户确认后更新 submodule 指针（单独任务）。
+- 新增来源客户端：`git submodule add <url> clientsSource/<Name>`，在下方登记表登记；不要直接把源码复制进根仓库。
 - **底座导入已完成**：根目录代码导入自 `clientsSource/BestClient/` @ `81ca85f2b`（BestClient 3.1.1，DDNet 20.1.1，TClient 10.9.0）；后续所有开发都在根目录进行。
 - 来源客户端登记：
 
-| 客户端 | 版本 | 上游基线 | 用途 |
-| --- | --- | --- | --- |
-| BestClient | 3.1.1 | DDNet 20.1.1 / TClient 10.9.0 | 底座 |
-| RanbiClient | 1.0.2 | DDNet 19.8 / TClient 10.8.7 | 功能来源 |
+| 客户端 | 版本 | 上游基线 | submodule 路径 | 用途 |
+| --- | --- | --- | --- | --- |
+| BestClient | 3.1.1 | DDNet 20.1.1 / TClient 10.9.0 | `clientsSource/BestClient` | 底座 |
+| RanbiClient | 1.0.2 | DDNet 19.8 / TClient 10.8.7 | `clientsSource/RanbiClient` | 功能来源 |
 
 - 版本以各来源 `src/game/version.h` 为准；来源同步后更新本表。
 - 功能清单看各来源的 `README.md`（如 RanbiClient 的勾选功能表），不要在本文件复制功能列表。
@@ -97,7 +97,9 @@ Lead:
 首次准备（根目录）：
 
 ```powershell
-git submodule update --init --recursive
+git submodule update --init ddnet-libs
+# 需要阅读来源客户端源码时再初始化（只读参考，构建不需要）：
+git submodule update --init clientsSource/BestClient clientsSource/RanbiClient
 ```
 
 `ddnet-libs` 子模块必须就位，否则依赖找不到；Rust 不在 PATH 时 CMake 配置会直接报错。
@@ -135,12 +137,12 @@ python scripts/languages/validate.py
 
 - **Lead 在完成验证后自动 commit，无需每次询问；本仓库只 commit，不 push**——推送只由用户执行。
 - 根仓库 `main` 为整合主线；功能开发按 Lead 判断使用 `feat/<name>` 分支，完成后合回。
-- `.gitignore` 必须忽略：`/clientsSource`、`build/`、`_work/`、生成产物（如 `src/generated`、Rust 桥接产物）；缺失时 Lead 在任务中补齐。
+- `.gitignore` 必须忽略：`build*`、`_work/`、生成产物（如 `src/generated`、Rust 桥接产物）；`clientsSource/` 由 git submodule 跟踪，不再忽略。缺失时 Lead 在任务中补齐。
 - 客户端名称、版本号、README 版本只在用户明确要求时改；未经要求不提升、不改名。
 - 禁止 `git tag`、改写历史、force-push（除非用户明确要求并确认）。
 - commit 使用 `port(<source>): ...`（功能移植）、`fix(...)`、`docs(...)`、`chore(...)` 前缀；正文写来源文件与版本、目标位置、验证结果、风险、用户实测步骤。
 - 一个 commit 对应一个功能闭环或一个可独立回滚的改动；不要把多个来源的无关移植混在一起。
-- commit 前确认 `git status` 干净、暂存内容不含 `clientsSource/` 或构建产物。
+- commit 前确认 `git status` 干净、暂存内容不含构建产物或未预期的 submodule 指针变更。
 
 ## 7. Windows / 编码
 
