@@ -50,7 +50,7 @@ Lead:
   Lead: cmake 构建 0 error + smoke
   verifier task: 独立 clean build + 回归检查
   PASS 后：同步文档/翻译/changelog
-  Lead: commit（必要时 push；push 失败要记录）
+  Lead: 自动 commit（只提交，不 push）
   最后给用户实机验证清单（步骤 + 预期现象 + 日志/控制台关键字）
 ```
 
@@ -67,7 +67,7 @@ Lead:
 - 根目录 = 整合客户端代码、文档、构建脚本的主仓；git 只跟踪这里的内容。
 - `clientsSource/` = 只读的上游客户端源码，已被 `.gitignore` 忽略。**只读：不修改、不提交、不在其中切分支或拉取**；同步来源由用户决定，作为单独任务执行。
 - 新增来源客户端：完整源码放到 `clientsSource/<Name>/`，在下方登记表登记，并在任务里说明用途；不要纳入 git。
-- 根目录还没有底座代码时，先完成一次性的**底座导入**：把 `clientsSource/BestClient/` 的源码复制到根目录（排除 `.git/`、构建产物），保留 `.gitignore` 的 `/clientsSource` 规则；导入完成前不要开始功能移植。
+- **底座导入已完成**：根目录代码导入自 `clientsSource/BestClient/` @ `81ca85f2b`（BestClient 3.1.1，DDNet 20.1.1，TClient 10.9.0）；后续所有开发都在根目录进行。
 - 来源客户端登记：
 
 | 客户端 | 版本 | 上游基线 | 用途 |
@@ -131,13 +131,14 @@ python scripts/languages/validate.py
 
 ## 6. 版本与 Git
 
+- **Lead 在完成验证后自动 commit，无需每次询问；本仓库只 commit，不 push**——推送只由用户执行。
 - 根仓库 `main` 为整合主线；功能开发按 Lead 判断使用 `feat/<name>` 分支，完成后合回。
 - `.gitignore` 必须忽略：`/clientsSource`、`build/`、`_work/`、生成产物（如 `src/generated`、Rust 桥接产物）；缺失时 Lead 在任务中补齐。
 - 客户端名称、版本号、README 版本只在用户明确要求时改；未经要求不提升、不改名。
-- 禁止擅自 `git tag`、改写历史、force-push（除非用户明确要求并确认）。
+- 禁止 `git tag`、改写历史、force-push（除非用户明确要求并确认）。
 - commit 使用 `port(<source>): ...`（功能移植）、`fix(...)`、`docs(...)`、`chore(...)` 前缀；正文写来源文件与版本、目标位置、验证结果、风险、用户实测步骤。
 - 一个 commit 对应一个功能闭环或一个可独立回滚的改动；不要把多个来源的无关移植混在一起。
-- push 前确认 `git status` 干净、不含 `clientsSource/`/构建产物；push 失败要记录在最终回复里，不能在未推送时声称已推送。
+- commit 前确认 `git status` 干净、暂存内容不含 `clientsSource/` 或构建产物。
 
 ## 7. Windows / 编码
 
@@ -163,7 +164,7 @@ python scripts/languages/validate.py
 - [ ] 根目录构建 0 error（既有 warning 已标注）；
 - [ ] verifier 独立复核 PASS（clean build + 回归检查/相关脚本通过）；
 - [ ] `README.md` / `docs/integration.md` / 翻译 / 配置说明已同步；
-- [ ] 已 commit（push 状态已如实告知）；
+- [ ] 已自动 commit（未推送，何时推送由用户决定）；
 - [ ] 给用户的实机验证步骤、预期现象、残余风险已写清。
 
 本文件是团队约定的唯一来源；流程或来源客户端变化时先更新本文件。
