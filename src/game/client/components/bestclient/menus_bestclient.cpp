@@ -4435,8 +4435,8 @@ void CMenus::RenderSettingsBestClientOthers(CUIRect MainView)
 	const bool SendClientIdentity = g_Config.m_BcSendClientIdentity != 0;
 	const float NamePlateSettingsHeight = ShowNamePlateSettings ? 2.0f * LineSize : 0.0f;
 	const float ScoreboardSettingsHeight = ShowScoreboardSettings ? LineSize : 0.0f;
-	// integratedclient (task-33): one checkbox row plus status rows (one when enabled, two when the
-	// identity is not sent so the "features are unavailable" warning fits in the column).
+	// integratedclient (task-33): one checkbox row plus two status rows in both states so the
+	// fake-client / "features are unavailable" warnings fit in the column.
 	const float SendClientIdentityStatusHeight = 2.0f * LineSize;
 	const float ClientIndicatorBlockHeight = LineSize + MarginSmall + 3.0f * LineSize + SendClientIdentityStatusHeight + NamePlateSettingsHeight + ScoreboardSettingsHeight;
 

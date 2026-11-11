@@ -2625,6 +2625,9 @@ Not sending client identity.
 BestClient server features are unavailable.
 == BestClient 伺服器功能不可用。
 
+You will be marked as a fake BC client.
+== 你會被標記為偽 BC 端。
+
 BETA
 == 
 
@@ -4461,9 +4464,6 @@ Mute headphones
 
 Client Indicator
 == 
-
-You will be marked as a fake BC client.
-== 你會被標記為偽 BC 端。
 
 Show indicator in name plates
 == 
