@@ -344,3 +344,16 @@
 	{"Weapon angle outer radius", SETTINGS_NAV_LEAF_RC_WEAPONS, "Weapon angle display", &g_Config.m_RcWeaponsAngleRadius, &g_Config.m_RcShowWeaponsAngle},
 	{"Weapon angle note font size", SETTINGS_NAV_LEAF_RC_WEAPONS, "Weapon angle display", &g_Config.m_RcWeaponsAngleFontSize, &g_Config.m_RcShowWeaponsAngle},
 	// ranbi
+
+	{"Skip duplicate messages in chat history", SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD, "Chat", &g_Config.m_RcChatNoDuplicateHistory, nullptr},
+	{"Show DDNet points in chat", SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD, "Points", &g_Config.m_RcChatShowPoints, nullptr},
+	{"Show spectator skin in Following line", SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD, "Spectator", &g_Config.m_RcShowSpectatorSkin, nullptr},
+	{"Show three-tile water skip hint", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTiles, nullptr},
+	{"Three-tile hint size", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTilesInfoSize, &g_Config.m_RcShowEnableSkipThreeTiles},
+	{"Three-tile hint color", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTilesInfoColor, &g_Config.m_RcShowEnableSkipThreeTiles},
+	{"Three-tile hint position X", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTilesInfoPositionX, &g_Config.m_RcShowEnableSkipThreeTiles},
+	{"Three-tile hint position Y", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTilesInfoPositionY, &g_Config.m_RcShowEnableSkipThreeTiles},
+	{"Three-tile hint left arrow text", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTilesInfoPositionLeftText, &g_Config.m_RcShowEnableSkipThreeTiles},
+	{"Three-tile hint right arrow text", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTilesInfoPositionRightText, &g_Config.m_RcShowEnableSkipThreeTiles},
+	{"Three-tile hint DJ left arrow text", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTilesInfoPositionDJLeftText, &g_Config.m_RcShowEnableSkipThreeTiles},
+	{"Three-tile hint DJ right arrow text", SETTINGS_NAV_LEAF_RC_NOTIFY, "Skip three tiles", &g_Config.m_RcShowEnableSkipThreeTilesInfoPositionDJRightText, &g_Config.m_RcShowEnableSkipThreeTiles},

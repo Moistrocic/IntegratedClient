@@ -2805,12 +2805,6 @@ Matched color
 Colors the tee coordinate part and requires BestClient 'Show tee coordinates' (bc_show_tee_coords).
 == 为坐标显示上色，需要开启 BestClient 的“显示坐标”（bc_show_tee_coords）。
 
-Ranbi chat and scoreboard features are not integrated yet. They will be added in a later batch.
-== Ranbi 聊天与计分板功能尚未整合，将在后续批次加入。
-
-Ranbi notify features are not integrated yet. They will be added in a later batch.
-== Ranbi 提示功能尚未整合，将在后续批次加入。
-
 Gun
 == 手枪
 
@@ -2858,6 +2852,63 @@ No weapon angle entries yet. Use Add on the left to create one.
 
 Angle range
 == 角度范围
+
+Skin %s
+== 皮肤 %s
+
+Skip duplicate messages in chat history
+== 聊天历史跳过重复消息
+
+Pressing Up or Down in the chat input skips repeated consecutive messages.
+== 在聊天输入框按上/下会跳过连续重复的消息。
+
+Show DDNet points in chat
+== 在聊天中显示 DDNet 分数
+
+Requires a DDNet, EGO or Legit server.
+== 需要 DDNet、EGO 或 Legit 服务器。
+
+Spectator
+== 旁观者
+
+Show spectator skin in Following line
+== 在 Following 行显示旁观皮肤名
+
+Appends the skin name; BestClient spectator names stay unchanged.
+== 追加皮肤名称；BestClient 的旁观者名称列表保持不变。
+
+Skip three tiles
+== 跳过三格水
+
+Show three-tile water skip hint
+== 显示三格水跳过提示
+
+Shows an arrow when the current position can be skipped with the three-tile water technique.
+== 当前位置可用三格水技巧跳过时显示箭头。
+
+Hint size
+== 提示字号大小
+
+Hint color
+== 提示颜色
+
+Hint position X
+== 提示位置 X
+
+Hint position Y
+== 提示位置 Y
+
+Left arrow text
+== 左箭头文本
+
+Right arrow text
+== 右箭头文本
+
+DJ left arrow text
+== 分身左箭头文本
+
+DJ right arrow text
+== 分身右箭头文本
 
 BETA
 == 

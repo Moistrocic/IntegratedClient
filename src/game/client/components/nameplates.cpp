@@ -1628,7 +1628,7 @@ void CNamePlates::RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *p
 	Data.m_ShowPoints = Data.m_ShowName && g_Config.m_RcNameplatesShowPoints;
 	if(Data.m_ShowPoints && GameClient()->m_ShowPoints.SupportedOnCurrentServer())
 	{
-		GameClient()->m_ShowPoints.RequestPointsForNameplate(Data.m_aName);
+		GameClient()->m_ShowPoints.RequestPointsForDisplay(Data.m_aName);
 		int Points = 0;
 		if(GameClient()->m_ShowPoints.TryGetPoints(Data.m_aName, &Points))
 			Data.m_Points = Points;

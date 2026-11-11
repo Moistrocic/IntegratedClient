@@ -1439,6 +1439,9 @@ Following %d: %s
 Following %s
 == 
 
+Skin %s
+== 
+
 [Spectating Camera Mode Icon]
 AUTO
 == 
@@ -5242,10 +5245,58 @@ Matched color
 Colors the tee coordinate part and requires BestClient 'Show tee coordinates' (bc_show_tee_coords).
 == 
 
-Ranbi chat and scoreboard features are not integrated yet. They will be added in a later batch.
+Skip duplicate messages in chat history
 == 
 
-Ranbi notify features are not integrated yet. They will be added in a later batch.
+Pressing Up or Down in the chat input skips repeated consecutive messages.
+== 
+
+Show DDNet points in chat
+== 
+
+Requires a DDNet, EGO or Legit server.
+== 
+
+Spectator
+== 
+
+Show spectator skin in Following line
+== 
+
+Appends the skin name; BestClient spectator names stay unchanged.
+== 
+
+Skip three tiles
+== 
+
+Show three-tile water skip hint
+== 
+
+Shows an arrow when the current position can be skipped with the three-tile water technique.
+== 
+
+Hint size
+== 
+
+Hint color
+== 
+
+Hint position X
+== 
+
+Hint position Y
+== 
+
+Left arrow text
+== 
+
+Right arrow text
+== 
+
+DJ left arrow text
+== 
+
+DJ right arrow text
 == 
 
 Gun

@@ -79,6 +79,9 @@ class CChat : public CComponent
 
 		int m_TimesRepeated;
 
+		// ranbi
+		int m_RanbiPoints = -1;
+		// ranbi
 		std::shared_ptr<CTranslateResponse> m_pTranslateResponse;
 		// bestclient
 		SChatMediaLine m_Media;

@@ -1211,6 +1211,7 @@ void CChat::AddLine(int ClientId, int Team, const char *pLine)
 	CurrentLine.m_NameColor = -2;
 	CurrentLine.m_CustomColor = CustomColor;
 	CurrentLine.m_Highlighted = Highlighted;
+	CurrentLine.m_RanbiPoints = -1; // ranbi
 
 	str_copy(CurrentLine.m_aText, pLine);
 	// bestclient
@@ -1426,13 +1427,26 @@ void CChat::OnPrepareLines(float y)
 		}
 		// bestclient
 
+		// ranbi: m_RcChatShowPoints (reuse the base CShowPoints provider/cache; hide until data is available)
+		int RanbiPoints = -1;
+		if(g_Config.m_RcChatShowPoints && Line.m_ClientId >= 0 && Line.m_aName[0] != '\0' &&
+			str_comp(Line.m_aName, "*** ") != 0 && str_comp(Line.m_aName, "— ") != 0 &&
+			GameClient()->m_ShowPoints.SupportedOnCurrentServer())
+		{
+			GameClient()->m_ShowPoints.RequestPointsForDisplay(Line.m_aName);
+			if(!GameClient()->m_ShowPoints.TryGetPoints(Line.m_aName, &RanbiPoints))
+				RanbiPoints = -1;
+		}
+		const bool RanbiPointsChanged = Line.m_RanbiPoints != RanbiPoints;
+		const bool LineForceRecreate = ForceRecreate || RanbiPointsChanged;
+
 		const float LineH = Line.m_aYOffset[OffsetType] >= 0.0f ? Line.m_aYOffset[OffsetType] : FontSize + RealMsgPaddingY;
 		LineY -= LineH;
 		if(LineY < HeightLimit && !AllowTopClip)
 			break;
 		AllowTopClip = false;
 
-		if(Line.m_TextContainerIndex.Valid() && Line.m_aYOffset[OffsetType] >= 0.0f && !ForceRecreate) // bestclient
+		if(Line.m_TextContainerIndex.Valid() && Line.m_aYOffset[OffsetType] >= 0.0f && !LineForceRecreate) // bestclient
 			continue;
 
 		TextRender()->DeleteTextContainer(Line.m_TextContainerIndex);
@@ -1550,6 +1564,15 @@ void CChat::OnPrepareLines(float y)
 		else
 			NameColor = ColorRGBA(0.8f, 0.8f, 0.8f, 1.0f);
 
+		// ranbi: m_RcChatShowPoints
+		if(RanbiPoints != -1)
+		{
+			char aRanbiPoints[16];
+			str_format(aRanbiPoints, sizeof(aRanbiPoints), "[%d] ", RanbiPoints);
+			TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
+			TextRender()->CreateOrAppendTextContainer(Line.m_TextContainerIndex, &LineCursor, aRanbiPoints);
+		}
+
 		TextRender()->TextColor(NameColor);
 		TextRender()->CreateOrAppendTextContainer(Line.m_TextContainerIndex, &LineCursor, aClientId);
 		TextRender()->CreateOrAppendTextContainer(Line.m_TextContainerIndex, &LineCursor, Line.m_aName);
@@ -1633,6 +1656,7 @@ void CChat::OnPrepareLines(float y)
 			Line.m_QuadContainerIndex = Graphics()->CreateRectQuadContainer(Begin, LineY, FullWidth, Line.m_aYOffset[OffsetType], MessageRounding(), IGraphics::CORNER_ALL);
 		}
 
+		Line.m_RanbiPoints = RanbiPoints; // ranbi
 		TextRender()->SetRenderFlags(CurRenderFlags);
 		if(Line.m_TextContainerIndex.Valid())
 			TextRender()->UploadTextContainer(Line.m_TextContainerIndex);
@@ -2102,6 +2126,14 @@ void CChat::SendChatQueued(const char *pLine)
 		AddEntry = true;
 	}
 
+	// ranbi: m_RcChatNoDuplicateHistory (Up/Down history skips repeated texts)
+	if(AddEntry && g_Config.m_RcChatNoDuplicateHistory)
+	{
+		CHistoryEntry *pLast = m_History.Last();
+		if(pLast && str_comp(pLast->m_aText, pLine) == 0)
+			AddEntry = false;
+	}
+
 	if(AddEntry)
 	{
 		const int Length = str_length(pLine);
@@ -2127,6 +2159,14 @@ void CChat::SendTranslatedChatQueued(int Team, const char *pLine)
 	{
 		++m_PendingChatCounter;
 		AddEntry = true;
+	}
+
+	// ranbi: m_RcChatNoDuplicateHistory (Up/Down history skips repeated texts)
+	if(AddEntry && g_Config.m_RcChatNoDuplicateHistory)
+	{
+		CHistoryEntry *pLast = m_History.Last();
+		if(pLast && str_comp(pLast->m_aText, pLine) == 0)
+			AddEntry = false;
 	}
 
 	if(AddEntry)

@@ -238,9 +238,9 @@ void CShowPoints::RequestPoints(const char *pName)
 	QueueRequest(pName);
 }
 
-// ranbi: allow the Ranbi nameplate points display to use the same provider/cache
+// ranbi: allow Ranbi displays (nameplates, chat) to use the same provider/cache
 // even when the scoreboard points column (bc_show_points_in_tab) is disabled.
-void CShowPoints::RequestPointsForNameplate(const char *pName)
+void CShowPoints::RequestPointsForDisplay(const char *pName)
 {
 	QueueRequest(pName);
 }

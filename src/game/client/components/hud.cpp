@@ -30,6 +30,7 @@
 #include <game/client/prediction/entities/character.h>
 #include <game/layers.h>
 #include <game/localization.h>
+#include <game/mapitems.h> // ranbi
 
 #include <algorithm>
 #include <cmath>
@@ -1938,8 +1939,10 @@ void CHud::RenderSpectatorHud()
 
 	// TClient
 	float AdjustedHeight = m_Height - (g_Config.m_TcStatusBar ? g_Config.m_TcStatusBarHeight : 0.0f);
+	// ranbi: the spectator skin suffix needs the wider box the source client uses for it
+	const float HudBoxWidth = g_Config.m_RcShowSpectatorSkin ? 280.0f : 180.0f;
 	// draw the box
-	Graphics()->DrawRect(m_Width - 180.0f, AdjustedHeight - 15.0f, 180.0f, 15.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.4f), IGraphics::CORNER_TL, 5.0f);
+	Graphics()->DrawRect(m_Width - HudBoxWidth, AdjustedHeight - 15.0f, HudBoxWidth, 15.0f, ColorRGBA(0.0f, 0.0f, 0.0f, 0.4f), IGraphics::CORNER_TL, 5.0f);
 
 	// draw the text
 	char aBuf[128];
@@ -1954,12 +1957,21 @@ void CHud::RenderSpectatorHud()
 			str_format(aBuf, sizeof(aBuf), Localize("Following %d: %s", "Spectating"), Player.ClientId(), Player.m_aName);
 		else
 			str_format(aBuf, sizeof(aBuf), Localize("Following %s", "Spectating"), Player.m_aName);
+
+		// ranbi: m_RcShowSpectatorSkin (distinct from BestClient's spectator name list)
+		if(g_Config.m_RcShowSpectatorSkin)
+		{
+			char aSkin[128];
+			str_format(aSkin, sizeof(aSkin), Localize("Skin %s"), Player.m_aSkinName);
+			str_append(aBuf, " | ", sizeof(aBuf));
+			str_append(aBuf, aSkin, sizeof(aBuf));
+		}
 	}
 	else
 	{
 		str_copy(aBuf, Localize("Free-View"));
 	}
-	TextRender()->Text(m_Width - 174.0f, AdjustedHeight - 15.0f + (15.f - 8.f) / 2.f, 8.0f, aBuf, -1.0f);
+	TextRender()->Text(m_Width - HudBoxWidth + 6.0f, AdjustedHeight - 15.0f + (15.f - 8.f) / 2.f, 8.0f, aBuf, -1.0f);
 
 	// draw the camera info
 	if(Client()->State() != IClient::STATE_DEMOPLAYBACK && GameClient()->m_Camera.SpectatingPlayer() && GameClient()->m_Camera.CanUseAutoSpecCamera() && g_Config.m_ClSpecAutoSync)
@@ -1981,6 +1993,94 @@ void CHud::RenderSpectatorHud()
 		TextRender()->Text(TagX + Padding + IconWidth + Padding, m_Height - 10.0f, 6.0f, pLabelText, -1.0f);
 		TextRender()->TextColor(1, 1, 1, 1);
 	}
+}
+
+// ranbi: m_RcShowEnableSkipThreeTiles (ported from RanbiClient 1.0.2 hud.cpp:2058-2135)
+void CHud::RenderSkipThreeTiles()
+{
+	if(!g_Config.m_RcShowEnableSkipThreeTiles || GameClient()->m_Snap.m_SpecInfo.m_Active)
+		return;
+
+	const int PlayerId = GameClient()->m_Snap.m_LocalClientId;
+	if(PlayerId < 0 || PlayerId >= MAX_CLIENTS)
+		return;
+
+	const vec2 PlayerPos = GameClient()->m_aClients[PlayerId].m_RenderPos / 32.0f;
+	double IntPart;
+	const float FracX = modf(PlayerPos.x, &IntPart);
+
+	auto CheckPos = [](float Pos) -> int {
+		constexpr float MaxDiff = 0.01f;
+		if(absolute(Pos - 0.31f) <= MaxDiff || absolute(Pos - 0.34f) <= MaxDiff || absolute(Pos - 0.16f) <= MaxDiff)
+			return 1;
+		if(absolute(Pos - 0.63f) <= MaxDiff || absolute(Pos - 0.66f) <= MaxDiff || absolute(Pos - 0.81f) <= MaxDiff)
+			return 2;
+		if(absolute(Pos - 0.25f) <= MaxDiff || absolute(Pos - 0.28f) <= MaxDiff || absolute(Pos - 0.12f) <= MaxDiff || absolute(Pos - 0.41f) <= MaxDiff)
+			return 3;
+		if(absolute(Pos - 0.69f) <= MaxDiff || absolute(Pos - 0.72f) <= MaxDiff || absolute(Pos - 0.84f) <= MaxDiff || absolute(Pos - 0.56f) <= MaxDiff)
+			return 4;
+		return 0;
+	};
+	const int Mode = CheckPos(FracX);
+	if(Mode == 0)
+		return;
+
+	const auto *pLayer = GameClient()->Layers()->GameLayer();
+	if(pLayer == nullptr)
+		return;
+	const int Index = (int)PlayerPos.y * pLayer->m_Width + (int)PlayerPos.x;
+	if(Index <= 0 || Index + 1 >= pLayer->m_Height * pLayer->m_Width)
+		return;
+
+	const bool Freeze = CheckTileFreeze(LAYER_GAME, Index) || CheckTileFreeze(LAYER_SWITCH, Index);
+	if(Freeze)
+		return;
+	const bool LeftFreeze = CheckTileFreeze(LAYER_GAME, Index - 1) || CheckTileFreeze(LAYER_SWITCH, Index - 1);
+	const bool RightFreeze = CheckTileFreeze(LAYER_GAME, Index + 1) || CheckTileFreeze(LAYER_SWITCH, Index + 1);
+	if(!LeftFreeze && !RightFreeze)
+		return;
+
+	const char *pText = "";
+	switch(Mode)
+	{
+	case 1: pText = g_Config.m_RcShowEnableSkipThreeTilesInfoPositionLeftText; break;
+	case 2: pText = g_Config.m_RcShowEnableSkipThreeTilesInfoPositionRightText; break;
+	case 3: pText = g_Config.m_RcShowEnableSkipThreeTilesInfoPositionDJLeftText; break;
+	case 4: pText = g_Config.m_RcShowEnableSkipThreeTilesInfoPositionDJRightText; break;
+	}
+	if(pText[0] == '\0')
+		return;
+	if(!((LeftFreeze && (Mode & 1)) || (RightFreeze && !(Mode & 1))))
+		return;
+
+	const float FontSize = (float)g_Config.m_RcShowEnableSkipThreeTilesInfoSize;
+	const float XPos = std::clamp((g_Config.m_RcShowEnableSkipThreeTilesInfoPositionX / 100.0f) * m_Width, 1.0f, m_Width - FontSize);
+	const float YPos = std::clamp((g_Config.m_RcShowEnableSkipThreeTilesInfoPositionY / 100.0f) * m_Height, 1.0f, m_Height - FontSize);
+	const ColorRGBA Color = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RcShowEnableSkipThreeTilesInfoColor));
+	TextRender()->TextColor(Color);
+	TextRender()->Text(XPos, YPos, FontSize, pText, -1.0f);
+	TextRender()->TextColor(TextRender()->DefaultTextColor());
+}
+
+bool CHud::CheckTileFreeze(int Layer, int Index) const
+{
+	if(Layer == LAYER_GAME)
+	{
+		const auto *pLayer = GameClient()->Layers()->GameLayer();
+		if(pLayer == nullptr)
+			return false;
+		const auto *pTiles = (CTile *)GameClient()->Layers()->Map()->GetData(pLayer->m_Data);
+		if(pTiles == nullptr)
+			return false;
+		const int Tile = pTiles[Index].m_Index;
+		return Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE;
+	}
+	if(Layer == LAYER_SWITCH)
+	{
+		const int Tile = GameClient()->Collision()->GetSwitchType(Index);
+		return Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE;
+	}
+	return false;
 }
 
 void CHud::RenderLocalTime(bool ForcePreview)
@@ -2470,6 +2570,8 @@ void CHud::OnRender()
 	GameClient()->m_BestClient.RenderSpecMovedNotify();
 	HudExtras::RenderPlayerBelowIndicator(GameClient(), Graphics(), TextRender(), m_Width, m_Height, Client()->RenderFrameTime());
 	// bestclient
+	// ranbi: m_RcShowEnableSkipThreeTiles
+	RenderSkipThreeTiles();
 	RenderCursor();
 }
 

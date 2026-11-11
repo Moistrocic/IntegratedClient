@@ -244,12 +244,83 @@ void CMenus::RenderSettingsRanbiNameplates(CUIRect MainView)
 
 void CMenus::RenderSettingsRanbiChatScoreboard(CUIRect MainView)
 {
-	RenderRanbiPlaceholder(Ui(), MainView, Localize("Ranbi chat and scoreboard features are not integrated yet. They will be added in a later batch."));
+	static CScrollRegion s_ScrollRegion;
+	BeginRanbiPageScroll(s_ScrollRegion, MainView);
+
+	CUIRect Column = MainView;
+	Column.HSplitTop(s_Margin, nullptr, &Column);
+
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Chat"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcChatNoDuplicateHistory, Localize("Skip duplicate messages in chat history"), &g_Config.m_RcChatNoDuplicateHistory, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("Pressing Up or Down in the chat input skips repeated consecutive messages."));
+
+	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Points"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcChatShowPoints, Localize("Show DDNet points in chat"), &g_Config.m_RcChatShowPoints, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("Requires a DDNet, EGO or Legit server."));
+
+	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Spectator"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcShowSpectatorSkin, Localize("Show spectator skin in Following line"), &g_Config.m_RcShowSpectatorSkin, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("Appends the skin name; BestClient spectator names stay unchanged."));
+
+	EndRanbiPageScroll(s_ScrollRegion, MainView, Column);
 }
 
 void CMenus::RenderSettingsRanbiNotify(CUIRect MainView)
 {
-	RenderRanbiPlaceholder(Ui(), MainView, Localize("Ranbi notify features are not integrated yet. They will be added in a later batch."));
+	static CScrollRegion s_ScrollRegion;
+	BeginRanbiPageScroll(s_ScrollRegion, MainView);
+
+	CUIRect Column = MainView;
+	Column.HSplitTop(s_Margin, nullptr, &Column);
+
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Skip three tiles"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcShowEnableSkipThreeTiles, Localize("Show three-tile water skip hint"), &g_Config.m_RcShowEnableSkipThreeTiles, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("Shows an arrow when the current position can be skipped with the three-tile water technique."));
+
+	if(g_Config.m_RcShowEnableSkipThreeTiles)
+	{
+		CUIRect Slider;
+		Column.HSplitTop(s_LineSize, &Slider, &Column);
+		Ui()->DoScrollbarOption(&g_Config.m_RcShowEnableSkipThreeTilesInfoSize, &g_Config.m_RcShowEnableSkipThreeTilesInfoSize, &Slider, Localize("Hint size"), 0, 50);
+
+		static CButtonContainer s_HintColorPicker;
+		DoLine_ColorPicker(&s_HintColorPicker, s_ColorPickerLineSize, s_ColorPickerLabelSize, s_ColorPickerLineSpacing, &Column, Localize("Hint color"), &g_Config.m_RcShowEnableSkipThreeTilesInfoColor, ColorRGBA(0.5f, 0.8f, 0.5f), false);
+
+		Column.HSplitTop(s_LineSize, &Slider, &Column);
+		Ui()->DoScrollbarOption(&g_Config.m_RcShowEnableSkipThreeTilesInfoPositionX, &g_Config.m_RcShowEnableSkipThreeTilesInfoPositionX, &Slider, Localize("Hint position X"), 0, 100);
+		Column.HSplitTop(s_LineSize, &Slider, &Column);
+		Ui()->DoScrollbarOption(&g_Config.m_RcShowEnableSkipThreeTilesInfoPositionY, &g_Config.m_RcShowEnableSkipThreeTilesInfoPositionY, &Slider, Localize("Hint position Y"), 0, 100);
+
+		static CLineInput s_LeftTextInput(g_Config.m_RcShowEnableSkipThreeTilesInfoPositionLeftText, sizeof(g_Config.m_RcShowEnableSkipThreeTilesInfoPositionLeftText));
+		static CLineInput s_RightTextInput(g_Config.m_RcShowEnableSkipThreeTilesInfoPositionRightText, sizeof(g_Config.m_RcShowEnableSkipThreeTilesInfoPositionRightText));
+		static CLineInput s_DjLeftTextInput(g_Config.m_RcShowEnableSkipThreeTilesInfoPositionDJLeftText, sizeof(g_Config.m_RcShowEnableSkipThreeTilesInfoPositionDJLeftText));
+		static CLineInput s_DjRightTextInput(g_Config.m_RcShowEnableSkipThreeTilesInfoPositionDJRightText, sizeof(g_Config.m_RcShowEnableSkipThreeTilesInfoPositionDJRightText));
+
+		CUIRect EditBox, Label;
+		Column.HSplitTop(s_LineSize + s_MarginExtraSmall, &EditBox, &Column);
+		EditBox.VSplitMid(&Label, &EditBox);
+		Ui()->DoLabel(&Label, Localize("Left arrow text"), s_FontSize, TEXTALIGN_ML);
+		Ui()->DoEditBox(&s_LeftTextInput, &EditBox, s_EditBoxFontSize);
+
+		Column.HSplitTop(s_LineSize + s_MarginExtraSmall, &EditBox, &Column);
+		EditBox.VSplitMid(&Label, &EditBox);
+		Ui()->DoLabel(&Label, Localize("Right arrow text"), s_FontSize, TEXTALIGN_ML);
+		Ui()->DoEditBox(&s_RightTextInput, &EditBox, s_EditBoxFontSize);
+
+		Column.HSplitTop(s_LineSize + s_MarginExtraSmall, &EditBox, &Column);
+		EditBox.VSplitMid(&Label, &EditBox);
+		Ui()->DoLabel(&Label, Localize("DJ left arrow text"), s_FontSize, TEXTALIGN_ML);
+		Ui()->DoEditBox(&s_DjLeftTextInput, &EditBox, s_EditBoxFontSize);
+
+		Column.HSplitTop(s_LineSize + s_MarginExtraSmall, &EditBox, &Column);
+		EditBox.VSplitMid(&Label, &EditBox);
+		Ui()->DoLabel(&Label, Localize("DJ right arrow text"), s_FontSize, TEXTALIGN_ML);
+		Ui()->DoEditBox(&s_DjRightTextInput, &EditBox, s_EditBoxFontSize);
+	}
+
+	EndRanbiPageScroll(s_ScrollRegion, MainView, Column);
 }
 
 static int s_RanbiSelectedWeapon = -1;

@@ -115,6 +115,10 @@ class CHud : public CComponent
 	int m_LastLocalClientId = -1;
 
 	void RenderSpectatorHud();
+	// ranbi
+	void RenderSkipThreeTiles();
+	bool CheckTileFreeze(int Layer, int Index) const;
+	// ranbi
 	void RenderWarmupTimer();
 	void RenderLocalTime(bool ForcePreview = false); // bestclient
 	void RenderFrozenHud(bool ForcePreview = false); // bestclient
