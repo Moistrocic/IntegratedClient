@@ -1086,6 +1086,9 @@ void CFastPractice::Disable()
 
 void CFastPractice::Toggle()
 {
+	// ranbi: task-38 - the toggle source can be a mouse1 click (also the +fire bind);
+	// swallow that press/release edge until the physical button is released.
+	Console()->ExecuteLine("ranbi_suppress_fire_until_release", IConsole::CLIENT_ID_UNSPECIFIED);
 	if(m_Enabled)
 		Disable();
 	else
