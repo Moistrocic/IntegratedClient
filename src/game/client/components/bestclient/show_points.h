@@ -36,6 +36,12 @@ public:
 
 	bool TryGetPoints(const char *pName, int *pPoints) const;
 	void RequestPoints(const char *pName);
+	// ranbi
+	/** Queue a points request for a display other than the scoreboard (e.g. the Ranbi
+	 *  nameplate points display), even when bc_show_points_in_tab is disabled. */
+	void RequestPointsForNameplate(const char *pName);
+	bool SupportedOnCurrentServer() const;
+	// ranbi
 
 private:
 	enum
@@ -77,6 +83,7 @@ private:
 	void ProcessInFlight();
 	void PumpQueue();
 	void StartRequest(const std::string &Name, EProvider Provider);
+	void QueueRequest(const char *pName); // ranbi
 };
 
 #endif

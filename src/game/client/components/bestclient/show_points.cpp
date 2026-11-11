@@ -233,7 +233,27 @@ bool CShowPoints::TryGetPoints(const char *pName, int *pPoints) const
 
 void CShowPoints::RequestPoints(const char *pName)
 {
-	if(!pName || !pName[0] || !Enabled())
+	if(!Enabled())
+		return;
+	QueueRequest(pName);
+}
+
+// ranbi: allow the Ranbi nameplate points display to use the same provider/cache
+// even when the scoreboard points column (bc_show_points_in_tab) is disabled.
+void CShowPoints::RequestPointsForNameplate(const char *pName)
+{
+	QueueRequest(pName);
+}
+
+// ranbi
+bool CShowPoints::SupportedOnCurrentServer() const
+{
+	return CurrentProvider() != EProvider::None;
+}
+
+void CShowPoints::QueueRequest(const char *pName)
+{
+	if(!pName || !pName[0])
 		return;
 
 	const EProvider Provider = CurrentProvider();
@@ -387,13 +407,16 @@ void CShowPoints::PumpQueue()
 
 void CShowPoints::OnUpdate()
 {
-	if(!Enabled())
+	// ranbi: requests can also come from the nameplate points display, so queued/in-flight
+	// requests are processed even while the scoreboard points column is disabled.
+	const bool HasPendingRequests = !m_Queue.empty() || !m_vInFlight.empty();
+	if(!Enabled() && !HasPendingRequests)
 	{
 		ClearPending();
 		return;
 	}
 
-	if(m_vInFlight.empty() && !GameClient()->m_Scoreboard.IsActive())
+	if(!HasPendingRequests && !GameClient()->m_Scoreboard.IsActive())
 		return;
 
 	if(CurrentProvider() == EProvider::None)
@@ -405,6 +428,6 @@ void CShowPoints::OnUpdate()
 
 	ProcessInFlight();
 
-	if(GameClient()->m_Scoreboard.IsActive())
+	if(GameClient()->m_Scoreboard.IsActive() || !m_Queue.empty())
 		PumpQueue();
 }

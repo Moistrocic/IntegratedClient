@@ -70,6 +70,15 @@ public:
 	int m_TeeCoordX100;
 	float m_FontSizeTeeCoords;
 	// bestclient
+	// ranbi
+	bool m_ShowPoints = false;
+	int m_Points = -1;
+	bool m_ShowFinished = false;
+	bool m_ShowDummyCopyStatus = false;
+	bool m_ShowHammerFlyStatus = false;
+	bool m_ShowDummyResetStatus = false;
+	ColorRGBA m_TeeCoordMatchedColor = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
+	// ranbi
 };
 
 // Part Types
@@ -991,8 +1000,12 @@ protected:
 		m_Visible = Data.m_ShowTeeCoords;
 		if(!m_Visible)
 			return false;
-		m_Color = ColorRGBA(1.0f, 1.0f, 1.0f, Data.m_Color.a);
-		return m_FontSize != Data.m_FontSizeTeeCoords || m_X100 != Data.m_TeeCoordX100;
+		// ranbi: optional matched-x highlight color, only changes the color of the base
+		// bc_show_tee_coords part; the coordinate display itself is unchanged.
+		const ColorRGBA NewColor = g_Config.m_RcNameplatesShowPositionXMatched ? Data.m_TeeCoordMatchedColor : ColorRGBA(1.0f, 1.0f, 1.0f, Data.m_Color.a);
+		const bool ColorChanged = m_Color != NewColor;
+		m_Color = NewColor;
+		return ColorChanged || m_FontSize != Data.m_FontSizeTeeCoords || m_X100 != Data.m_TeeCoordX100;
 	}
 
 	void UpdateText(CGameClient &This, const CNamePlateData &Data) override
@@ -1091,6 +1104,125 @@ public:
 };
 // bestclient
 
+// ranbi
+class CNamePlatePartPoints : public CNamePlatePartText
+{
+private:
+	char m_aText[64] = "";
+	int m_Points = -1;
+	float m_FontSize = -INFINITY;
+
+protected:
+	bool UpdateNeeded(CGameClient &This, const CNamePlateData &Data) override
+	{
+		m_Visible = Data.m_ShowPoints;
+		if(!m_Visible)
+			return false;
+		m_Color = Data.m_Color;
+		return m_FontSize != Data.m_FontSize || m_Points != Data.m_Points;
+	}
+
+	void UpdateText(CGameClient &This, const CNamePlateData &Data) override
+	{
+		m_Points = Data.m_Points;
+		m_FontSize = Data.m_FontSize;
+		str_format(m_aText, sizeof(m_aText), "[%d]", m_Points);
+		CTextCursor Cursor;
+		Cursor.m_FontSize = m_FontSize;
+		This.TextRender()->CreateOrAppendTextContainer(m_TextContainerIndex, &Cursor, m_aText);
+	}
+
+public:
+	CNamePlatePartPoints(CGameClient &This) :
+		CNamePlatePartText(This) {}
+};
+
+class CNamePlatePartRaceState : public CNamePlatePartIcon
+{
+public:
+	void Update(CGameClient &This, const CNamePlateData &Data) override
+	{
+		m_Visible = Data.m_ShowFinished;
+		if(!m_Visible)
+			return;
+		const float Width = (float)g_Config.m_RcNameplatesShowFinishedSize;
+		m_Size = vec2(Width, Width);
+	}
+
+	CNamePlatePartRaceState(CGameClient &This) :
+		CNamePlatePartIcon(This)
+	{
+		m_Texture = g_pData->m_aImages[IMAGE_RACEFLAG].m_Id;
+	}
+};
+
+class CNamePlatePartDummyCopyState : public CNamePlatePartIcon
+{
+public:
+	void Update(CGameClient &This, const CNamePlateData &Data) override
+	{
+		m_Visible = Data.m_ShowDummyCopyStatus;
+		if(!m_Visible)
+			return;
+		const float Width = (float)g_Config.m_RcNameplatesShowDummyCopyStatusSize;
+		m_Size = vec2(Width, Width);
+	}
+
+	CNamePlatePartDummyCopyState(CGameClient &This) :
+		CNamePlatePartIcon(This)
+	{
+		m_Texture = This.m_HudSkin.m_SpriteHudDummyCopy;
+	}
+};
+
+class CNamePlatePartHammerFlyStatus : public CNamePlatePartIcon
+{
+public:
+	void Update(CGameClient &This, const CNamePlateData &Data) override
+	{
+		m_Visible = Data.m_ShowHammerFlyStatus;
+		if(!m_Visible)
+			return;
+		const float Width = (float)g_Config.m_RcNameplatesShowHammerFlyStatusSize;
+		m_Size = vec2(Width, Width);
+	}
+
+	CNamePlatePartHammerFlyStatus(CGameClient &This) :
+		CNamePlatePartIcon(This)
+	{
+		m_Texture = This.m_HudSkin.m_SpriteHudDummyHammer;
+	}
+};
+
+class CNamePlatePartDummyResetStatus : public CNamePlatePartText
+{
+private:
+	float m_FontSize = -INFINITY;
+
+protected:
+	bool UpdateNeeded(CGameClient &This, const CNamePlateData &Data) override
+	{
+		m_Visible = Data.m_ShowDummyResetStatus;
+		if(!m_Visible)
+			return false;
+		m_Color = ColorRGBA(1.0f, 0.0f, 0.0f, Data.m_Color.a);
+		return m_FontSize != (float)g_Config.m_RcNameplatesShowDummyResetStatusSize;
+	}
+
+	void UpdateText(CGameClient &This, const CNamePlateData &Data) override
+	{
+		m_FontSize = (float)g_Config.m_RcNameplatesShowDummyResetStatusSize;
+		CTextCursor Cursor;
+		Cursor.m_FontSize = m_FontSize;
+		This.TextRender()->CreateOrAppendTextContainer(m_TextContainerIndex, &Cursor, "↺");
+	}
+
+public:
+	CNamePlatePartDummyResetStatus(CGameClient &This) :
+		CNamePlatePartText(This) {}
+};
+// ranbi
+
 class CNamePlate
 {
 private:
@@ -1137,6 +1269,7 @@ private:
 			AddPart<CNamePlatePartBClientIndicator>(This);
 			AddPart<CNamePlatePartVoiceTalking>(This);
 			// bestclient
+			AddPart<CNamePlatePartPoints>(This); // ranbi
 			AddPart<CNamePlatePartName>(This);
 			AddPart<CNamePlatePartNewLine>(This);
 			// bestclient
@@ -1160,6 +1293,14 @@ private:
 			AddPart<CNamePlatePartHookStrongWeak>(This);
 			AddPart<CNamePlatePartHookStrongWeakId>(This);
 			AddPart<CNamePlatePartNewLine>(This);
+
+			// ranbi
+			AddPart<CNamePlatePartRaceState>(This);
+			AddPart<CNamePlatePartDummyResetStatus>(This);
+			AddPart<CNamePlatePartHammerFlyStatus>(This);
+			AddPart<CNamePlatePartDummyCopyState>(This);
+			AddPart<CNamePlatePartNewLine>(This);
+			// ranbi
 
 			AddPart<CNamePlatePartDirection>(This, DIRECTION_LEFT);
 			AddPart<CNamePlatePartDirection>(This, DIRECTION_UP);
@@ -1479,6 +1620,110 @@ void CNamePlates::RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *p
 		Data.m_ShowClan = true;
 	Data.m_Local = pPlayerInfo->m_Local;
 
+	// ranbi: extended nameplate data (points / finished / dummy statuses / range hidden / matched tee coords)
+	const bool IsPlayer = pPlayerInfo->m_ClientId == GameClient()->m_aLocalIds[!g_Config.m_ClDummy] || pPlayerInfo->m_ClientId == GameClient()->m_aLocalIds[g_Config.m_ClDummy];
+	const int ViewClientId = (GameClient()->m_Snap.m_SpecInfo.m_Active && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW) ? GameClient()->m_Snap.m_SpecInfo.m_SpectatorId : GameClient()->m_Snap.m_LocalClientId;
+
+	// ranbi: m_RcNameplatesShowPoints -- reuse the base CShowPoints provider/cache instead of porting CPoints
+	Data.m_ShowPoints = Data.m_ShowName && g_Config.m_RcNameplatesShowPoints;
+	if(Data.m_ShowPoints && GameClient()->m_ShowPoints.SupportedOnCurrentServer())
+	{
+		GameClient()->m_ShowPoints.RequestPointsForNameplate(Data.m_aName);
+		int Points = 0;
+		if(GameClient()->m_ShowPoints.TryGetPoints(Data.m_aName, &Points))
+			Data.m_Points = Points;
+	}
+	Data.m_ShowPoints = Data.m_ShowPoints && Data.m_Points != -1;
+
+	// ranbi: m_RcNameplatesShowFinished
+	const bool HasFinish = GameClient()->m_ReceivedDDNetPlayerFinishTimes ? ClientData.m_FinishTimeSeconds != FinishTime::NOT_FINISHED_MILLIS : pPlayerInfo->m_Score != FinishTime::NOT_FINISHED_TIMESCORE;
+	Data.m_ShowFinished = g_Config.m_RcNameplatesShowFinished && HasFinish;
+
+	// ranbi: dummy copy / hammer fly / dummy reset status
+	Data.m_ShowDummyCopyStatus = IsPlayer && g_Config.m_ClDummyCopyMoves && g_Config.m_RcNameplatesShowDummyCopyStatus;
+	const char *pMouse1Bind = GameClient()->m_Binds.Get(KEY_MOUSE_1, KeyModifier::NONE);
+	Data.m_ShowHammerFlyStatus = IsPlayer && g_Config.m_RcNameplatesShowHammerFlyStatus && (g_Config.m_ClDummyHammer || str_find(pMouse1Bind, "cl_dummy_hammer") != nullptr);
+	Data.m_ShowDummyResetStatus = IsPlayer && !g_Config.m_ClDummyResetOnSwitch && g_Config.m_RcNameplatesShowDummyResetStatus;
+
+	// ranbi: m_RcNameplatesShowPositionXMatched -- color extension of the base CNamePlatePartTeeCoord
+	Data.m_TeeCoordMatchedColor = ColorRGBA(1.0f, 1.0f, 1.0f, Data.m_Color.a);
+	if(g_Config.m_RcNameplatesShowPositionXMatched && g_Config.m_BcShowTeeCoords && ViewClientId >= 0 && ViewClientId < MAX_CLIENTS)
+	{
+		bool Matched = false;
+		const int ViewX100 = round_to_int(GameClient()->m_aClients[ViewClientId].m_RenderPos.x / 32.0f * 100.0f);
+		if(pPlayerInfo->m_ClientId == ViewClientId)
+		{
+			for(int i = 0; i < MAX_CLIENTS; i++)
+			{
+				if(i == ViewClientId || !GameClient()->m_Snap.m_aCharacters[i].m_Active)
+					continue;
+				const int OtherX100 = round_to_int(GameClient()->m_aClients[i].m_RenderPos.x / 32.0f * 100.0f);
+				if(absolute(OtherX100 - ViewX100) < 2)
+				{
+					Matched = true;
+					break;
+				}
+			}
+		}
+		else
+		{
+			Matched = absolute(Data.m_TeeCoordX100 - ViewX100) < 2;
+		}
+		Data.m_TeeCoordMatchedColor = Matched ? color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RcNameplatesShowPositionXMatchedColor).WithAlpha(Data.m_Color.a)) : ColorRGBA(1.0f, 0.0f, 0.0f, Data.m_Color.a);
+	}
+
+	// ranbi: m_RcNameplatesRangeHidden* -- hide selected parts within radius/angle around the view player
+	if(g_Config.m_RcNameplatesRangeHidden && ViewClientId >= 0 && ViewClientId < MAX_CLIENTS && pPlayerInfo->m_ClientId != ViewClientId)
+	{
+		const vec2 ViewPos = GameClient()->m_aClients[ViewClientId].m_RenderPos;
+		const float Dist = distance(ViewPos, Position);
+		if(Dist <= (float)absolute(g_Config.m_RcNameplatesRangeHiddenRadius) * 32.0f)
+		{
+			bool InAngle = true;
+			const float MathDeg = angle(ViewPos - Position) * 180.0f / pi;
+			const float AbsDeg = std::fmod(360.0f - MathDeg + 360.0f, 360.0f);
+			const int Start = g_Config.m_RcNameplatesRangeHiddenAngleStart;
+			const int End = g_Config.m_RcNameplatesRangeHiddenAngleEnd;
+			if(Start <= End)
+				InAngle = AbsDeg >= (float)Start && AbsDeg <= (float)End;
+			else
+				InAngle = AbsDeg >= (float)Start || AbsDeg <= (float)End;
+			if(InAngle)
+			{
+				if(g_Config.m_RcNameplatesRangeHiddenName)
+					Data.m_ShowName = false;
+				if(g_Config.m_RcNameplatesRangeHiddenPoints)
+					Data.m_ShowPoints = false;
+				if(g_Config.m_RcNameplatesRangeHiddenPositionX)
+					Data.m_ShowTeeCoords = false;
+				if(g_Config.m_RcNameplatesRangeHiddenFinished)
+					Data.m_ShowFinished = false;
+				if(g_Config.m_RcNameplatesRangeHiddenStatus)
+				{
+					Data.m_ShowDummyCopyStatus = false;
+					Data.m_ShowHammerFlyStatus = false;
+					Data.m_ShowDummyResetStatus = false;
+				}
+				if(g_Config.m_RcNameplatesRangeHiddenHookStatus)
+				{
+					Data.m_ShowHookStrongWeak = false;
+					Data.m_ShowHookStrongWeakId = false;
+				}
+				if(g_Config.m_RcNameplatesRangeHiddenLove)
+					Data.m_ShowFriendMark = false;
+				if(g_Config.m_RcNameplatesRangeHiddenOthers)
+				{
+					Data.m_ShowDirection = false;
+					Data.m_ShowClan = false;
+					// ranbi: base-only extra parts are treated as "others" as well
+					Data.m_ShowBClientIndicator = false;
+					Data.m_ShowBClientVersion = false;
+					Data.m_ShowVoiceTalking = false;
+				}
+			}
+		}
+	}
+
 	// bestclient
 	GameClient()->m_FlyingNamePlates.Update(pPlayerInfo->m_ClientId, Position);
 	const vec2 RenderPos = GameClient()->m_FlyingNamePlates.GetRenderPos(pPlayerInfo->m_ClientId, Position);
@@ -1494,7 +1739,10 @@ void CNamePlates::RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *p
 	const bool NeedsUpdate = DemoPaused || !NamePlate.IsInited() ||
 				 (CurTick != m_pData->m_aLastUpdateTick[ClientId]) ||
 				 (absolute(Alpha - m_pData->m_aLastAlpha[ClientId]) > 0.05f) ||
-				 g_Config.m_BcShowTeeCoords != 0;
+				 g_Config.m_BcShowTeeCoords != 0 ||
+				 // ranbi: range hidden / matched highlighting depend on the live view position
+				 g_Config.m_RcNameplatesRangeHidden != 0 ||
+				 g_Config.m_RcNameplatesShowPositionXMatched != 0;
 	// bestclient
 
 	if(NeedsUpdate)
@@ -1605,6 +1853,19 @@ void CNamePlates::RenderNamePlatePreview(vec2 Position, int Dummy)
 	Data.m_ShowTeeCoords = false;
 	Data.m_TeeCoordX100 = 0;
 	Data.m_FontSizeTeeCoords = FontSize;
+	// ranbi: preview data for the extended parts (used by the later Ranbi settings page)
+	Data.m_ShowFinished = g_Config.m_RcNameplatesShowFinished;
+	Data.m_ShowDummyCopyStatus = g_Config.m_RcNameplatesShowDummyCopyStatus;
+	Data.m_ShowHammerFlyStatus = g_Config.m_RcNameplatesShowHammerFlyStatus;
+	Data.m_ShowDummyResetStatus = g_Config.m_RcNameplatesShowDummyResetStatus;
+	Data.m_ShowPoints = g_Config.m_RcNameplatesShowPoints;
+	if(Data.m_ShowPoints)
+	{
+		int Points = 0;
+		Data.m_ShowPoints = GameClient()->m_ShowPoints.TryGetPoints(Data.m_aName, &Points);
+		Data.m_Points = Points;
+	}
+	// ranbi
 	// bestclient
 
 	CNamePlate NamePlate(*GameClient(), Data);
