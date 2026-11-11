@@ -113,6 +113,7 @@ cmake --build build --target everything -j 8
 
 - **本机并行度上限 8**：本地构建、格式化、脚本等 CPU 密集型任务必须显式限制并行数——`cmake --build ... -j 8`（Ninja 默认吃满全部核心，禁止不带 `-j` 裸跑）、`python scripts/fix_style.py -j 8`；Docker/其他批量任务同理。不得占满用户机器的 CPU 与磁盘。
 - **一个 build 目录只对应一套工具链**：MSVC 与 GCC/MinGW 各用独立目录（如 `build-msvc`、`build-gcc`、`build-vscode`），不要在同一 build 目录切换编译器/generator。GCC/MinGW 构建必须使用 GNU 版 Rust（`RUSTUP_TOOLCHAIN=stable-x86_64-pc-windows-gnu`），否则 cargo 产出 MSVC 的 `.lib`，链接时会找不到 `libddnet_engine_shared.a`。
+- **本地复刻 GitHub Actions**：`scripts/ci-local/run-ci-local.ps1 -Workflow <style|build|rust|...> [-Job <id>]`，Linux 作业用 act + `catthehacker/ubuntu:act-*` 容器，Windows 作业用 act host 模式；macOS/iOS 无法本地复刻。覆盖范围与限制见 `scripts/ci-local/README.md`。
 
 - 只编客户端：`cmake --build build --target game-client`；产物 `build\DDNet.exe`（`CLIENT_EXECUTABLE` 默认 `DDNet`；`DDNet` 同名 target 只在 Makefile 生成器下存在）。
 - 也可用 VS 生成器：`cmake -S . -B build -A x64`，构建时加 `--config Debug`（CI Windows 用此法）。
