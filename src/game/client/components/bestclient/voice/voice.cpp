@@ -41,6 +41,9 @@
 #include <limits>
 #include <unordered_set>
 
+template class CFixedSampleRingBuffer<BestClientVoice::FRAME_SIZE * 8>;
+template class CFixedSampleRingBuffer<BestClientVoice::SAMPLE_RATE * 2>;
+
 namespace
 {
 	constexpr int CAPTURE_READ_SAMPLES = 4096;

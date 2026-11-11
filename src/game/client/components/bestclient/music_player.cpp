@@ -3639,10 +3639,10 @@ public:
 		const bool StateChanged = Snapshot.m_PlaybackState != m_PlaybackAnchorState;
 		const int64_t PredictedPosition = DisplayPositionMs();
 		const int64_t Drift = SnapshotPosition - PredictedPosition;
-		const bool SnapshotSeekedBackwards =
+		const bool SnapshotMovedBackwards =
 			m_LastRawSnapshotPositionMs >= 0 &&
 			SnapshotPosition + 500 < m_LastRawSnapshotPositionMs;
-		const bool StaleRewind = Drift < -1500 && !SnapshotSeekedBackwards;
+		const bool StaleRewind = Drift < -1500 && !SnapshotMovedBackwards;
 		const bool NeedsHardResync =
 			TrackIdentityChanged ||
 			m_PlaybackAnchorTick == 0 ||

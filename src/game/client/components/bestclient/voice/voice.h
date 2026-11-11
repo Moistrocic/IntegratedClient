@@ -30,6 +30,75 @@ struct OpusEncoder;
 struct OpusDecoder;
 class IHttpRequest;
 
+template<size_t Capacity>
+class CFixedSampleRingBuffer
+{
+public:
+	size_t PushBack(const int16_t *pData, size_t Count)
+	{
+		if(Count == 0 || pData == nullptr || Capacity == 0)
+			return 0;
+
+		if(Count >= Capacity)
+		{
+			pData += Count - Capacity;
+			Count = Capacity;
+			Clear();
+		}
+
+		const size_t Overflow = m_Size + Count > Capacity ? m_Size + Count - Capacity : 0;
+		if(Overflow > 0)
+			DiscardFront(Overflow);
+
+		size_t Tail = (m_Head + m_Size) % Capacity;
+		size_t Remaining = Count;
+		size_t Offset = 0;
+		while(Remaining > 0)
+		{
+			const size_t Chunk = std::min(Remaining, Capacity - Tail);
+			for(size_t i = 0; i < Chunk; ++i)
+				m_aData[Tail + i] = pData[Offset + i];
+			Tail = (Tail + Chunk) % Capacity;
+			Offset += Chunk;
+			Remaining -= Chunk;
+		}
+		m_Size += Count;
+		return Overflow;
+	}
+
+	size_t PopFront(int16_t *pDst, size_t Count)
+	{
+		if(Count == 0 || pDst == nullptr)
+			return 0;
+		const size_t Actual = std::min(Count, m_Size);
+		for(size_t i = 0; i < Actual; ++i)
+			pDst[i] = m_aData[(m_Head + i) % Capacity];
+		DiscardFront(Actual);
+		return Actual;
+	}
+
+	size_t DiscardFront(size_t Count)
+	{
+		const size_t Actual = std::min(Count, m_Size);
+		m_Head = (m_Head + Actual) % Capacity;
+		m_Size -= Actual;
+		return Actual;
+	}
+
+	size_t Size() const { return m_Size; }
+	constexpr size_t CapacityValue() const { return Capacity; }
+	void Clear()
+	{
+		m_Head = 0;
+		m_Size = 0;
+	}
+
+private:
+	std::array<int16_t, Capacity> m_aData = {};
+	size_t m_Head = 0;
+	size_t m_Size = 0;
+};
+
 class CVoiceChat : public CComponent
 {
 public:
@@ -68,75 +137,6 @@ public:
 	bool TryHandleChatCommand(const char *pLine);
 
 private:
-	template<size_t Capacity>
-	class CFixedSampleRingBuffer
-	{
-	public:
-		size_t PushBack(const int16_t *pData, size_t Count)
-		{
-			if(Count == 0 || pData == nullptr || Capacity == 0)
-				return 0;
-
-			if(Count >= Capacity)
-			{
-				pData += Count - Capacity;
-				Count = Capacity;
-				Clear();
-			}
-
-			const size_t Overflow = m_Size + Count > Capacity ? m_Size + Count - Capacity : 0;
-			if(Overflow > 0)
-				DiscardFront(Overflow);
-
-			size_t Tail = (m_Head + m_Size) % Capacity;
-			size_t Remaining = Count;
-			size_t Offset = 0;
-			while(Remaining > 0)
-			{
-				const size_t Chunk = std::min(Remaining, Capacity - Tail);
-				for(size_t i = 0; i < Chunk; ++i)
-					m_aData[Tail + i] = pData[Offset + i];
-				Tail = (Tail + Chunk) % Capacity;
-				Offset += Chunk;
-				Remaining -= Chunk;
-			}
-			m_Size += Count;
-			return Overflow;
-		}
-
-		size_t PopFront(int16_t *pDst, size_t Count)
-		{
-			if(Count == 0 || pDst == nullptr)
-				return 0;
-			const size_t Actual = std::min(Count, m_Size);
-			for(size_t i = 0; i < Actual; ++i)
-				pDst[i] = m_aData[(m_Head + i) % Capacity];
-			DiscardFront(Actual);
-			return Actual;
-		}
-
-		size_t DiscardFront(size_t Count)
-		{
-			const size_t Actual = std::min(Count, m_Size);
-			m_Head = (m_Head + Actual) % Capacity;
-			m_Size -= Actual;
-			return Actual;
-		}
-
-		size_t Size() const { return m_Size; }
-		constexpr size_t CapacityValue() const { return Capacity; }
-		void Clear()
-		{
-			m_Head = 0;
-			m_Size = 0;
-		}
-
-	private:
-		std::array<int16_t, Capacity> m_aData = {};
-		size_t m_Head = 0;
-		size_t m_Size = 0;
-	};
-
 	enum ERuntimeState
 	{
 		RUNTIME_STOPPED = 0,
