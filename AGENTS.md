@@ -106,8 +106,10 @@ git submodule update --init --recursive
 
 ```powershell
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DDEV=ON -DDOWNLOAD_GTEST=ON
-cmake --build build --target everything
+cmake --build build --target everything -j 8
 ```
+
+- **本机并行度上限 8**：本地构建、格式化、脚本等 CPU 密集型任务必须显式限制并行数——`cmake --build ... -j 8`（Ninja 默认吃满全部核心，禁止不带 `-j` 裸跑）、`python scripts/fix_style.py -j 8`；Docker/其他批量任务同理。不得占满用户机器的 CPU 与磁盘。
 
 - 只编客户端：`cmake --build build --target game-client`；产物 `build\DDNet.exe`（`CLIENT_EXECUTABLE` 默认 `DDNet`；`DDNet` 同名 target 只在 Makefile 生成器下存在）。
 - 也可用 VS 生成器：`cmake -S . -B build -A x64`，构建时加 `--config Debug`（CI Windows 用此法）。
