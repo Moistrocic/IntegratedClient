@@ -68,6 +68,7 @@ namespace BestClientUiTheme
 		SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD,
 		SETTINGS_NAV_LEAF_RC_NOTIFY,
 		SETTINGS_NAV_LEAF_RC_WEAPONS,
+		SETTINGS_NAV_LEAF_RC_AI, // integratedclient
 	};
 	static const int s_aIntegratedclientLeaves[] = {
 		SETTINGS_NAV_LEAF_IC_INFO,
@@ -204,6 +205,10 @@ namespace BestClientUiTheme
 			Target.m_SettingsPage = CMenus::SETTINGS_RANBI;
 			Target.m_RanbiTab = CMenus::RANBI_TAB_WEAPONS;
 			break;
+		case SETTINGS_NAV_LEAF_RC_AI: // integratedclient
+			Target.m_SettingsPage = CMenus::SETTINGS_RANBI;
+			Target.m_RanbiTab = CMenus::RANBI_TAB_AI;
+			break;
 		case SETTINGS_NAV_LEAF_IC_INFO: // integratedclient
 			Target.m_SettingsPage = CMenus::SETTINGS_INTEGRATEDCLIENT;
 			break;
@@ -221,7 +226,7 @@ namespace BestClientUiTheme
 			return SETTINGS_NAV_GROUP_TCLIENT;
 		if(Leaf >= SETTINGS_NAV_LEAF_BC_VISUALS && Leaf <= SETTINGS_NAV_LEAF_BC_INFO)
 			return SETTINGS_NAV_GROUP_BESTCLIENT;
-		if(Leaf >= SETTINGS_NAV_LEAF_RC_GENERAL && Leaf <= SETTINGS_NAV_LEAF_RC_WEAPONS) // integratedclient
+		if(Leaf >= SETTINGS_NAV_LEAF_RC_GENERAL && Leaf <= SETTINGS_NAV_LEAF_RC_AI) // integratedclient
 			return SETTINGS_NAV_GROUP_RANBI;
 		if(Leaf == SETTINGS_NAV_LEAF_IC_INFO) // integratedclient
 			return SETTINGS_NAV_GROUP_INTEGRATEDCLIENT;
@@ -287,6 +292,7 @@ namespace BestClientUiTheme
 			case CMenus::RANBI_TAB_CHAT_SCOREBOARD: return SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD;
 			case CMenus::RANBI_TAB_NOTIFY: return SETTINGS_NAV_LEAF_RC_NOTIFY;
 			case CMenus::RANBI_TAB_WEAPONS: return SETTINGS_NAV_LEAF_RC_WEAPONS;
+			case CMenus::RANBI_TAB_AI: return SETTINGS_NAV_LEAF_RC_AI; // integratedclient
 			default: return SETTINGS_NAV_LEAF_RC_GENERAL;
 			}
 		case CMenus::SETTINGS_INTEGRATEDCLIENT: // integratedclient
@@ -474,6 +480,7 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 		case SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD: return Localize("Chat & Scoreboard");
 		case SETTINGS_NAV_LEAF_RC_NOTIFY: return Localize("Notify");
 		case SETTINGS_NAV_LEAF_RC_WEAPONS: return Localize("Weapons");
+		case SETTINGS_NAV_LEAF_RC_AI: return Localize("AI"); // integratedclient
 		case SETTINGS_NAV_LEAF_IC_INFO:
 			return Localize("Info"); // integratedclient
 		// integratedclient

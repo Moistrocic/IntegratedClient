@@ -51,6 +51,7 @@ namespace BestClientUiTheme
 		SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD,
 		SETTINGS_NAV_LEAF_RC_NOTIFY,
 		SETTINGS_NAV_LEAF_RC_WEAPONS,
+		SETTINGS_NAV_LEAF_RC_AI, // integratedclient
 		SETTINGS_NAV_LEAF_IC_INFO, // integratedclient
 		// integratedclient
 		SETTINGS_NAV_LEAF_COUNT,

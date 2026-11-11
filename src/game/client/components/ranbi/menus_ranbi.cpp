@@ -623,4 +623,109 @@ void CMenus::RenderSettingsRanbiWeapons(CUIRect MainView)
 	s_ListScrollRegion.End();
 }
 
+// ranbi: AI auto reply settings (batch8). The feature is default off; the API
+// token is stored in plain text and chat/server data is sent to a third party.
+static void RenderRanbiAiWarning(CUi *pUi, CUIRect *pColumn, const char *pText)
+{
+	CUIRect Label;
+	pColumn->HSplitTop(s_LineSize, &Label, pColumn);
+	Label.VSplitLeft(s_Margin, nullptr, &Label);
+	SLabelProperties Props;
+	Props.SetColor(ColorRGBA(1.0f, 0.45f, 0.35f, 1.0f));
+	pUi->DoLabel(&Label, pText, s_FontSize * 0.85f, TEXTALIGN_ML, Props);
+}
+
+void CMenus::RenderSettingsRanbiAi(CUIRect MainView)
+{
+	static CScrollRegion s_ScrollRegion;
+	BeginRanbiPageScroll(s_ScrollRegion, MainView);
+
+	CUIRect Column = MainView;
+	Column.HSplitTop(s_Margin, nullptr, &Column);
+
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Warnings"));
+	RenderRanbiAiWarning(Ui(), &Column, Localize("Warning: auto reply sends chat messages as you. Many servers ban bots and automated chat."));
+	RenderRanbiAiWarning(Ui(), &Column, Localize("Privacy: chat messages, server info and MOTD are sent to the configured third-party API."));
+	RenderRanbiAiWarning(Ui(), &Column, Localize("The API token is stored in plain text in settings_ranbi.cfg."));
+
+	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("API"));
+	{
+		static CLineInput s_BaseUrlInput(g_Config.m_RcAiBaseUrl, sizeof(g_Config.m_RcAiBaseUrl));
+		static CLineInput s_ModelInput(g_Config.m_RcAiModel, sizeof(g_Config.m_RcAiModel));
+		static CLineInput s_TokenInput(g_Config.m_RcAiToken, sizeof(g_Config.m_RcAiToken));
+		static CLineInput s_SystemPromptInput(g_Config.m_RcAiSystemPrompt, sizeof(g_Config.m_RcAiSystemPrompt));
+		static bool s_TokenInputInitialized = false;
+		if(!s_TokenInputInitialized)
+		{
+			s_TokenInput.SetHidden(true);
+			s_TokenInputInitialized = true;
+		}
+
+		CUIRect EditBox, Label;
+		Column.HSplitTop(s_LineSize + s_MarginExtraSmall, &EditBox, &Column);
+		EditBox.VSplitMid(&Label, &EditBox);
+		Ui()->DoLabel(&Label, Localize("Base URL"), s_FontSize, TEXTALIGN_ML);
+		Ui()->DoEditBox(&s_BaseUrlInput, &EditBox, s_EditBoxFontSize);
+
+		Column.HSplitTop(s_LineSize + s_MarginExtraSmall, &EditBox, &Column);
+		EditBox.VSplitMid(&Label, &EditBox);
+		Ui()->DoLabel(&Label, Localize("Model"), s_FontSize, TEXTALIGN_ML);
+		Ui()->DoEditBox(&s_ModelInput, &EditBox, s_EditBoxFontSize);
+
+		Column.HSplitTop(s_LineSize + s_MarginExtraSmall, &EditBox, &Column);
+		EditBox.VSplitMid(&Label, &EditBox);
+		Ui()->DoLabel(&Label, Localize("API token (hidden)"), s_FontSize, TEXTALIGN_ML);
+		Ui()->DoEditBox(&s_TokenInput, &EditBox, s_EditBoxFontSize);
+
+		Column.HSplitTop(s_LineSize + s_MarginExtraSmall, &EditBox, &Column);
+		EditBox.VSplitMid(&Label, &EditBox);
+		Ui()->DoLabel(&Label, Localize("System prompt"), s_FontSize, TEXTALIGN_ML);
+		Ui()->DoEditBox(&s_SystemPromptInput, &EditBox, s_EditBoxFontSize);
+	}
+	RenderRanbiHint(Ui(), &Column, Localize("OpenAI-compatible API, e.g. https://api.openai.com/v1 or a local endpoint."));
+
+	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Auto reply"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcAiAutoReply, Localize("Auto AI reply (default off)"), &g_Config.m_RcAiAutoReply, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("Replies only when another player mentions your name. Keep it off to keep normal chat behavior."));
+
+	CUIRect Slider;
+	Column.HSplitTop(s_LineSize, &Slider, &Column);
+	Ui()->DoScrollbarOption(&g_Config.m_RcAiReplyInterval, &g_Config.m_RcAiReplyInterval, &Slider, Localize("Reply interval (seconds)"), 1, 60);
+	Column.HSplitTop(s_LineSize, &Slider, &Column);
+	Ui()->DoScrollbarOption(&g_Config.m_RcAiMaxSentenceLength, &g_Config.m_RcAiMaxSentenceLength, &Slider, Localize("Max sentence length (characters)"), 1, 100);
+	Column.HSplitTop(s_LineSize, &Slider, &Column);
+	Ui()->DoScrollbarOption(&g_Config.m_RcAiMinSentenceLength, &g_Config.m_RcAiMinSentenceLength, &Slider, Localize("Min sentence length (characters)"), 1, 100);
+	Column.HSplitTop(s_LineSize, &Slider, &Column);
+	Ui()->DoScrollbarOption(&g_Config.m_RcAiTemperature, &g_Config.m_RcAiTemperature, &Slider, Localize("Temperature (x0.1)"), 0, 20);
+	Column.HSplitTop(s_LineSize, &Slider, &Column);
+	Ui()->DoScrollbarOption(&g_Config.m_RcAiContextCount, &g_Config.m_RcAiContextCount, &Slider, Localize("Context count"), 0, 20);
+
+	if(g_Config.m_RcAiAutoReply && (g_Config.m_RcAiBaseUrl[0] == '\0' || g_Config.m_RcAiModel[0] == '\0' || g_Config.m_RcAiToken[0] == '\0'))
+		RenderRanbiAiWarning(Ui(), &Column, Localize("Auto reply is enabled but Base URL, Model or API token is empty; requests will fail."));
+
+	const char *pLastError = GameClient()->m_AiClient.LastError();
+	if(pLastError[0] != '\0')
+	{
+		char aError[384];
+		str_format(aError, sizeof(aError), Localize("Last AI request error: %s"), pLastError);
+		RenderRanbiAiWarning(Ui(), &Column, aError);
+	}
+	else if(GameClient()->m_AiClient.IsBusy())
+	{
+		RenderRanbiHint(Ui(), &Column, Localize("Waiting for the AI response..."));
+	}
+	else
+	{
+		RenderRanbiHint(Ui(), &Column, Localize("Request failures are logged to the console (ranbi_ai)."));
+	}
+
+	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Knowledge base"));
+	RenderRanbiHint(Ui(), &Column, Localize("Text files in ranbi/knowledge/*.txt are used as extra context; ddnet_wiki.txt is created on first start."));
+
+	EndRanbiPageScroll(s_ScrollRegion, MainView, Column);
+}
+
 // integratedclient

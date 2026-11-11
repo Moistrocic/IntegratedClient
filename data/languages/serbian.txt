@@ -4951,6 +4951,18 @@ Chat Binds
 Status Bar
 == 
 
+Nameplates
+== 
+
+Chat & Scoreboard
+== 
+
+Notify
+== 
+
+AI
+== 
+
 Type to search settings
 == 
 
@@ -4976,15 +4988,6 @@ Translation timed out
 == 
 
 Translation failed: %s
-== 
-
-Nameplates
-== 
-
-Chat & Scoreboard
-== 
-
-Notify
 == 
 
 System default
@@ -5384,6 +5387,78 @@ No weapon angle entries yet. Use Add on the left to create one.
 == 
 
 Angle range
+== 
+
+Warnings
+== 
+
+Warning: auto reply sends chat messages as you. Many servers ban bots and automated chat.
+== 
+
+Privacy: chat messages, server info and MOTD are sent to the configured third-party API.
+== 
+
+The API token is stored in plain text in settings_ranbi.cfg.
+== 
+
+API
+== 
+
+Base URL
+== 
+
+Model
+== 
+
+API token (hidden)
+== 
+
+System prompt
+== 
+
+OpenAI-compatible API, e.g. https://api.openai.com/v1 or a local endpoint.
+== 
+
+Auto reply
+== 
+
+Auto AI reply (default off)
+== 
+
+Replies only when another player mentions your name. Keep it off to keep normal chat behavior.
+== 
+
+Reply interval (seconds)
+== 
+
+Max sentence length (characters)
+== 
+
+Min sentence length (characters)
+== 
+
+Temperature (x0.1)
+== 
+
+Context count
+== 
+
+Auto reply is enabled but Base URL, Model or API token is empty; requests will fail.
+== 
+
+Last AI request error: %s
+== 
+
+Waiting for the AI response...
+== 
+
+Request failures are logged to the console (ranbi_ai).
+== 
+
+Knowledge base
+== 
+
+Text files in ranbi/knowledge/*.txt are used as extra context; ddnet_wiki.txt is created on first start.
 == 
 
 [bgdraw]

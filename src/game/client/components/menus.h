@@ -850,6 +850,7 @@ public:
 		RANBI_TAB_CHAT_SCOREBOARD,
 		RANBI_TAB_NOTIFY,
 		RANBI_TAB_WEAPONS,
+		RANBI_TAB_AI, // integratedclient
 		RANBI_TAB_COUNT,
 	};
 	// integratedclient
@@ -1034,6 +1035,7 @@ private:
 	void RenderSettingsRanbiChatScoreboard(CUIRect MainView);
 	void RenderSettingsRanbiNotify(CUIRect MainView);
 	void RenderSettingsRanbiWeapons(CUIRect MainView);
+	void RenderSettingsRanbiAi(CUIRect MainView); // integratedclient
 	// integratedclient
 
 	// found in components/bestclient/menus_bestclient.cpp // bestclient

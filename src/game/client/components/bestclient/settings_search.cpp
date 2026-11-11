@@ -76,6 +76,14 @@ namespace BestClientSettingsSearch
 		case SETTINGS_NAV_LEAF_BC_OTHERS: return BcLocalize("Others");
 		case SETTINGS_NAV_LEAF_BC_CONFIGS: return BcLocalize("Configs");
 		case SETTINGS_NAV_LEAF_BC_INFO: return BcLocalize("Info");
+		// integratedclient
+		case SETTINGS_NAV_LEAF_RC_GENERAL: return Localize("General");
+		case SETTINGS_NAV_LEAF_RC_NAMEPLATES: return Localize("Nameplates");
+		case SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD: return Localize("Chat & Scoreboard");
+		case SETTINGS_NAV_LEAF_RC_NOTIFY: return Localize("Notify");
+		case SETTINGS_NAV_LEAF_RC_WEAPONS: return Localize("Weapons");
+		case SETTINGS_NAV_LEAF_RC_AI: return Localize("AI");
+		// integratedclient
 		default: return Localize("Settings");
 		}
 	}
@@ -84,6 +92,8 @@ namespace BestClientSettingsSearch
 	{
 		if(GroupForLeaf(Leaf) == SETTINGS_NAV_GROUP_TCLIENT)
 			return TCLocalize("TClient");
+		if(GroupForLeaf(Leaf) == SETTINGS_NAV_GROUP_RANBI) // integratedclient
+			return Localize("Ranbi");
 		return Localize("BestClient");
 	}
 

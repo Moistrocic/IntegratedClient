@@ -3197,6 +3197,8 @@ if(CLIENT)
     components/players.h
     components/race_demo.cpp
     components/race_demo.h
+    components/ranbi/ai_client.cpp
+    components/ranbi/ai_client.h
     components/ranbi/menus_ranbi.cpp
     components/ranbi/render_proxy.cpp
     components/ranbi/render_proxy.h

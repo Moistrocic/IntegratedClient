@@ -345,6 +345,19 @@
 	{"Weapon angle note font size", SETTINGS_NAV_LEAF_RC_WEAPONS, "Weapon angle display", &g_Config.m_RcWeaponsAngleFontSize, &g_Config.m_RcShowWeaponsAngle},
 	// ranbi
 
+	// ranbi: AI (batch8; inserted here instead of the file tail so queued patches don't conflict)
+	{"Auto AI reply", SETTINGS_NAV_LEAF_RC_AI, "Auto reply", &g_Config.m_RcAiAutoReply, nullptr},
+	{"AI reply interval", SETTINGS_NAV_LEAF_RC_AI, "Auto reply", &g_Config.m_RcAiReplyInterval, &g_Config.m_RcAiAutoReply},
+	{"AI max sentence length", SETTINGS_NAV_LEAF_RC_AI, "Auto reply", &g_Config.m_RcAiMaxSentenceLength, &g_Config.m_RcAiAutoReply},
+	{"AI min sentence length", SETTINGS_NAV_LEAF_RC_AI, "Auto reply", &g_Config.m_RcAiMinSentenceLength, &g_Config.m_RcAiAutoReply},
+	{"AI temperature", SETTINGS_NAV_LEAF_RC_AI, "Auto reply", &g_Config.m_RcAiTemperature, &g_Config.m_RcAiAutoReply},
+	{"AI context count", SETTINGS_NAV_LEAF_RC_AI, "Auto reply", &g_Config.m_RcAiContextCount, &g_Config.m_RcAiAutoReply},
+	{"AI base URL", SETTINGS_NAV_LEAF_RC_AI, "API", &g_Config.m_RcAiBaseUrl, nullptr},
+	{"AI model", SETTINGS_NAV_LEAF_RC_AI, "API", &g_Config.m_RcAiModel, nullptr},
+	{"AI token", SETTINGS_NAV_LEAF_RC_AI, "API", &g_Config.m_RcAiToken, nullptr},
+	{"AI system prompt", SETTINGS_NAV_LEAF_RC_AI, "API", &g_Config.m_RcAiSystemPrompt, nullptr},
+	// ranbi
+
 	{"Skip duplicate messages in chat history", SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD, "Chat", &g_Config.m_RcChatNoDuplicateHistory, nullptr},
 	{"Show DDNet points in chat", SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD, "Points", &g_Config.m_RcChatShowPoints, nullptr},
 	{"Show spectator skin in Following line", SETTINGS_NAV_LEAF_RC_CHAT_SCOREBOARD, "Spectator", &g_Config.m_RcShowSpectatorSkin, nullptr},

@@ -208,6 +208,7 @@ void CGameClient::OnConsoleInit()
 					      &m_VoiceChat, // bestclient
 					      &m_Hud,
 					      &m_Weapons, // ranbi
+					      &m_AiClient, // ranbi
 					      &m_BestClient, // bestclient
 					      &m_BcConfigPresets, // bestclient
 					      &m_Translate, // bestclient

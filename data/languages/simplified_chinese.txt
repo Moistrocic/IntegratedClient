@@ -2946,6 +2946,93 @@ Adds a 'Take Name' action to the scoreboard player menu and requires a confirmat
 Warning: renaming to another player can be seen as impersonation and may violate server rules.
 == 警告：改为其他玩家名称可能被视为冒名，并可能违反服务器规则。
 
+BestClient
+== BestClient
+
+TClient
+== TClient
+
+Configs
+== 配置
+
+Others
+== 其他
+
+AI
+== AI
+
+Warnings
+== 警告
+
+Warning: auto reply sends chat messages as you. Many servers ban bots and automated chat.
+== 警告：自动回复会以你的身份发送聊天消息。许多服务器禁止机器人和自动聊天。
+
+Privacy: chat messages, server info and MOTD are sent to the configured third-party API.
+== 隐私：聊天消息、服务器信息和 MOTD 会发送到配置的第三方 API。
+
+The API token is stored in plain text in settings_ranbi.cfg.
+== API 令牌以明文存储在 settings_ranbi.cfg 中。
+
+API
+== API
+
+Base URL
+== 基础 URL
+
+Model
+== 模型
+
+API token (hidden)
+== API 令牌（隐藏）
+
+System prompt
+== 系统提示词
+
+OpenAI-compatible API, e.g. https://api.openai.com/v1 or a local endpoint.
+== 兼容 OpenAI 的 API，例如 https://api.openai.com/v1 或本地端点。
+
+Auto reply
+== 自动回复
+
+Auto AI reply (default off)
+== AI 自动回复（默认关闭）
+
+Replies only when another player mentions your name. Keep it off to keep normal chat behavior.
+== 仅在其它玩家提到你的名字时回复。保持关闭以维持正常聊天行为。
+
+Reply interval (seconds)
+== 回复间隔（秒）
+
+Max sentence length (characters)
+== 最大句子长度（字符）
+
+Min sentence length (characters)
+== 最小句子长度（字符）
+
+Temperature (x0.1)
+== 温度（×0.1）
+
+Context count
+== 上下文条数
+
+Auto reply is enabled but Base URL, Model or API token is empty; requests will fail.
+== 自动回复已开启，但 Base URL、模型或 API 令牌为空；请求将失败。
+
+Last AI request error: %s
+== 最近一次 AI 请求错误：%s
+
+Waiting for the AI response...
+== 正在等待 AI 回复...
+
+Request failures are logged to the console (ranbi_ai).
+== 请求失败会记录到控制台（ranbi_ai）。
+
+Knowledge base
+== 知识库
+
+Text files in ranbi/knowledge/*.txt are used as extra context; ddnet_wiki.txt is created on first start.
+== ranbi/knowledge/*.txt 中的文本文件会作为额外上下文；ddnet_wiki.txt 会在首次启动时创建。
+
 BETA
 == 
 
@@ -3003,9 +3090,6 @@ No BestClient users on the selected server
 Click to select server. Double click to connect.
 == 
 
-BestClient
-== 
-
 Configure demo camera effects
 == 
 
@@ -3060,13 +3144,7 @@ Stop practice
 Fast practice
 == 
 
-TClient
-== 
-
 Profiles
-== 
-
-Configs
 == 
 
 Show dummy position
@@ -3787,9 +3865,6 @@ Changes: %d
 == 
 
 Visuals
-== 
-
-Others
 == 
 
 high fps intake
