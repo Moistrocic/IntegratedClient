@@ -1,9 +1,11 @@
 /* Copyright © 2026 BestProject Team */
 #include "fast_practice.h"
 
+#include <base/log.h>
 #include <base/math.h>
 #include <base/mem.h>
 #include <base/str.h>
+#include <base/time.h>
 #include <base/vmath.h>
 
 #include <engine/shared/config.h>
@@ -28,6 +30,7 @@
 #include <cctype>
 #include <cmath>
 #include <cstdarg>
+#include <cstdint>
 #include <limits>
 
 namespace
@@ -188,6 +191,7 @@ void CFastPractice::ResetPracticeState()
 	ClearMapEntities();
 	ResetStoredInputs();
 	ResetAttackTickHistory();
+	std::fill(std::begin(m_aLastTrackedFire), std::end(m_aLastTrackedFire), 0);
 	ResetCommandState();
 	ResetPracticeRaceStates();
 }
@@ -901,6 +905,80 @@ void CFastPractice::ResetAttackTickHistory()
 			m_aLastAttackTick[m_EnableDummyClientId] = pChar->GetAttackTick();
 }
 
+namespace
+{
+	const char *AttackFireName(int Fire)
+	{
+		return (Fire & 1) != 0 ? "pressed/odd" : "released/even";
+	}
+} // namespace
+
+void CFastPractice::BeginDebugLog()
+{
+	if(!g_Config.m_Debug)
+		return;
+	m_DebugLogUntil = time_get() + time_freq();
+}
+
+bool CFastPractice::DebugLogActive() const
+{
+	// task-46 supplement: log continuously in debug mode so the 2s *before* the
+	// toggle (where the menu mouse1 press may be sent) is captured as well.
+	return g_Config.m_Debug != 0;
+}
+
+void CFastPractice::LogAttackState(const char *pStage)
+{
+	if(!DebugLogActive())
+		return;
+	log_info("fast_practice", "[fp-attack] %s enabled=%d suppress=%d cooldown=%d base_tick=%d pred_tick=%d",
+		pStage, m_Enabled ? 1 : 0, m_SuppressFireOnNextPredictTick ? 1 : 0, m_InputSuppressTicks,
+		m_PracticeWorld.GameTick(), Client()->PredGameTick(g_Config.m_ClDummy));
+	for(const int ClientId : {m_EnableLocalClientId, m_EnableDummyClientId})
+	{
+		if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+			continue;
+		CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId);
+		const int AttackTick = pChar != nullptr ? pChar->GetAttackTick() : -1;
+		const int LatestFire = pChar != nullptr ? (pChar->LatestInput()->m_Fire & INPUT_STATE_MASK) : -1;
+		log_info("fast_practice", "[fp-attack] %s cid=%d attack_tick=%d last_attack_tick=%d latest_fire=%d(%s)",
+			pStage, ClientId, AttackTick, m_aLastAttackTick[ClientId], LatestFire, LatestFire >= 0 ? AttackFireName(LatestFire) : "n/a");
+	}
+	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
+	{
+		const int LiveFire = GameClient()->m_Controls.m_aInputData[Conn].m_Fire & INPUT_STATE_MASK;
+		log_info("fast_practice", "[fp-attack] %s live conn=%d fire=%d(%s) locked=%d haslock=%d",
+			pStage, Conn, LiveFire, AttackFireName(LiveFire), m_aServerLockedFire[Conn], m_aHasServerLockedTargets[Conn] ? 1 : 0);
+	}
+}
+
+void CFastPractice::SyncToggleFireState()
+{
+	// The 2-bit fire ring has two even released states (0 and 2); CountInput(0, 2)
+	// counts a press. Keep controls, latest client input history and the practice/
+	// normal predicted characters on the same locked even state at the toggle edge.
+	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
+	{
+		const int Fire = m_aServerLockedFire[Conn] & INPUT_STATE_MASK;
+		GameClient()->m_Controls.m_aInputData[Conn].m_Fire = Fire;
+		GameClient()->m_Controls.m_aLastData[Conn].m_Fire = Fire;
+		if(int *pInputData = Client()->GetInput(Client()->PredGameTick(g_Config.m_ClDummy), Conn))
+			((CNetObj_PlayerInput *)pInputData)->m_Fire = Fire;
+
+		const int ClientId = GameClient()->m_aLocalIds[Conn];
+		if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+			continue;
+		for(CGameWorld *pWorld : {&m_PracticeWorld, &GameClient()->m_PredictedWorld, &GameClient()->m_GameWorld})
+		{
+			if(CCharacter *pChar = pWorld->GetCharacterById(ClientId))
+				pChar->LatestInput()->m_Fire = Fire;
+		}
+	}
+	GameClient()->m_DummyInput.m_Fire = 0;
+	GameClient()->m_HammerInput.m_Fire = 0;
+	GameClient()->m_DummyFire = 0;
+}
+
 void CFastPractice::ReleaseBufferedInputState()
 {
 	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
@@ -942,7 +1020,9 @@ void CFastPractice::CaptureServerLockedTargets()
 			TargetY = 0;
 		}
 		m_aServerLockedTargets[Slot] = ivec2(TargetX, TargetY);
-		m_aServerLockedFire[Slot] = ReleasedFireState(Input.m_Fire);
+		// task-46: keep the previous sent even ring state (0 vs 2 matters for CountInput)
+		const int LastSentFire = GameClient()->m_Controls.m_aLastData[Slot].m_Fire & INPUT_STATE_MASK;
+		m_aServerLockedFire[Slot] = (LastSentFire & 1) != 0 ? ((LastSentFire + 1) & INPUT_STATE_MASK) : LastSentFire;
 		m_aServerLockedNextWeapon[Slot] = Input.m_NextWeapon & INPUT_STATE_MASK;
 		m_aServerLockedPrevWeapon[Slot] = Input.m_PrevWeapon & INPUT_STATE_MASK;
 		m_aHasServerLockedTargets[Slot] = true;
@@ -1001,8 +1081,15 @@ void CFastPractice::Enable()
 	if(m_RequireDummy && m_EnableDummyClientId >= 0)
 		if(CCharacter *pDummy = m_PracticeWorld.GetCharacterById(m_EnableDummyClientId))
 			TrackSafeRescuePosition(m_EnableDummyClientId, pDummy);
-	ReleaseBufferedInputState();
+	// task-46: capture the previous sent fire ring *before* ReleaseBufferedInputState
+	// mutates m_aLastData, then sync the whole ring and suppress the first ticks.
 	CaptureServerLockedTargets();
+	LogAttackState("enable-before-release");
+	ReleaseBufferedInputState();
+	SyncToggleFireState();
+	m_SuppressFireOnNextPredictTick = true;
+	m_InputSuppressTicks = std::max(m_InputSuppressTicks, 2);
+	LogAttackState("enable-post-sync");
 	PublishParticipantCores(m_EnableLocalClientId, m_EnableDummyClientId);
 	GameClient()->m_PredictedTick = m_PracticeWorld.GameTick();
 }
@@ -1026,6 +1113,8 @@ void CFastPractice::Disable()
 	GameClient()->m_PredictedWorld.m_PredictedEvents.clear();
 	GameClient()->m_GameWorld.m_PredictedEvents.clear();
 	ReleaseBufferedInputState();
+	SyncToggleFireState();
+	LogAttackState("disable-post-sync");
 	m_aHasServerLockedTargets.fill(false);
 	m_aServerLockedFire.fill(0);
 	m_aServerLockedNextWeapon.fill(0);
@@ -1035,10 +1124,20 @@ void CFastPractice::Disable()
 
 void CFastPractice::Toggle()
 {
+	BeginDebugLog();
+	// task-46: the real fire press can be buffered across the toggle (normal mouse
+	// fire before toggling). Clear residual odd fire and arm the send-layer guard so
+	// no old press can be sent after the boundary; a fresh physical press clears it.
+	Console()->ExecuteLine("ranbi_fp_clear_fire", IConsole::CLIENT_ID_UNSPECIFIED);
+	Console()->ExecuteLine("ranbi_fp_fire_guard", IConsole::CLIENT_ID_UNSPECIFIED);
+	LogAttackState("toggle-begin");
 	if(m_Enabled)
 		Disable();
 	else
 		Enable();
+	Console()->ExecuteLine("ranbi_fp_clear_fire", IConsole::CLIENT_ID_UNSPECIFIED);
+	Console()->ExecuteLine("ranbi_fp_fire_guard", IConsole::CLIENT_ID_UNSPECIFIED);
+	LogAttackState("toggle-end");
 }
 
 bool CFastPractice::ConsumeKillCommand()
@@ -1102,6 +1201,12 @@ void CFastPractice::ResetPracticeToAnchor()
 
 void CFastPractice::PrepareInputForSend(int *pData, int Size, bool Dummy)
 {
+	if(DebugLogActive())
+	{
+		const int InFire = (pData != nullptr && Size >= (int)sizeof(CNetObj_PlayerInput)) ? ((const CNetObj_PlayerInput *)pData)->m_Fire & INPUT_STATE_MASK : -1;
+		log_info("fast_practice", "[fp-send] PrepareInputForSend pre dummy=%d size=%d enabled=%d in_fire=%d(%s)",
+			Dummy ? 1 : 0, Size, m_Enabled ? 1 : 0, InFire, InFire >= 0 ? AttackFireName(InFire) : "n/a");
+	}
 	if(!m_Enabled || !pData)
 		return;
 	if(GameClient()->m_Snap.m_SpecInfo.m_Active || (GameClient()->m_Snap.m_pLocalInfo && GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS))
@@ -1131,6 +1236,12 @@ void CFastPractice::PrepareInputForSend(int *pData, int Size, bool Dummy)
 
 	CNetObj_PlayerInput Neutral{};
 	BuildNeutralInput(Neutral, Dummy, true);
+	if(DebugLogActive())
+	{
+		log_info("fast_practice", "[fp-send] PrepareInputForSend post dummy=%d out_fire=%d(%s) locked=%d",
+			Dummy ? 1 : 0, Neutral.m_Fire & INPUT_STATE_MASK, AttackFireName(Neutral.m_Fire & INPUT_STATE_MASK),
+			m_aServerLockedFire[g_Config.m_ClDummy ^ (int)Dummy]);
+	}
 	if(Size >= (int)sizeof(CNetObj_PlayerInput))
 		mem_copy(pData, &Neutral, sizeof(Neutral));
 }
@@ -1159,6 +1270,19 @@ void CFastPractice::TrackFireSound(int ClientId, CCharacter *pChar)
 		return;
 
 	m_aLastAttackTick[ClientId] = AttackTick;
+
+	const int LatestFire = pChar->LatestInput()->m_Fire & INPUT_STATE_MASK;
+	const int TrackedPresses = CountInput(m_aLastTrackedFire[ClientId], LatestFire).m_Presses;
+	m_aLastTrackedFire[ClientId] = LatestFire;
+	if(DebugLogActive())
+	{
+		log_info("fast_practice", "[fp-attack] TrackFireSound cid=%d attack_tick=%d latest_fire=%d(%s) presses=%d weapon=%d",
+			ClientId, AttackTick, LatestFire, AttackFireName(LatestFire), TrackedPresses, pChar->GetActiveWeapon());
+	}
+	// task-46: an attack tick that advanced without any fire press/hold in the practice
+	// input is the local toggle artifact; do not play a fire sound/effect for it.
+	if(TrackedPresses == 0 && (LatestFire & 1) == 0)
+		return;
 
 	if(!GameClient()->m_SuppressEvents && pChar->GetActiveWeapon() == WEAPON_HAMMER)
 		MaybePlayHammerHitEffect(pChar);
@@ -1676,7 +1800,13 @@ void CFastPractice::TickPracticeWorld()
 			if(pInputData)
 			{
 				LocalNeutralizedInput = *pInputData;
-				LocalNeutralizedInput.m_Fire = ReleasedFireState(pLocalChar->LatestInput()->m_Fire);
+				// task-46: use the same even ring state as the previous LatestInput, so
+				// CountInput can not count a 0 -> 2 press and FullAuto stays off.
+				int GuardFire = pLocalChar->LatestInput()->m_Fire & INPUT_STATE_MASK;
+				if((GuardFire & 1) != 0)
+					GuardFire = (GuardFire + 1) & INPUT_STATE_MASK;
+				pLocalChar->LatestInput()->m_Fire = GuardFire;
+				LocalNeutralizedInput.m_Fire = GuardFire;
 				LocalNeutralizedInput.m_WantedWeapon = 0;
 				LocalNeutralizedInput.m_NextWeapon = 0;
 				LocalNeutralizedInput.m_PrevWeapon = 0;
@@ -1685,7 +1815,11 @@ void CFastPractice::TickPracticeWorld()
 			if(pDummyInputData)
 			{
 				DummyNeutralizedInput = *pDummyInputData;
-				DummyNeutralizedInput.m_Fire = ReleasedFireState(pDummyChar->LatestInput()->m_Fire);
+				int GuardFire = pDummyChar->LatestInput()->m_Fire & INPUT_STATE_MASK;
+				if((GuardFire & 1) != 0)
+					GuardFire = (GuardFire + 1) & INPUT_STATE_MASK;
+				pDummyChar->LatestInput()->m_Fire = GuardFire;
+				DummyNeutralizedInput.m_Fire = GuardFire;
 				DummyNeutralizedInput.m_WantedWeapon = 0;
 				DummyNeutralizedInput.m_NextWeapon = 0;
 				DummyNeutralizedInput.m_PrevWeapon = 0;

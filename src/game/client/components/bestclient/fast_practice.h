@@ -13,6 +13,7 @@
 #include <game/mapitems.h>
 
 #include <array>
+#include <cstdint>
 #include <deque>
 #include <string>
 #include <vector>
@@ -33,6 +34,7 @@ public:
 	bool Enabled() const { return m_Enabled; }
 	bool Active() const { return m_Enabled && m_Ready; }
 	bool CanEnable() const;
+	bool DebugLogActive() const;
 	void Toggle();
 	void Enable();
 	void Disable();
@@ -223,6 +225,11 @@ private:
 	void UpdateFreezeSkinDebounce();
 	void RenderGhost(const SGhostData &Ghost, float Alpha) const;
 	void ReleaseBufferedInputState();
+	void SyncToggleFireState();
+	void BeginDebugLog();
+	void LogAttackState(const char *pStage);
+	int64_t m_DebugLogUntil = 0;
+	int m_aLastTrackedFire[MAX_CLIENTS] = {};
 	void CaptureServerLockedTargets();
 	void CaptureFrozenTargets();
 	void ResetStoredInputs();

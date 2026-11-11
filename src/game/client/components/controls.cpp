@@ -3,6 +3,7 @@
 #include "controls.h"
 
 #include <base/dbg.h>
+#include <base/log.h>
 #include <base/mem.h>
 #include <base/str.h>
 #include <base/time.h>
@@ -24,6 +25,58 @@
 #include <game/collision.h>
 
 #include <algorithm>
+
+namespace
+{
+	void RanbiClearResidualFire(CControls *pControls)
+	{
+		for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
+		{
+			int Released = pControls->m_aLastData[Conn].m_Fire & INPUT_STATE_MASK;
+			if((Released & 1) != 0)
+				Released = (Released + 1) & INPUT_STATE_MASK;
+			pControls->m_aInputData[Conn].m_Fire = Released;
+			pControls->m_aLastData[Conn].m_Fire = Released;
+			if(g_Config.m_Debug)
+				log_info("fast_practice", "[fp-send] clear residual fire conn=%d fire=%d", Conn, Released);
+		}
+	}
+
+	void ConRanbiFpClearFire(IConsole::IResult *pResult, void *pUserData)
+	{
+		(void)pResult;
+		RanbiClearResidualFire(static_cast<CControls *>(pUserData));
+	}
+
+	// task-46: send-layer fire guard for the Fast Practice toggle boundary. Forces the
+	// outgoing fire to one even released state (both connections) and forces a send,
+	// until the physical fire is released or a new post-toggle press arrives (max 2 s).
+	bool s_aRanbiFpFireGuardActive[NUM_DUMMIES] = {};
+	int64_t s_aRanbiFpFireGuardUntil[NUM_DUMMIES] = {};
+
+	void RanbiFpArmFireGuard(CControls *pControls)
+	{
+		const int64_t Until = time_get() + time_freq() * 2;
+		for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
+		{
+			s_aRanbiFpFireGuardActive[Conn] = true;
+			s_aRanbiFpFireGuardUntil[Conn] = Until;
+			int Released = pControls->m_aLastData[Conn].m_Fire & INPUT_STATE_MASK;
+			if((Released & 1) != 0)
+				Released = (Released + 1) & INPUT_STATE_MASK;
+			pControls->m_aInputData[Conn].m_Fire = Released;
+			pControls->m_aLastData[Conn].m_Fire = Released;
+		}
+		if(g_Config.m_Debug)
+			log_info("fast_practice", "[fp-send] fire guard armed");
+	}
+
+	void ConRanbiFpFireGuard(IConsole::IResult *pResult, void *pUserData)
+	{
+		(void)pResult;
+		RanbiFpArmFireGuard(static_cast<CControls *>(pUserData));
+	}
+} // namespace
 
 CControls::CControls()
 {
@@ -188,10 +241,31 @@ void CControls::ConKeyInputCounter(IConsole::IResult *pResult, void *pUserData)
 
 	int *pVariable = pState->m_apVariables[g_Config.m_ClDummy];
 	const bool Pressed = pResult->GetInteger(0) != 0;
+	const bool IsFire = pVariable == &pState->m_pControls->m_aInputData[g_Config.m_ClDummy].m_Fire;
+	if(IsFire && s_aRanbiFpFireGuardActive[g_Config.m_ClDummy])
+	{
+		s_aRanbiFpFireGuardActive[g_Config.m_ClDummy] = false;
+		if(g_Config.m_Debug)
+			log_info("fast_practice", "[fp-send] fire guard released by physical fire event pressed=%d", Pressed ? 1 : 0);
+	}
+	if(IsFire && pState->m_pControls->GameClient()->m_Menus.IsActive())
+	{
+		// task-46 supplement: the in-game menu button is mouse1 (also the +fire bind);
+		// never latch a menu click into the fire ring. The user must press fire again
+		// after the menu closes, so normal shooting/practice attacks stay unchanged.
+		int Released = (*pVariable) & INPUT_STATE_MASK;
+		if((Released & 1) != 0)
+			Released = (Released + 1) & INPUT_STATE_MASK;
+		*pVariable = Released;
+		pState->m_pControls->GameClient()->m_BestClient.OnGoresFireInput(0);
+		if(g_Config.m_Debug)
+			log_info("fast_practice", "[fp-send] menu +fire swallowed pressed=%d fire=%d", Pressed ? 1 : 0, Released);
+		return;
+	}
 	if(((*pVariable) & 1) != Pressed)
 		(*pVariable)++;
 	*pVariable &= INPUT_STATE_MASK;
-	if(pVariable == &pState->m_pControls->m_aInputData[g_Config.m_ClDummy].m_Fire)
+	if(IsFire)
 		pState->m_pControls->GameClient()->m_BestClient.OnGoresFireInput(pResult->GetInteger(0));
 	// bestclient
 }
@@ -221,6 +295,10 @@ void CControls::ConKeyInputNextPrevWeapon(IConsole::IResult *pResult, void *pUse
 
 void CControls::OnConsoleInit()
 {
+	// task-46: input guard used by Fast Practice toggles
+	Console()->Register("ranbi_fp_clear_fire", "", CFGFLAG_CLIENT, ConRanbiFpClearFire, this, "Clear residual odd fire state (Fast Practice toggle)");
+	Console()->Register("ranbi_fp_fire_guard", "", CFGFLAG_CLIENT, ConRanbiFpFireGuard, this, "Force outgoing fire released across a Fast Practice toggle");
+
 	// game commands
 	{
 		// bestclient
@@ -364,6 +442,17 @@ int CControls::SnapInput(int *pData)
 		if(!GameClient()->m_GameInfo.m_BugDDRaceInput)
 			ResetInput(g_Config.m_ClDummy);
 
+		// task-46: mouse1 menu clicks are also +fire; with m_BugDDRaceInput the
+		// ResetInput above is skipped, which would send the pressed mouse state.
+		{
+			int Released = m_aLastData[g_Config.m_ClDummy].m_Fire & INPUT_STATE_MASK;
+			if((Released & 1) != 0)
+				Released = (Released + 1) & INPUT_STATE_MASK;
+			m_aInputData[g_Config.m_ClDummy].m_Fire = Released;
+			m_aLastData[g_Config.m_ClDummy].m_Fire = Released;
+			if(int *pInputData = Client()->GetInput(Client()->PredGameTick(g_Config.m_ClDummy), g_Config.m_ClDummy))
+				((CNetObj_PlayerInput *)pInputData)->m_Fire = Released;
+		}
 		mem_copy(pData, &m_aInputData[g_Config.m_ClDummy], sizeof(m_aInputData[0]));
 		// set the target anyway though so that we can keep seeing our surroundings,
 		// even if chat or menu are activated
@@ -503,6 +592,50 @@ int CControls::SnapInput(int *pData)
 	{
 		m_LastSendTime = time_get();
 		mem_copy(pData, &m_aInputData[g_Config.m_ClDummy], sizeof(m_aInputData[0]));
+	}
+	// task-46: while the toggle-boundary guard is active force the outgoing fire to
+	// one even released state (both connections) and flush that release to the server.
+	bool GuardForcedSend = false;
+	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
+	{
+		if(!s_aRanbiFpFireGuardActive[Conn])
+			continue;
+		if(time_get() > s_aRanbiFpFireGuardUntil[Conn])
+		{
+			s_aRanbiFpFireGuardActive[Conn] = false;
+			continue;
+		}
+		int Released = m_aLastData[Conn].m_Fire & INPUT_STATE_MASK;
+		if((Released & 1) != 0)
+			Released = (Released + 1) & INPUT_STATE_MASK;
+		m_aInputData[Conn].m_Fire = Released;
+		m_aLastData[Conn].m_Fire = Released;
+		if(int *pInputData = Client()->GetInput(Client()->PredGameTick(g_Config.m_ClDummy), Conn))
+			((CNetObj_PlayerInput *)pInputData)->m_Fire = Released;
+		GuardForcedSend = true;
+	}
+	if(GuardForcedSend)
+	{
+		Send = true;
+		mem_copy(pData, &m_aInputData[g_Config.m_ClDummy], sizeof(m_aInputData[0]));
+	}
+
+	if(g_Config.m_Debug)
+	{
+		const int SentFire = Send ? (((const CNetObj_PlayerInput *)pData)->m_Fire & INPUT_STATE_MASK) : -1;
+		const int InFire = m_aInputData[g_Config.m_ClDummy].m_Fire & INPUT_STATE_MASK;
+		const int LastFire = m_aLastData[g_Config.m_ClDummy].m_Fire & INPUT_STATE_MASK;
+		log_info("fast_practice", "[fp-send] SnapInput send=%d pData_fire=%d(%s) in_fire=%d(%s) last_fire=%d(%s) menu=%d mouse1=%d enabled=%d",
+			Send ? 1 : 0, SentFire, SentFire >= 0 ? ((SentFire & 1) ? "pressed/odd" : "released/even") : "n/a",
+			InFire, (InFire & 1) ? "pressed/odd" : "released/even", LastFire, (LastFire & 1) ? "pressed/odd" : "released/even",
+			GameClient()->m_Menus.IsActive() ? 1 : 0, Input()->NativeMousePressed(0) ? 1 : 0, GameClient()->m_FastPractice.Enabled() ? 1 : 0);
+		const int *pQueueA = Client()->GetInput(Client()->PredGameTick(g_Config.m_ClDummy), 0);
+		const int *pQueueB = Client()->GetInput(Client()->PredGameTick(g_Config.m_ClDummy), 1);
+		log_info("fast_practice", "[fp-send] SnapInput extra guard=%d queue0_fire=%d queue1_fire=%d game_tick=%d pred_tick=%d",
+			s_aRanbiFpFireGuardActive[0] || s_aRanbiFpFireGuardActive[1] ? 1 : 0,
+			pQueueA != nullptr ? (((const CNetObj_PlayerInput *)pQueueA)->m_Fire & INPUT_STATE_MASK) : -1,
+			pQueueB != nullptr ? (((const CNetObj_PlayerInput *)pQueueB)->m_Fire & INPUT_STATE_MASK) : -1,
+			Client()->GameTick(g_Config.m_ClDummy), Client()->PredGameTick(g_Config.m_ClDummy));
 	}
 
 	// bestclient
