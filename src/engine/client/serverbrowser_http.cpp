@@ -372,7 +372,7 @@ CServerBrowserHttp::CServerBrowserHttp(IEngine *pEngine, IStorage *pStorage, IHt
 	m_pStorage(pStorage),
 	m_UseBestClientMaster(g_Config.m_BcMastersrv != 0),
 	m_pChooseMaster(new CChooseMaster(pEngine, pHttp, Validate, ppUrls, NumUrls, PreviousBestIndex))
-	// bestclient
+// bestclient
 {
 	Refresh();
 }
@@ -684,4 +684,3 @@ IServerBrowserHttp *CreateServerBrowserHttp(IEngine *pEngine, IStorage *pStorage
 	return new CServerBrowserHttp(pEngine, pStorage, pHttp, ppUrls, NumUrls, PreviousBestIndex);
 }
 // bestclient
-

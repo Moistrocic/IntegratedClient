@@ -13,121 +13,121 @@
 
 namespace
 {
-enum
-{
-	SHAPE_CUBE = 1,
-	SHAPE_HEART = 2,
-	SHAPE_MIXED = 3,
-};
-
-constexpr float MAX_DELTA = 0.1f;
-constexpr float PROJ_DIST = 600.0f;
-constexpr float PROJ_SCALE_MIN = 0.5f;
-constexpr float PROJ_SCALE_MAX = 1.6f;
-constexpr int PARTICLE_MAX_CUBE = 12000;
-constexpr int PARTICLE_MAX_HEART = 8000;
-constexpr int MAX_COLLISION_PARTICLES = 140;
-constexpr size_t MAX_COLLISION_PAIRS = 10000;
-constexpr float GLOW_ALPHA = 0.35f;
-constexpr float GLOW_OFFSET = 2.0f;
-constexpr float DENSITY_CELL_SPARSE = 120.0f;
-constexpr float DENSITY_CELL_DENSE = 14.0f;
-constexpr float UPDATE_EXPAND = 1.35f;
-constexpr float HEART_SIZE_SCALE = 0.09f;
-
-const std::array<vec3, 8> g_aCubeVertices = {{
-	vec3(-1.0f, -1.0f, -1.0f),
-	vec3(1.0f, -1.0f, -1.0f),
-	vec3(1.0f, 1.0f, -1.0f),
-	vec3(-1.0f, 1.0f, -1.0f),
-	vec3(-1.0f, -1.0f, 1.0f),
-	vec3(1.0f, -1.0f, 1.0f),
-	vec3(1.0f, 1.0f, 1.0f),
-	vec3(-1.0f, 1.0f, 1.0f),
-}};
-
-const std::array<std::array<int, 2>, 12> g_aCubeEdges = {{
-	{{0, 1}},
-	{{1, 2}},
-	{{2, 3}},
-	{{3, 0}},
-	{{4, 5}},
-	{{5, 6}},
-	{{6, 7}},
-	{{7, 4}},
-	{{0, 4}},
-	{{1, 5}},
-	{{2, 6}},
-	{{3, 7}},
-}};
-
-constexpr int HEART_POINTS = 8;
-constexpr int HEART_LAYERS = 2;
-constexpr float HEART_THICKNESS = 0.28f;
-
-struct SRotation
-{
-	float m_Cx, m_Sx, m_Cy, m_Sy, m_Cz, m_Sz;
-};
-
-SRotation MakeRotation(const vec3 &Rot)
-{
-	return SRotation{
-		std::cos(Rot.x), std::sin(Rot.x),
-		std::cos(Rot.y), std::sin(Rot.y),
-		std::cos(Rot.z), std::sin(Rot.z)};
-}
-
-vec3 RotateVec3(const vec3 &V, const SRotation &Rot)
-{
-	vec3 R = vec3(V.x * Rot.m_Cz - V.y * Rot.m_Sz, V.x * Rot.m_Sz + V.y * Rot.m_Cz, V.z);
-	R = vec3(R.x, R.y * Rot.m_Cx - R.z * Rot.m_Sx, R.y * Rot.m_Sx + R.z * Rot.m_Cx);
-	R = vec3(R.x * Rot.m_Cy + R.z * Rot.m_Sy, R.y, -R.x * Rot.m_Sy + R.z * Rot.m_Cy);
-	return R;
-}
-
-vec2 ProjectPoint(const vec3 &Pos, const vec2 &Center)
-{
-	const float Scale = std::clamp(PROJ_DIST / (PROJ_DIST + Pos.z), PROJ_SCALE_MIN, PROJ_SCALE_MAX);
-	const vec2 Rel = vec2(Pos.x - Center.x, Pos.y - Center.y);
-	return Center + Rel * Scale;
-}
-
-const std::array<vec3, HEART_POINTS> &HeartVertices()
-{
-	static std::array<vec3, HEART_POINTS> s_aVerts;
-	static bool s_Initialized = false;
-	if(!s_Initialized)
+	enum
 	{
-		for(int i = 0; i < HEART_POINTS; i++)
+		SHAPE_CUBE = 1,
+		SHAPE_HEART = 2,
+		SHAPE_MIXED = 3,
+	};
+
+	constexpr float MAX_DELTA = 0.1f;
+	constexpr float PROJ_DIST = 600.0f;
+	constexpr float PROJ_SCALE_MIN = 0.5f;
+	constexpr float PROJ_SCALE_MAX = 1.6f;
+	constexpr int PARTICLE_MAX_CUBE = 12000;
+	constexpr int PARTICLE_MAX_HEART = 8000;
+	constexpr int MAX_COLLISION_PARTICLES = 140;
+	constexpr size_t MAX_COLLISION_PAIRS = 10000;
+	constexpr float GLOW_ALPHA = 0.35f;
+	constexpr float GLOW_OFFSET = 2.0f;
+	constexpr float DENSITY_CELL_SPARSE = 120.0f;
+	constexpr float DENSITY_CELL_DENSE = 14.0f;
+	constexpr float UPDATE_EXPAND = 1.35f;
+	constexpr float HEART_SIZE_SCALE = 0.09f;
+
+	const std::array<vec3, 8> g_aCubeVertices = {{
+		vec3(-1.0f, -1.0f, -1.0f),
+		vec3(1.0f, -1.0f, -1.0f),
+		vec3(1.0f, 1.0f, -1.0f),
+		vec3(-1.0f, 1.0f, -1.0f),
+		vec3(-1.0f, -1.0f, 1.0f),
+		vec3(1.0f, -1.0f, 1.0f),
+		vec3(1.0f, 1.0f, 1.0f),
+		vec3(-1.0f, 1.0f, 1.0f),
+	}};
+
+	const std::array<std::array<int, 2>, 12> g_aCubeEdges = {{
+		{{0, 1}},
+		{{1, 2}},
+		{{2, 3}},
+		{{3, 0}},
+		{{4, 5}},
+		{{5, 6}},
+		{{6, 7}},
+		{{7, 4}},
+		{{0, 4}},
+		{{1, 5}},
+		{{2, 6}},
+		{{3, 7}},
+	}};
+
+	constexpr int HEART_POINTS = 8;
+	constexpr int HEART_LAYERS = 2;
+	constexpr float HEART_THICKNESS = 0.28f;
+
+	struct SRotation
+	{
+		float m_Cx, m_Sx, m_Cy, m_Sy, m_Cz, m_Sz;
+	};
+
+	SRotation MakeRotation(const vec3 &Rot)
+	{
+		return SRotation{
+			std::cos(Rot.x), std::sin(Rot.x),
+			std::cos(Rot.y), std::sin(Rot.y),
+			std::cos(Rot.z), std::sin(Rot.z)};
+	}
+
+	vec3 RotateVec3(const vec3 &V, const SRotation &Rot)
+	{
+		vec3 R = vec3(V.x * Rot.m_Cz - V.y * Rot.m_Sz, V.x * Rot.m_Sz + V.y * Rot.m_Cz, V.z);
+		R = vec3(R.x, R.y * Rot.m_Cx - R.z * Rot.m_Sx, R.y * Rot.m_Sx + R.z * Rot.m_Cx);
+		R = vec3(R.x * Rot.m_Cy + R.z * Rot.m_Sy, R.y, -R.x * Rot.m_Sy + R.z * Rot.m_Cy);
+		return R;
+	}
+
+	vec2 ProjectPoint(const vec3 &Pos, const vec2 &Center)
+	{
+		const float Scale = std::clamp(PROJ_DIST / (PROJ_DIST + Pos.z), PROJ_SCALE_MIN, PROJ_SCALE_MAX);
+		const vec2 Rel = vec2(Pos.x - Center.x, Pos.y - Center.y);
+		return Center + Rel * Scale;
+	}
+
+	const std::array<vec3, HEART_POINTS> &HeartVertices()
+	{
+		static std::array<vec3, HEART_POINTS> s_aVerts;
+		static bool s_Initialized = false;
+		if(!s_Initialized)
 		{
-			const float T = 2.0f * pi * (float)i / (float)HEART_POINTS;
-			const float X = 16.0f * std::pow(std::sin(T), 3.0f);
-			const float Y = 13.0f * std::cos(T) - 5.0f * std::cos(2.0f * T) - 2.0f * std::cos(3.0f * T) - std::cos(4.0f * T);
-			s_aVerts[i] = vec3(X, -Y, 0.0f);
+			for(int i = 0; i < HEART_POINTS; i++)
+			{
+				const float T = 2.0f * pi * (float)i / (float)HEART_POINTS;
+				const float X = 16.0f * std::pow(std::sin(T), 3.0f);
+				const float Y = 13.0f * std::cos(T) - 5.0f * std::cos(2.0f * T) - 2.0f * std::cos(3.0f * T) - std::cos(4.0f * T);
+				s_aVerts[i] = vec3(X, -Y, 0.0f);
+			}
+			s_Initialized = true;
 		}
-		s_Initialized = true;
+		return s_aVerts;
 	}
-	return s_aVerts;
-}
 
-int PickType(int ConfigType)
-{
-	if(ConfigType == SHAPE_MIXED)
-		return random_float() > 0.5f ? SHAPE_CUBE : SHAPE_HEART;
-	return ConfigType;
-}
-
-ColorRGBA MakeParticleColor()
-{
-	ColorRGBA BaseColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_Bc3dParticlesColor, true));
-	if(g_Config.m_Bc3dParticlesColorMode == 2)
+	int PickType(int ConfigType)
 	{
-		const ColorHSLA RandomColor(random_float(), 0.85f, 0.65f, BaseColor.a);
-		BaseColor = color_cast<ColorRGBA>(RandomColor);
+		if(ConfigType == SHAPE_MIXED)
+			return random_float() > 0.5f ? SHAPE_CUBE : SHAPE_HEART;
+		return ConfigType;
 	}
-	return BaseColor;
-}
+
+	ColorRGBA MakeParticleColor()
+	{
+		ColorRGBA BaseColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_Bc3dParticlesColor, true));
+		if(g_Config.m_Bc3dParticlesColorMode == 2)
+		{
+			const ColorHSLA RandomColor(random_float(), 0.85f, 0.65f, BaseColor.a);
+			BaseColor = color_cast<ColorRGBA>(RandomColor);
+		}
+		return BaseColor;
+	}
 
 } // namespace
 
@@ -190,9 +190,9 @@ void C3DParticles::OnRender()
 	const unsigned CurColor = g_Config.m_Bc3dParticlesColor;
 
 	const bool StructuralChanged = !m_HasConfigSnapshot ||
-		CurType != m_LastType ||
-		CurSizeMax != m_LastSizeMax ||
-		CurDensity != m_LastDensity;
+				       CurType != m_LastType ||
+				       CurSizeMax != m_LastSizeMax ||
+				       CurDensity != m_LastDensity;
 
 	if(StructuralChanged)
 	{
@@ -302,7 +302,7 @@ void C3DParticles::OnRender()
 	};
 
 	const bool NeedRefill = (int)m_vParticles.size() != TargetCount ||
-		MapWInt != m_LastMapW || MapHInt != m_LastMapH || TargetCount != m_LastAutoCount;
+				MapWInt != m_LastMapW || MapHInt != m_LastMapH || TargetCount != m_LastAutoCount;
 	if(NeedRefill)
 	{
 		m_vParticles.clear();

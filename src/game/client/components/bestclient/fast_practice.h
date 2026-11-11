@@ -2,8 +2,8 @@
 #ifndef GAME_CLIENT_COMPONENTS_BESTCLIENT_FAST_PRACTICE_H
 #define GAME_CLIENT_COMPONENTS_BESTCLIENT_FAST_PRACTICE_H
 
-#include <engine/console.h>
 #include <engine/client/enums.h>
+#include <engine/console.h>
 
 #include <generated/protocol.h>
 

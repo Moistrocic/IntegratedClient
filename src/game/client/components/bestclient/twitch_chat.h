@@ -2,9 +2,9 @@
 #ifndef GAME_CLIENT_COMPONENTS_BESTCLIENT_TWITCH_CHAT_H
 #define GAME_CLIENT_COMPONENTS_BESTCLIENT_TWITCH_CHAT_H
 
-#include <game/client/component.h>
-
 #include <engine/external/readerwriterqueue/ReaderWriterQueue.h>
+
+#include <game/client/component.h>
 
 #include <atomic>
 #include <cstdint>

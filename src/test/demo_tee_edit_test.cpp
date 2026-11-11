@@ -2,10 +2,10 @@
 
 #include <engine/shared/snapshot.h>
 
+#include <generated/protocol.h>
+
 #include <game/client/demo_tee_edit.h>
 #include <game/gamecore.h>
-
-#include <generated/protocol.h>
 
 #include <gtest/gtest.h>
 
@@ -14,57 +14,57 @@
 
 namespace
 {
-struct STestSnapshot
-{
-	CSnapshotBuffer m_Buffer;
-	int m_Size = 0;
-};
+	struct STestSnapshot
+	{
+		CSnapshotBuffer m_Buffer;
+		int m_Size = 0;
+	};
 
-STestSnapshot MakeSnapshot(const CNetObj_ClientInfo *pInfo, int ClientId = 3, int ItemSize = sizeof(CNetObj_ClientInfo))
-{
-	CSnapshotBuilder Builder;
-	Builder.Init();
-	EXPECT_TRUE(Builder.NewItem(NETOBJTYPE_CLIENTINFO, ClientId, pInfo, ItemSize));
-	STestSnapshot Result;
-	Result.m_Size = Builder.Finish(&Result.m_Buffer);
-	return Result;
-}
+	STestSnapshot MakeSnapshot(const CNetObj_ClientInfo *pInfo, int ClientId = 3, int ItemSize = sizeof(CNetObj_ClientInfo))
+	{
+		CSnapshotBuilder Builder;
+		Builder.Init();
+		EXPECT_TRUE(Builder.NewItem(NETOBJTYPE_CLIENTINFO, ClientId, pInfo, ItemSize));
+		STestSnapshot Result;
+		Result.m_Size = Builder.Finish(&Result.m_Buffer);
+		return Result;
+	}
 
-CNetObj_ClientInfo MakeInfo(const char *pName, const char *pSkin = "original")
-{
-	CNetObj_ClientInfo Info = {};
-	StrToInts(Info.m_aName, std::size(Info.m_aName), pName);
-	StrToInts(Info.m_aClan, std::size(Info.m_aClan), "clan");
-	Info.m_Country = 643;
-	StrToInts(Info.m_aSkin, std::size(Info.m_aSkin), pSkin);
-	Info.m_UseCustomColor = 1;
-	Info.m_ColorBody = 0x123456;
-	Info.m_ColorFeet = 0x654321;
-	return Info;
-}
+	CNetObj_ClientInfo MakeInfo(const char *pName, const char *pSkin = "original")
+	{
+		CNetObj_ClientInfo Info = {};
+		StrToInts(Info.m_aName, std::size(Info.m_aName), pName);
+		StrToInts(Info.m_aClan, std::size(Info.m_aClan), "clan");
+		Info.m_Country = 643;
+		StrToInts(Info.m_aSkin, std::size(Info.m_aSkin), pSkin);
+		Info.m_UseCustomColor = 1;
+		Info.m_ColorBody = 0x123456;
+		Info.m_ColorFeet = 0x654321;
+		return Info;
+	}
 
-SDemoTeeOverride MakeOverride(const char *pOriginalName = "original-name")
-{
-	SDemoTeeOverride Override;
-	Override.m_Active = true;
-	Override.m_OverrideAppearance = true;
-	Override.m_UseCustomColors = true;
-	str_copy(Override.m_aOriginalName, pOriginalName);
-	str_copy(Override.m_aOriginalClan, "clan");
-	str_copy(Override.m_aName, "edited-name");
-	str_copy(Override.m_aClan, "edited-clan");
-	str_copy(Override.m_aSkinName, "edited-skin");
-	Override.m_BodyColor = 0xabcdef;
-	Override.m_FeetColor = 0xfedcba;
-	return Override;
-}
+	SDemoTeeOverride MakeOverride(const char *pOriginalName = "original-name")
+	{
+		SDemoTeeOverride Override;
+		Override.m_Active = true;
+		Override.m_OverrideAppearance = true;
+		Override.m_UseCustomColors = true;
+		str_copy(Override.m_aOriginalName, pOriginalName);
+		str_copy(Override.m_aOriginalClan, "clan");
+		str_copy(Override.m_aName, "edited-name");
+		str_copy(Override.m_aClan, "edited-clan");
+		str_copy(Override.m_aSkinName, "edited-skin");
+		Override.m_BodyColor = 0xabcdef;
+		Override.m_FeetColor = 0xfedcba;
+		return Override;
+	}
 
-CNetObj_ClientInfo *FindInfo(CSnapshotBuffer &Buffer)
-{
-	const CSnapshot *pSnapshot = Buffer.AsSnapshot();
-	const CSnapshotItem *pItem = pSnapshot->GetItem(0);
-	return reinterpret_cast<CNetObj_ClientInfo *>(const_cast<int *>(pItem->Data()));
-}
+	CNetObj_ClientInfo *FindInfo(CSnapshotBuffer &Buffer)
+	{
+		const CSnapshot *pSnapshot = Buffer.AsSnapshot();
+		const CSnapshotItem *pItem = pSnapshot->GetItem(0);
+		return reinterpret_cast<CNetObj_ClientInfo *>(const_cast<int *>(pItem->Data()));
+	}
 } // namespace
 
 TEST(DemoTeeEdit, AppliesNameSkinCustomFlagAndBodyFeetColorsToMatchingClient)

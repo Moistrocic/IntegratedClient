@@ -1,6 +1,6 @@
 /* Copyright © 2026 BestProject Team */
-#ifndef GAME_CLIENT_COMPONENTS_MEDIA_DECODER_H
-#define GAME_CLIENT_COMPONENTS_MEDIA_DECODER_H
+#ifndef GAME_CLIENT_COMPONENTS_BESTCLIENT_MEDIA_DECODER_H
+#define GAME_CLIENT_COMPONENTS_BESTCLIENT_MEDIA_DECODER_H
 
 #include <engine/graphics.h>
 #include <engine/storage.h>
@@ -51,21 +51,21 @@ struct SMediaDecodeLimits
 
 namespace MediaDecoder
 {
-std::string ExtractExtensionLower(const char *pPath);
-bool IsLikelyAnimatedImageExtension(const std::string &Ext);
-bool IsLikelyVideoExtension(const std::string &Ext);
+	std::string ExtractExtensionLower(const char *pPath);
+	bool IsLikelyAnimatedImageExtension(const std::string &Ext);
+	bool IsLikelyVideoExtension(const std::string &Ext);
 
-void UnloadFrames(IGraphics *pGraphics, std::vector<SMediaFrame> &vFrames);
-bool UploadFrames(IGraphics *pGraphics, SMediaDecodedFrames &DecodedFrames, std::vector<SMediaFrame> &vFrames, const char *pContextName);
-bool GetCurrentFrameTexture(const std::vector<SMediaFrame> &vFrames, bool Animated, int64_t AnimationStart, IGraphics::CTextureHandle &Texture);
-bool DecodeImageToRgba(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, CImageInfo &Image);
-bool DecodeStaticImageCpu(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, SMediaDecodedFrames &DecodedFrames, int MaxDimension);
-bool DecodeAnimatedImageCpu(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, SMediaDecodedFrames &DecodedFrames, const SMediaDecodeLimits &Limits);
-bool DecodeImageWithFfmpegCpu(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, SMediaDecodedFrames &DecodedFrames, const SMediaDecodeLimits &Limits);
+	void UnloadFrames(IGraphics *pGraphics, std::vector<SMediaFrame> &vFrames);
+	bool UploadFrames(IGraphics *pGraphics, SMediaDecodedFrames &DecodedFrames, std::vector<SMediaFrame> &vFrames, const char *pContextName);
+	bool GetCurrentFrameTexture(const std::vector<SMediaFrame> &vFrames, bool Animated, int64_t AnimationStart, IGraphics::CTextureHandle &Texture);
+	bool DecodeImageToRgba(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, CImageInfo &Image);
+	bool DecodeStaticImageCpu(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, SMediaDecodedFrames &DecodedFrames, int MaxDimension);
+	bool DecodeAnimatedImageCpu(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, SMediaDecodedFrames &DecodedFrames, const SMediaDecodeLimits &Limits);
+	bool DecodeImageWithFfmpegCpu(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, SMediaDecodedFrames &DecodedFrames, const SMediaDecodeLimits &Limits);
 
-bool DecodeStaticImage(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, std::vector<SMediaFrame> &vFrames, bool &Animated, int &Width, int &Height, int64_t &AnimationStart);
-bool DecodeAnimatedImage(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, std::vector<SMediaFrame> &vFrames, bool &Animated, int &Width, int &Height, int64_t &AnimationStart, int MaxAnimationDurationMs);
-bool DecodeImageWithFfmpeg(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, std::vector<SMediaFrame> &vFrames, bool &Animated, int &Width, int &Height, int64_t &AnimationStart, bool DecodeAllFrames, int MaxAnimationDurationMs);
+	bool DecodeStaticImage(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, std::vector<SMediaFrame> &vFrames, bool &Animated, int &Width, int &Height, int64_t &AnimationStart);
+	bool DecodeAnimatedImage(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, std::vector<SMediaFrame> &vFrames, bool &Animated, int &Width, int &Height, int64_t &AnimationStart, int MaxAnimationDurationMs);
+	bool DecodeImageWithFfmpeg(IGraphics *pGraphics, const unsigned char *pData, size_t DataSize, const char *pContextName, std::vector<SMediaFrame> &vFrames, bool &Animated, int &Width, int &Height, int64_t &AnimationStart, bool DecodeAllFrames, int MaxAnimationDurationMs);
 }
 
 #endif

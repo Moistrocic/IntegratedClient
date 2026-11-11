@@ -388,10 +388,10 @@ void CDemoTeeEditor::UpdateSelection(CGameClient *pGameClient, const CUIRect &De
 
 	CUi *pUi = pGameClient->Ui();
 	const bool CanSelect = pGameClient->m_Menus.IsActive() && pGameClient->m_Menus.Popup() == CMenus::POPUP_NONE &&
-		!pGameClient->m_GameConsole.IsActive() && !pGameClient->m_AspectRatio.ConfirmWantsInput() &&
-		(!pUi->IsPopupOpen() || (EditorPopupOpen(pGameClient) && !EditorPopupHovered(pGameClient))) &&
-		pUi->MouseButton(0) == 0 && pUi->LastMouseButton(0) &&
-		!DemoControls.Inside(pUi->MousePos());
+			       !pGameClient->m_GameConsole.IsActive() && !pGameClient->m_AspectRatio.ConfirmWantsInput() &&
+			       (!pUi->IsPopupOpen() || (EditorPopupOpen(pGameClient) && !EditorPopupHovered(pGameClient))) &&
+			       pUi->MouseButton(0) == 0 && pUi->LastMouseButton(0) &&
+			       !DemoControls.Inside(pUi->MousePos());
 	if(!CanSelect)
 		return;
 

@@ -21,7 +21,6 @@
 #include <game/client/ui_rect.h> // bestclient
 
 #include <algorithm> // bestclient
-
 #include <vector>
 
 class CTranslateResponse

@@ -363,9 +363,16 @@ CUi::EPopupMenuFunctionResult CChat::PopupTranslateSettings(void *pContext, CUIR
 	(void)Active;
 
 	static const std::vector<STranslateLanguage> s_vSourceLanguages = {
-		{"Auto", "auto"}, {"Russian", "ru"}, {"English", "en"}, {"German", "de"},
-		{"French", "fr"}, {"Spanish", "es"}, {"Polish", "pl"}, {"Chinese", "zh"},
-		{"Portuguese", "pt"}, {"Turkish", "tr"},
+		{"Auto", "auto"},
+		{"Russian", "ru"},
+		{"English", "en"},
+		{"German", "de"},
+		{"French", "fr"},
+		{"Spanish", "es"},
+		{"Polish", "pl"},
+		{"Chinese", "zh"},
+		{"Portuguese", "pt"},
+		{"Turkish", "tr"},
 	};
 	static CUi::SDropDownState s_IncomingSourceState;
 	static CUi::SDropDownState s_IncomingTargetState;
@@ -459,7 +466,7 @@ CUi::EPopupMenuFunctionResult CChat::PopupTranslateSettings(void *pContext, CUIR
 		pChat->Ui()->DoEditBox(&s_TranslateKey, &Row, FontSize);
 		View.HSplitTop(Gap, nullptr, &View);
 		pChat->m_TranslateSettingsInputActive = s_TranslateEndpoint.IsActive() || s_TranslateKey.IsActive() ||
-			pChat->Ui()->ActiveItem() == &s_TranslateEndpoint || pChat->Ui()->ActiveItem() == &s_TranslateKey;
+							pChat->Ui()->ActiveItem() == &s_TranslateEndpoint || pChat->Ui()->ActiveItem() == &s_TranslateKey;
 	}
 	else
 		pChat->m_TranslateSettingsInputActive = false;
@@ -481,14 +488,14 @@ void CChat::RenderTranslateSettingsButton(const CUIRect &ButtonRect)
 	const bool Active = g_Config.m_TcTranslateAutoOutgoing;
 	const bool Open = Ui()->IsPopupOpen(&m_TranslateSettingsPopupId);
 	const ColorRGBA IconColor = Open ? ColorRGBA(0.5f, 0.65f, 1.0f, 1.0f) :
-		(Active ? ColorRGBA(0.35f, 0.85f, 0.45f, 1.0f) : ColorRGBA(1.0f, 1.0f, 1.0f, Hovered ? 1.0f : 0.8f));
+					   (Active ? ColorRGBA(0.35f, 0.85f, 0.45f, 1.0f) : ColorRGBA(1.0f, 1.0f, 1.0f, Hovered ? 1.0f : 0.8f));
 	const float IconSize = ButtonRect.h * 1.65f;
 	TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
 	TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH |
-		ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING |
-		ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING |
-		ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT |
-		ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+				     ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING |
+				     ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING |
+				     ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT |
+				     ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 	TextRender()->TextColor(IconColor);
 	Ui()->DoLabel(&ButtonRect, FontIcon::EARTH_AMERICAS, IconSize, TEXTALIGN_MC);
 	TextRender()->SetRenderFlags(0);
@@ -540,7 +547,7 @@ bool CChat::OnInput(const IInput::CEvent &Event)
 	{
 		const vec2 MousePos = ChatMousePos();
 		const bool InsideButton = MousePos.x >= m_TranslateButtonRect.x && MousePos.x <= m_TranslateButtonRect.x + m_TranslateButtonRect.w &&
-			MousePos.y >= m_TranslateButtonRect.y && MousePos.y <= m_TranslateButtonRect.y + m_TranslateButtonRect.h;
+					  MousePos.y >= m_TranslateButtonRect.y && MousePos.y <= m_TranslateButtonRect.y + m_TranslateButtonRect.h;
 		if(Event.m_Flags & IInput::FLAG_PRESS)
 		{
 			m_TranslateButtonPressed = InsideButton;
@@ -1888,21 +1895,21 @@ void CChat::OnRender()
 				CUIRect ButtonRect = {x + LineW + 2.0f, LineRenderY - ButtonSize * 0.15f, ButtonSize, ButtonSize};
 				const vec2 MousePos = ChatMousePos();
 				const bool Hovered = MousePos.x >= ButtonRect.x && MousePos.x <= ButtonRect.x + ButtonRect.w &&
-					MousePos.y >= ButtonRect.y && MousePos.y <= ButtonRect.y + ButtonRect.h;
+						     MousePos.y >= ButtonRect.y && MousePos.y <= ButtonRect.y + ButtonRect.h;
 				if(Hovered)
 					m_TranslateMessageHoverLine = ArrayIndex;
 				const bool HasTranslation = Line.m_pTranslateResponse && Line.m_pTranslateResponse->m_Shown && Line.m_pTranslateResponse->m_Text[0] && !Line.m_pTranslateResponse->m_Error;
 				const ColorRGBA IconColor = HasTranslation ? ColorRGBA(0.35f, 0.85f, 0.45f, Blend) :
-					(Hovered ? ColorRGBA(1.0f, 1.0f, 1.0f, Blend) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.55f * Blend));
+									     (Hovered ? ColorRGBA(1.0f, 1.0f, 1.0f, Blend) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.55f * Blend));
 				const float UiScale = Ui()->Screen()->h / Height;
 				const CUIRect UiButtonRect = {ButtonRect.x * UiScale, ButtonRect.y * UiScale, ButtonRect.w * UiScale, ButtonRect.h * UiScale};
 				Ui()->MapScreen();
 				TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
 				TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH |
-					ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING |
-					ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING |
-					ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT |
-					ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+							     ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING |
+							     ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING |
+							     ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT |
+							     ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 				TextRender()->TextColor(IconColor);
 				TextRender()->Text(UiButtonRect.x, UiButtonRect.y, UiButtonRect.h * 0.85f, FontIcon::EARTH_AMERICAS);
 				TextRender()->SetRenderFlags(0);

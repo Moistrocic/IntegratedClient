@@ -190,8 +190,12 @@ void CEdgeHelper::RenderEdgeHelperEdgeInfo(CUIRect *pBase, float Scale)
 	RightZone.VSplitLeft(ActionSpacing + 2.0f * Scale, nullptr, &RightZone);
 	LeftZone.Margin(SEdgeHelperProperties::ms_ItemSpacing * Scale, &LeftZone);
 	RightZone.Margin(SEdgeHelperProperties::ms_ItemSpacing * Scale, &RightZone);
-	LeftZone.Draw(m_PosX >= 44 ? color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RiEdgeInfoColorFreeze)) : m_PosX >= 28 ? color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RiEdgeInfoColorSafe)) : color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RiEdgeInfoColorKill)), IGraphics::CORNER_ALL, SEdgeHelperProperties::ms_Rounding * Scale);
-	RightZone.Draw(m_PosX <= 53 ? color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RiEdgeInfoColorFreeze)) : m_PosX <= 69 ? color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RiEdgeInfoColorSafe)) : color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RiEdgeInfoColorKill)), IGraphics::CORNER_ALL, SEdgeHelperProperties::ms_Rounding * Scale);
+	LeftZone.Draw(m_PosX >= 44 ? color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RiEdgeInfoColorFreeze)) : m_PosX >= 28 ? color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RiEdgeInfoColorSafe)) :
+															 color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RiEdgeInfoColorKill)),
+		IGraphics::CORNER_ALL, SEdgeHelperProperties::ms_Rounding * Scale);
+	RightZone.Draw(m_PosX <= 53 ? color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RiEdgeInfoColorFreeze)) : m_PosX <= 69 ? color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RiEdgeInfoColorSafe)) :
+															  color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RiEdgeInfoColorKill)),
+		IGraphics::CORNER_ALL, SEdgeHelperProperties::ms_Rounding * Scale);
 	CenterZone.VSplitLeft(SEdgeHelperProperties::ms_WallWidth * Scale + ActionSpacing, &LeftZone, &CenterZone);
 	CenterZone.VSplitRight(SEdgeHelperProperties::ms_WallWidth * Scale + ActionSpacing, &CenterZone, &RightZone);
 	LeftZone.VSplitRight(ActionSpacing - 3.0f * Scale, &LeftZone, nullptr);

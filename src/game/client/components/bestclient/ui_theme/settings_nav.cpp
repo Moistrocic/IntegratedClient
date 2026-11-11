@@ -1,5 +1,6 @@
 /* Copyright © 2026 BestProject Team */
 #include "settings_nav.h"
+
 #include "widgets.h"
 
 #include <base/dbg.h>
@@ -19,299 +20,299 @@
 namespace BestClientUiTheme
 {
 
-static constexpr int TC_TAB_SETTINGS = 0;
-static constexpr int TC_TAB_BINDWHEEL = 1;
-static constexpr int TC_TAB_WARLIST = 2;
-static constexpr int TC_TAB_BINDCHAT = 3;
-static constexpr int TC_TAB_STATUSBAR = 4;
-static constexpr int TC_TAB_INFO = 5;
+	static constexpr int TC_TAB_SETTINGS = 0;
+	static constexpr int TC_TAB_BINDWHEEL = 1;
+	static constexpr int TC_TAB_WARLIST = 2;
+	static constexpr int TC_TAB_BINDCHAT = 3;
+	static constexpr int TC_TAB_STATUSBAR = 4;
+	static constexpr int TC_TAB_INFO = 5;
 
-static constexpr int BC_TAB_VISUALS = 0;
-static constexpr int BC_TAB_GAMEPLAY = 1;
-static constexpr int BC_TAB_OTHERS = 2;
-static constexpr int BC_TAB_CONFIGS = 3;
-static constexpr int BC_TAB_INFO = 4;
+	static constexpr int BC_TAB_VISUALS = 0;
+	static constexpr int BC_TAB_GAMEPLAY = 1;
+	static constexpr int BC_TAB_OTHERS = 2;
+	static constexpr int BC_TAB_CONFIGS = 3;
+	static constexpr int BC_TAB_INFO = 4;
 
-static const int s_aDdnetLeaves[] = {
-	SETTINGS_NAV_LEAF_GENERAL,
-	SETTINGS_NAV_LEAF_TEE,
-	SETTINGS_NAV_LEAF_APPEARANCE,
-	SETTINGS_NAV_LEAF_CONTROLS,
-	SETTINGS_NAV_LEAF_GRAPHICS,
-	SETTINGS_NAV_LEAF_SOUND,
-	SETTINGS_NAV_LEAF_DDNET,
-	SETTINGS_NAV_LEAF_ASSETS,
-	SETTINGS_NAV_LEAF_CREDITS,
-};
-static const int s_aTclientLeaves[] = {
-	SETTINGS_NAV_LEAF_TC_SETTINGS,
-	SETTINGS_NAV_LEAF_TC_BIND_WHEEL,
-	SETTINGS_NAV_LEAF_TC_WAR_LIST,
-	SETTINGS_NAV_LEAF_TC_CHAT_BINDS,
-	SETTINGS_NAV_LEAF_TC_STATUS_BAR,
-	SETTINGS_NAV_LEAF_TC_PROFILE,
-	SETTINGS_NAV_LEAF_TC_CONFIGS,
-	SETTINGS_NAV_LEAF_TC_INFO,
-};
-static const int s_aBestclientLeaves[] = {
-	SETTINGS_NAV_LEAF_BC_VISUALS,
-	SETTINGS_NAV_LEAF_BC_GAMEPLAY,
-	SETTINGS_NAV_LEAF_BC_OTHERS,
-	SETTINGS_NAV_LEAF_BC_CONFIGS,
-	SETTINGS_NAV_LEAF_BC_INFO,
-};
-
-static int LeafVisualRank(int Leaf)
-{
-	const int *apLists[] = {s_aDdnetLeaves, s_aTclientLeaves, s_aBestclientLeaves};
-	const int aCounts[] = {
-		(int)(sizeof(s_aDdnetLeaves) / sizeof(s_aDdnetLeaves[0])),
-		(int)(sizeof(s_aTclientLeaves) / sizeof(s_aTclientLeaves[0])),
-		(int)(sizeof(s_aBestclientLeaves) / sizeof(s_aBestclientLeaves[0])),
+	static const int s_aDdnetLeaves[] = {
+		SETTINGS_NAV_LEAF_GENERAL,
+		SETTINGS_NAV_LEAF_TEE,
+		SETTINGS_NAV_LEAF_APPEARANCE,
+		SETTINGS_NAV_LEAF_CONTROLS,
+		SETTINGS_NAV_LEAF_GRAPHICS,
+		SETTINGS_NAV_LEAF_SOUND,
+		SETTINGS_NAV_LEAF_DDNET,
+		SETTINGS_NAV_LEAF_ASSETS,
+		SETTINGS_NAV_LEAF_CREDITS,
 	};
-	int Rank = 0;
-	for(int List = 0; List < 3; ++List)
-	{
-		for(int i = 0; i < aCounts[List]; ++i, ++Rank)
-		{
-			if(apLists[List][i] == Leaf)
-				return Rank;
-		}
-	}
-	return Leaf;
-}
-
-static bool IsFlagSet(int Flags, int Bit)
-{
-	return (Flags & (1 << Bit)) != 0;
-}
-
-SSettingsLeafTarget LeafTarget(int Leaf)
-{
-	SSettingsLeafTarget Target;
-	switch(Leaf)
-	{
-	case SETTINGS_NAV_LEAF_GENERAL:
-		Target.m_SettingsPage = CMenus::SETTINGS_GENERAL;
-		break;
-	case SETTINGS_NAV_LEAF_TEE:
-		Target.m_SettingsPage = CMenus::SETTINGS_TEE;
-		break;
-	case SETTINGS_NAV_LEAF_APPEARANCE:
-		Target.m_SettingsPage = CMenus::SETTINGS_APPEARANCE;
-		break;
-	case SETTINGS_NAV_LEAF_CONTROLS:
-		Target.m_SettingsPage = CMenus::SETTINGS_CONTROLS;
-		break;
-	case SETTINGS_NAV_LEAF_GRAPHICS:
-		Target.m_SettingsPage = CMenus::SETTINGS_GRAPHICS;
-		break;
-	case SETTINGS_NAV_LEAF_SOUND:
-		Target.m_SettingsPage = CMenus::SETTINGS_SOUND;
-		break;
-	case SETTINGS_NAV_LEAF_DDNET:
-		Target.m_SettingsPage = CMenus::SETTINGS_DDNET;
-		break;
-	case SETTINGS_NAV_LEAF_ASSETS:
-		Target.m_SettingsPage = CMenus::SETTINGS_ASSETS;
-		break;
-	case SETTINGS_NAV_LEAF_CREDITS:
-		Target.m_SettingsPage = CMenus::SETTINGS_CREDITS;
-		break;
-	case SETTINGS_NAV_LEAF_TC_SETTINGS:
-		Target.m_SettingsPage = CMenus::SETTINGS_TCLIENT;
-		Target.m_TClientTab = TC_TAB_SETTINGS;
-		break;
-	case SETTINGS_NAV_LEAF_TC_BIND_WHEEL:
-		Target.m_SettingsPage = CMenus::SETTINGS_TCLIENT;
-		Target.m_TClientTab = TC_TAB_BINDWHEEL;
-		break;
-	case SETTINGS_NAV_LEAF_TC_WAR_LIST:
-		Target.m_SettingsPage = CMenus::SETTINGS_TCLIENT;
-		Target.m_TClientTab = TC_TAB_WARLIST;
-		break;
-	case SETTINGS_NAV_LEAF_TC_CHAT_BINDS:
-		Target.m_SettingsPage = CMenus::SETTINGS_TCLIENT;
-		Target.m_TClientTab = TC_TAB_BINDCHAT;
-		break;
-	case SETTINGS_NAV_LEAF_TC_STATUS_BAR:
-		Target.m_SettingsPage = CMenus::SETTINGS_TCLIENT;
-		Target.m_TClientTab = TC_TAB_STATUSBAR;
-		break;
-	case SETTINGS_NAV_LEAF_TC_INFO:
-		Target.m_SettingsPage = CMenus::SETTINGS_TCLIENT;
-		Target.m_TClientTab = TC_TAB_INFO;
-		break;
-	case SETTINGS_NAV_LEAF_TC_PROFILE:
-		Target.m_SettingsPage = CMenus::SETTINGS_PROFILES;
-		break;
-	case SETTINGS_NAV_LEAF_TC_CONFIGS:
-		Target.m_SettingsPage = CMenus::SETTINGS_CONFIGS;
-		break;
-	case SETTINGS_NAV_LEAF_BC_VISUALS:
-		Target.m_SettingsPage = CMenus::SETTINGS_BESTCLIENT;
-		Target.m_BestClientTab = BC_TAB_VISUALS;
-		break;
-	case SETTINGS_NAV_LEAF_BC_GAMEPLAY:
-		Target.m_SettingsPage = CMenus::SETTINGS_BESTCLIENT;
-		Target.m_BestClientTab = BC_TAB_GAMEPLAY;
-		break;
-	case SETTINGS_NAV_LEAF_BC_OTHERS:
-		Target.m_SettingsPage = CMenus::SETTINGS_BESTCLIENT;
-		Target.m_BestClientTab = BC_TAB_OTHERS;
-		break;
-	case SETTINGS_NAV_LEAF_BC_CONFIGS:
-		Target.m_SettingsPage = CMenus::SETTINGS_BESTCLIENT;
-		Target.m_BestClientTab = BC_TAB_CONFIGS;
-		break;
-	case SETTINGS_NAV_LEAF_BC_INFO:
-		Target.m_SettingsPage = CMenus::SETTINGS_BESTCLIENT;
-		Target.m_BestClientTab = BC_TAB_INFO;
-		break;
-	default:
-		Target.m_SettingsPage = CMenus::SETTINGS_GENERAL;
-		break;
-	}
-	return Target;
-}
-
-int GroupForLeaf(int Leaf)
-{
-	if(Leaf >= SETTINGS_NAV_LEAF_TC_SETTINGS && Leaf <= SETTINGS_NAV_LEAF_TC_CONFIGS)
-		return SETTINGS_NAV_GROUP_TCLIENT;
-	if(Leaf >= SETTINGS_NAV_LEAF_BC_VISUALS && Leaf <= SETTINGS_NAV_LEAF_BC_INFO)
-		return SETTINGS_NAV_GROUP_BESTCLIENT;
-	return SETTINGS_NAV_GROUP_DDNET;
-}
-
-bool IsLeafVisible(int Leaf, int TcTabFlags, int BcTabFlags)
-{
-	if(Leaf >= SETTINGS_NAV_LEAF_TC_SETTINGS && Leaf <= SETTINGS_NAV_LEAF_TC_INFO)
-	{
-		const int Tab = Leaf - SETTINGS_NAV_LEAF_TC_SETTINGS;
-		return !IsFlagSet(TcTabFlags, Tab);
-	}
-	if(Leaf >= SETTINGS_NAV_LEAF_BC_VISUALS && Leaf <= SETTINGS_NAV_LEAF_BC_OTHERS)
-	{
-		const int Tab = Leaf - SETTINGS_NAV_LEAF_BC_VISUALS;
-		return !IsFlagSet(BcTabFlags, Tab);
-	}
-	if(Leaf == SETTINGS_NAV_LEAF_BC_CONFIGS)
-		return !IsFlagSet(BcTabFlags, BC_TAB_CONFIGS);
-	return true;
-}
-
-int LeafFromState(int SettingsPage, int TClientTab, int BestClientTab)
-{
-	switch(SettingsPage)
-	{
-	case CMenus::SETTINGS_GENERAL: return SETTINGS_NAV_LEAF_GENERAL;
-	case CMenus::SETTINGS_TEE: return SETTINGS_NAV_LEAF_TEE;
-	case CMenus::SETTINGS_APPEARANCE: return SETTINGS_NAV_LEAF_APPEARANCE;
-	case CMenus::SETTINGS_CONTROLS: return SETTINGS_NAV_LEAF_CONTROLS;
-	case CMenus::SETTINGS_GRAPHICS: return SETTINGS_NAV_LEAF_GRAPHICS;
-	case CMenus::SETTINGS_SOUND: return SETTINGS_NAV_LEAF_SOUND;
-	case CMenus::SETTINGS_DDNET: return SETTINGS_NAV_LEAF_DDNET;
-	case CMenus::SETTINGS_ASSETS: return SETTINGS_NAV_LEAF_ASSETS;
-	case CMenus::SETTINGS_CREDITS: return SETTINGS_NAV_LEAF_CREDITS;
-	case CMenus::SETTINGS_PROFILES: return SETTINGS_NAV_LEAF_TC_PROFILE;
-	case CMenus::SETTINGS_CONFIGS: return SETTINGS_NAV_LEAF_TC_CONFIGS;
-	case CMenus::SETTINGS_TCLIENT:
-		switch(TClientTab)
-		{
-		case TC_TAB_BINDWHEEL: return SETTINGS_NAV_LEAF_TC_BIND_WHEEL;
-		case TC_TAB_WARLIST: return SETTINGS_NAV_LEAF_TC_WAR_LIST;
-		case TC_TAB_BINDCHAT: return SETTINGS_NAV_LEAF_TC_CHAT_BINDS;
-		case TC_TAB_STATUSBAR: return SETTINGS_NAV_LEAF_TC_STATUS_BAR;
-		case TC_TAB_INFO: return SETTINGS_NAV_LEAF_TC_INFO;
-		default: return SETTINGS_NAV_LEAF_TC_SETTINGS;
-		}
-	case CMenus::SETTINGS_BESTCLIENT:
-		switch(BestClientTab)
-		{
-		case BC_TAB_GAMEPLAY: return SETTINGS_NAV_LEAF_BC_GAMEPLAY;
-		case BC_TAB_OTHERS: return SETTINGS_NAV_LEAF_BC_OTHERS;
-		case BC_TAB_CONFIGS: return SETTINGS_NAV_LEAF_BC_CONFIGS;
-		case BC_TAB_INFO: return SETTINGS_NAV_LEAF_BC_INFO;
-		default: return SETTINGS_NAV_LEAF_BC_VISUALS;
-		}
-	default:
-		return SETTINGS_NAV_LEAF_GENERAL;
-	}
-}
-
-void ApplyLeaf(CMenus *pMenus, int Leaf)
-{
-	if(!pMenus)
-		return;
-	const SSettingsLeafTarget Target = LeafTarget(Leaf);
-	g_Config.m_UiSettingsPage = Target.m_SettingsPage;
-	if(Target.m_SettingsPage == CMenus::SETTINGS_TCLIENT)
-		pMenus->SetTClientSettingsTab(Target.m_TClientTab);
-	if(Target.m_SettingsPage == CMenus::SETTINGS_BESTCLIENT)
-	{
-		pMenus->SetBestClientSettingsTab(Target.m_BestClientTab);
-		pMenus->CloseBestClientFun();
-	}
-}
-
-BCUiAnimations::STabSwitch AnimateVerticalLeafSwitch(int SelectedLeaf, float DeltaTime)
-{
-	BCUiAnimations::STabSwitch Result;
-	struct SState
-	{
-		bool m_Initialized = false;
-		int m_FromLeaf = 0;
-		int m_ToLeaf = 0;
-		float m_Progress = 1.0f;
+	static const int s_aTclientLeaves[] = {
+		SETTINGS_NAV_LEAF_TC_SETTINGS,
+		SETTINGS_NAV_LEAF_TC_BIND_WHEEL,
+		SETTINGS_NAV_LEAF_TC_WAR_LIST,
+		SETTINGS_NAV_LEAF_TC_CHAT_BINDS,
+		SETTINGS_NAV_LEAF_TC_STATUS_BAR,
+		SETTINGS_NAV_LEAF_TC_PROFILE,
+		SETTINGS_NAV_LEAF_TC_CONFIGS,
+		SETTINGS_NAV_LEAF_TC_INFO,
 	};
-	static SState s_State;
+	static const int s_aBestclientLeaves[] = {
+		SETTINGS_NAV_LEAF_BC_VISUALS,
+		SETTINGS_NAV_LEAF_BC_GAMEPLAY,
+		SETTINGS_NAV_LEAF_BC_OTHERS,
+		SETTINGS_NAV_LEAF_BC_CONFIGS,
+		SETTINGS_NAV_LEAF_BC_INFO,
+	};
 
-	SelectedLeaf = std::clamp(SelectedLeaf, 0, SETTINGS_NAV_LEAF_COUNT - 1);
-	if(!s_State.m_Initialized)
+	static int LeafVisualRank(int Leaf)
 	{
-		s_State.m_Initialized = true;
-		s_State.m_FromLeaf = SelectedLeaf;
-		s_State.m_ToLeaf = SelectedLeaf;
-		s_State.m_Progress = 1.0f;
+		const int *apLists[] = {s_aDdnetLeaves, s_aTclientLeaves, s_aBestclientLeaves};
+		const int aCounts[] = {
+			(int)(sizeof(s_aDdnetLeaves) / sizeof(s_aDdnetLeaves[0])),
+			(int)(sizeof(s_aTclientLeaves) / sizeof(s_aTclientLeaves[0])),
+			(int)(sizeof(s_aBestclientLeaves) / sizeof(s_aBestclientLeaves[0])),
+		};
+		int Rank = 0;
+		for(int List = 0; List < 3; ++List)
+		{
+			for(int i = 0; i < aCounts[List]; ++i, ++Rank)
+			{
+				if(apLists[List][i] == Leaf)
+					return Rank;
+			}
+		}
+		return Leaf;
 	}
-	if(SelectedLeaf != s_State.m_ToLeaf)
-	{
-		s_State.m_FromLeaf = s_State.m_ToLeaf;
-		s_State.m_ToLeaf = SelectedLeaf;
-		s_State.m_Progress = 0.0f;
-	}
-	s_State.m_FromLeaf = std::clamp(s_State.m_FromLeaf, 0, SETTINGS_NAV_LEAF_COUNT - 1);
-	s_State.m_ToLeaf = std::clamp(s_State.m_ToLeaf, 0, SETTINGS_NAV_LEAF_COUNT - 1);
 
-	if(!BCUiAnimations::SettingsUiAnimationEnabled())
+	static bool IsFlagSet(int Flags, int Bit)
 	{
-		s_State.m_FromLeaf = SelectedLeaf;
-		s_State.m_ToLeaf = SelectedLeaf;
-		s_State.m_Progress = 1.0f;
+		return (Flags & (1 << Bit)) != 0;
 	}
-	else if(s_State.m_Progress < 1.0f)
+
+	SSettingsLeafTarget LeafTarget(int Leaf)
 	{
-		const float Step = std::clamp(DeltaTime * 12.0f, 0.0f, 1.0f);
-		s_State.m_Progress += (1.0f - s_State.m_Progress) * Step;
-		if(s_State.m_Progress > 0.995f)
+		SSettingsLeafTarget Target;
+		switch(Leaf)
+		{
+		case SETTINGS_NAV_LEAF_GENERAL:
+			Target.m_SettingsPage = CMenus::SETTINGS_GENERAL;
+			break;
+		case SETTINGS_NAV_LEAF_TEE:
+			Target.m_SettingsPage = CMenus::SETTINGS_TEE;
+			break;
+		case SETTINGS_NAV_LEAF_APPEARANCE:
+			Target.m_SettingsPage = CMenus::SETTINGS_APPEARANCE;
+			break;
+		case SETTINGS_NAV_LEAF_CONTROLS:
+			Target.m_SettingsPage = CMenus::SETTINGS_CONTROLS;
+			break;
+		case SETTINGS_NAV_LEAF_GRAPHICS:
+			Target.m_SettingsPage = CMenus::SETTINGS_GRAPHICS;
+			break;
+		case SETTINGS_NAV_LEAF_SOUND:
+			Target.m_SettingsPage = CMenus::SETTINGS_SOUND;
+			break;
+		case SETTINGS_NAV_LEAF_DDNET:
+			Target.m_SettingsPage = CMenus::SETTINGS_DDNET;
+			break;
+		case SETTINGS_NAV_LEAF_ASSETS:
+			Target.m_SettingsPage = CMenus::SETTINGS_ASSETS;
+			break;
+		case SETTINGS_NAV_LEAF_CREDITS:
+			Target.m_SettingsPage = CMenus::SETTINGS_CREDITS;
+			break;
+		case SETTINGS_NAV_LEAF_TC_SETTINGS:
+			Target.m_SettingsPage = CMenus::SETTINGS_TCLIENT;
+			Target.m_TClientTab = TC_TAB_SETTINGS;
+			break;
+		case SETTINGS_NAV_LEAF_TC_BIND_WHEEL:
+			Target.m_SettingsPage = CMenus::SETTINGS_TCLIENT;
+			Target.m_TClientTab = TC_TAB_BINDWHEEL;
+			break;
+		case SETTINGS_NAV_LEAF_TC_WAR_LIST:
+			Target.m_SettingsPage = CMenus::SETTINGS_TCLIENT;
+			Target.m_TClientTab = TC_TAB_WARLIST;
+			break;
+		case SETTINGS_NAV_LEAF_TC_CHAT_BINDS:
+			Target.m_SettingsPage = CMenus::SETTINGS_TCLIENT;
+			Target.m_TClientTab = TC_TAB_BINDCHAT;
+			break;
+		case SETTINGS_NAV_LEAF_TC_STATUS_BAR:
+			Target.m_SettingsPage = CMenus::SETTINGS_TCLIENT;
+			Target.m_TClientTab = TC_TAB_STATUSBAR;
+			break;
+		case SETTINGS_NAV_LEAF_TC_INFO:
+			Target.m_SettingsPage = CMenus::SETTINGS_TCLIENT;
+			Target.m_TClientTab = TC_TAB_INFO;
+			break;
+		case SETTINGS_NAV_LEAF_TC_PROFILE:
+			Target.m_SettingsPage = CMenus::SETTINGS_PROFILES;
+			break;
+		case SETTINGS_NAV_LEAF_TC_CONFIGS:
+			Target.m_SettingsPage = CMenus::SETTINGS_CONFIGS;
+			break;
+		case SETTINGS_NAV_LEAF_BC_VISUALS:
+			Target.m_SettingsPage = CMenus::SETTINGS_BESTCLIENT;
+			Target.m_BestClientTab = BC_TAB_VISUALS;
+			break;
+		case SETTINGS_NAV_LEAF_BC_GAMEPLAY:
+			Target.m_SettingsPage = CMenus::SETTINGS_BESTCLIENT;
+			Target.m_BestClientTab = BC_TAB_GAMEPLAY;
+			break;
+		case SETTINGS_NAV_LEAF_BC_OTHERS:
+			Target.m_SettingsPage = CMenus::SETTINGS_BESTCLIENT;
+			Target.m_BestClientTab = BC_TAB_OTHERS;
+			break;
+		case SETTINGS_NAV_LEAF_BC_CONFIGS:
+			Target.m_SettingsPage = CMenus::SETTINGS_BESTCLIENT;
+			Target.m_BestClientTab = BC_TAB_CONFIGS;
+			break;
+		case SETTINGS_NAV_LEAF_BC_INFO:
+			Target.m_SettingsPage = CMenus::SETTINGS_BESTCLIENT;
+			Target.m_BestClientTab = BC_TAB_INFO;
+			break;
+		default:
+			Target.m_SettingsPage = CMenus::SETTINGS_GENERAL;
+			break;
+		}
+		return Target;
+	}
+
+	int GroupForLeaf(int Leaf)
+	{
+		if(Leaf >= SETTINGS_NAV_LEAF_TC_SETTINGS && Leaf <= SETTINGS_NAV_LEAF_TC_CONFIGS)
+			return SETTINGS_NAV_GROUP_TCLIENT;
+		if(Leaf >= SETTINGS_NAV_LEAF_BC_VISUALS && Leaf <= SETTINGS_NAV_LEAF_BC_INFO)
+			return SETTINGS_NAV_GROUP_BESTCLIENT;
+		return SETTINGS_NAV_GROUP_DDNET;
+	}
+
+	bool IsLeafVisible(int Leaf, int TcTabFlags, int BcTabFlags)
+	{
+		if(Leaf >= SETTINGS_NAV_LEAF_TC_SETTINGS && Leaf <= SETTINGS_NAV_LEAF_TC_INFO)
+		{
+			const int Tab = Leaf - SETTINGS_NAV_LEAF_TC_SETTINGS;
+			return !IsFlagSet(TcTabFlags, Tab);
+		}
+		if(Leaf >= SETTINGS_NAV_LEAF_BC_VISUALS && Leaf <= SETTINGS_NAV_LEAF_BC_OTHERS)
+		{
+			const int Tab = Leaf - SETTINGS_NAV_LEAF_BC_VISUALS;
+			return !IsFlagSet(BcTabFlags, Tab);
+		}
+		if(Leaf == SETTINGS_NAV_LEAF_BC_CONFIGS)
+			return !IsFlagSet(BcTabFlags, BC_TAB_CONFIGS);
+		return true;
+	}
+
+	int LeafFromState(int SettingsPage, int TClientTab, int BestClientTab)
+	{
+		switch(SettingsPage)
+		{
+		case CMenus::SETTINGS_GENERAL: return SETTINGS_NAV_LEAF_GENERAL;
+		case CMenus::SETTINGS_TEE: return SETTINGS_NAV_LEAF_TEE;
+		case CMenus::SETTINGS_APPEARANCE: return SETTINGS_NAV_LEAF_APPEARANCE;
+		case CMenus::SETTINGS_CONTROLS: return SETTINGS_NAV_LEAF_CONTROLS;
+		case CMenus::SETTINGS_GRAPHICS: return SETTINGS_NAV_LEAF_GRAPHICS;
+		case CMenus::SETTINGS_SOUND: return SETTINGS_NAV_LEAF_SOUND;
+		case CMenus::SETTINGS_DDNET: return SETTINGS_NAV_LEAF_DDNET;
+		case CMenus::SETTINGS_ASSETS: return SETTINGS_NAV_LEAF_ASSETS;
+		case CMenus::SETTINGS_CREDITS: return SETTINGS_NAV_LEAF_CREDITS;
+		case CMenus::SETTINGS_PROFILES: return SETTINGS_NAV_LEAF_TC_PROFILE;
+		case CMenus::SETTINGS_CONFIGS: return SETTINGS_NAV_LEAF_TC_CONFIGS;
+		case CMenus::SETTINGS_TCLIENT:
+			switch(TClientTab)
+			{
+			case TC_TAB_BINDWHEEL: return SETTINGS_NAV_LEAF_TC_BIND_WHEEL;
+			case TC_TAB_WARLIST: return SETTINGS_NAV_LEAF_TC_WAR_LIST;
+			case TC_TAB_BINDCHAT: return SETTINGS_NAV_LEAF_TC_CHAT_BINDS;
+			case TC_TAB_STATUSBAR: return SETTINGS_NAV_LEAF_TC_STATUS_BAR;
+			case TC_TAB_INFO: return SETTINGS_NAV_LEAF_TC_INFO;
+			default: return SETTINGS_NAV_LEAF_TC_SETTINGS;
+			}
+		case CMenus::SETTINGS_BESTCLIENT:
+			switch(BestClientTab)
+			{
+			case BC_TAB_GAMEPLAY: return SETTINGS_NAV_LEAF_BC_GAMEPLAY;
+			case BC_TAB_OTHERS: return SETTINGS_NAV_LEAF_BC_OTHERS;
+			case BC_TAB_CONFIGS: return SETTINGS_NAV_LEAF_BC_CONFIGS;
+			case BC_TAB_INFO: return SETTINGS_NAV_LEAF_BC_INFO;
+			default: return SETTINGS_NAV_LEAF_BC_VISUALS;
+			}
+		default:
+			return SETTINGS_NAV_LEAF_GENERAL;
+		}
+	}
+
+	void ApplyLeaf(CMenus *pMenus, int Leaf)
+	{
+		if(!pMenus)
+			return;
+		const SSettingsLeafTarget Target = LeafTarget(Leaf);
+		g_Config.m_UiSettingsPage = Target.m_SettingsPage;
+		if(Target.m_SettingsPage == CMenus::SETTINGS_TCLIENT)
+			pMenus->SetTClientSettingsTab(Target.m_TClientTab);
+		if(Target.m_SettingsPage == CMenus::SETTINGS_BESTCLIENT)
+		{
+			pMenus->SetBestClientSettingsTab(Target.m_BestClientTab);
+			pMenus->CloseBestClientFun();
+		}
+	}
+
+	BCUiAnimations::STabSwitch AnimateVerticalLeafSwitch(int SelectedLeaf, float DeltaTime)
+	{
+		BCUiAnimations::STabSwitch Result;
+		struct SState
+		{
+			bool m_Initialized = false;
+			int m_FromLeaf = 0;
+			int m_ToLeaf = 0;
+			float m_Progress = 1.0f;
+		};
+		static SState s_State;
+
+		SelectedLeaf = std::clamp(SelectedLeaf, 0, SETTINGS_NAV_LEAF_COUNT - 1);
+		if(!s_State.m_Initialized)
+		{
+			s_State.m_Initialized = true;
+			s_State.m_FromLeaf = SelectedLeaf;
+			s_State.m_ToLeaf = SelectedLeaf;
 			s_State.m_Progress = 1.0f;
+		}
+		if(SelectedLeaf != s_State.m_ToLeaf)
+		{
+			s_State.m_FromLeaf = s_State.m_ToLeaf;
+			s_State.m_ToLeaf = SelectedLeaf;
+			s_State.m_Progress = 0.0f;
+		}
+		s_State.m_FromLeaf = std::clamp(s_State.m_FromLeaf, 0, SETTINGS_NAV_LEAF_COUNT - 1);
+		s_State.m_ToLeaf = std::clamp(s_State.m_ToLeaf, 0, SETTINGS_NAV_LEAF_COUNT - 1);
+
+		if(!BCUiAnimations::SettingsUiAnimationEnabled())
+		{
+			s_State.m_FromLeaf = SelectedLeaf;
+			s_State.m_ToLeaf = SelectedLeaf;
+			s_State.m_Progress = 1.0f;
+		}
+		else if(s_State.m_Progress < 1.0f)
+		{
+			const float Step = std::clamp(DeltaTime * 12.0f, 0.0f, 1.0f);
+			s_State.m_Progress += (1.0f - s_State.m_Progress) * Step;
+			if(s_State.m_Progress > 0.995f)
+				s_State.m_Progress = 1.0f;
+		}
+
+		Result.m_Progress = s_State.m_Progress;
+		Result.m_FromIndex = s_State.m_FromLeaf;
+		Result.m_ToIndex = s_State.m_ToLeaf;
+		return Result;
 	}
 
-	Result.m_Progress = s_State.m_Progress;
-	Result.m_FromIndex = s_State.m_FromLeaf;
-	Result.m_ToIndex = s_State.m_ToLeaf;
-	return Result;
-}
-
-void VerticalLeafContentOffsets(float Progress, int FromLeaf, int ToLeaf, float Height, float &FromOffset, float &ToOffset)
-{
-	const float Eased = BCUiAnimations::EaseOutCubic(Progress);
-	const float SlideDistance = Height + 6.0f;
-	const int Direction = ToLeaf >= FromLeaf ? 1 : -1;
-	FromOffset = -Direction * Eased * SlideDistance;
-	ToOffset = Direction * (1.0f - Eased) * SlideDistance;
-}
+	void VerticalLeafContentOffsets(float Progress, int FromLeaf, int ToLeaf, float Height, float &FromOffset, float &ToOffset)
+	{
+		const float Eased = BCUiAnimations::EaseOutCubic(Progress);
+		const float SlideDistance = Height + 6.0f;
+		const int Direction = ToLeaf >= FromLeaf ? 1 : -1;
+		FromOffset = -Direction * Eased * SlideDistance;
+		ToOffset = Direction * (1.0f - Eased) * SlideDistance;
+	}
 
 } // namespace BestClientUiTheme
 

@@ -18,61 +18,61 @@
 
 namespace
 {
-void EnsureFixedBindSlots(std::vector<CFastActions::CBind> &vBinds)
-{
-	if(vBinds.size() != FAST_ACTIONS_FIXED_SLOTS)
-		vBinds.resize(FAST_ACTIONS_FIXED_SLOTS);
-}
-
-int SlotFromName(const char *pName)
-{
-	if(!pName || pName[0] == '\0')
-		return -1;
-	char *pEnd = nullptr;
-	const long Value = std::strtol(pName, &pEnd, 10);
-	if(*pEnd != '\0')
-		return -1;
-	const int Index = (int)Value - 1;
-	return Index >= 0 && Index < FAST_ACTIONS_FIXED_SLOTS ? Index : -1;
-}
-
-bool IsLegacySlotName(const char *pName, int SlotIndex)
-{
-	if(!pName || pName[0] == '\0')
-		return false;
-
-	char aSlotName[16];
-	str_format(aSlotName, sizeof(aSlotName), "%d", SlotIndex + 1);
-	return str_comp(pName, aSlotName) == 0;
-}
-
-int KeyToSlotIndex(int Key)
-{
-	switch(Key)
+	void EnsureFixedBindSlots(std::vector<CFastActions::CBind> &vBinds)
 	{
-	case KEY_1: return 0;
-	case KEY_KP_1: return 0;
-	case KEY_2: return 1;
-	case KEY_KP_2: return 1;
-	case KEY_3: return 2;
-	case KEY_KP_3: return 2;
-	case KEY_4: return 3;
-	case KEY_KP_4: return 3;
-	case KEY_5: return 4;
-	case KEY_KP_5: return 4;
-	case KEY_6: return 5;
-	case KEY_KP_6: return 5;
-	default: return -1;
+		if(vBinds.size() != FAST_ACTIONS_FIXED_SLOTS)
+			vBinds.resize(FAST_ACTIONS_FIXED_SLOTS);
 	}
-}
 
-float EaseInOutQuad(float t)
-{
-	t = std::clamp(t, 0.0f, 1.0f);
-	if(t < 0.5f)
-		return 2.0f * t * t;
-	return 1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) / 2.0f;
-}
+	int SlotFromName(const char *pName)
+	{
+		if(!pName || pName[0] == '\0')
+			return -1;
+		char *pEnd = nullptr;
+		const long Value = std::strtol(pName, &pEnd, 10);
+		if(*pEnd != '\0')
+			return -1;
+		const int Index = (int)Value - 1;
+		return Index >= 0 && Index < FAST_ACTIONS_FIXED_SLOTS ? Index : -1;
+	}
+
+	bool IsLegacySlotName(const char *pName, int SlotIndex)
+	{
+		if(!pName || pName[0] == '\0')
+			return false;
+
+		char aSlotName[16];
+		str_format(aSlotName, sizeof(aSlotName), "%d", SlotIndex + 1);
+		return str_comp(pName, aSlotName) == 0;
+	}
+
+	int KeyToSlotIndex(int Key)
+	{
+		switch(Key)
+		{
+		case KEY_1: return 0;
+		case KEY_KP_1: return 0;
+		case KEY_2: return 1;
+		case KEY_KP_2: return 1;
+		case KEY_3: return 2;
+		case KEY_KP_3: return 2;
+		case KEY_4: return 3;
+		case KEY_KP_4: return 3;
+		case KEY_5: return 4;
+		case KEY_KP_5: return 4;
+		case KEY_6: return 5;
+		case KEY_KP_6: return 5;
+		default: return -1;
+		}
+	}
+
+	float EaseInOutQuad(float t)
+	{
+		t = std::clamp(t, 0.0f, 1.0f);
+		if(t < 0.5f)
+			return 2.0f * t * t;
+		return 1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) / 2.0f;
+	}
 
 } // namespace
 

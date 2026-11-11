@@ -1,30 +1,31 @@
 /* Copyright © 2026 BestProject Team */
-#include <engine/shared/config.h>
-#include <engine/storage.h>
-#include <engine/textrender.h>
-#include <engine/font_icons.h>
-#include <engine/graphics.h>
-#include <engine/client.h>
-#include <engine/keys.h>
-#include <engine/updater.h>
-
 #include <base/io.h>
 #include <base/math.h>
 #include <base/str.h>
 #include <base/time.h>
 
-#include <cstdlib>
+#include <engine/client.h>
+#include <engine/font_icons.h>
+#include <engine/graphics.h>
+#include <engine/keys.h>
+#include <engine/shared/config.h>
+#include <engine/storage.h>
+#include <engine/textrender.h>
+#include <engine/updater.h>
+
+#include <generated/client_data.h>
+#include <generated/protocol.h>
 
 #include <game/client/bc_menu_badges.h>
 #include <game/client/bc_ui_animations.h>
-#include <game/client/components/bestclient/fast_actions.h>
-#include <game/client/components/bestclient/gradient.h>
 #include <game/client/components/bestclient/bestclient.h>
 #include <game/client/components/bestclient/changelog.h>
 #include <game/client/components/bestclient/cursor_trail.h>
-#include <game/client/components/bestclient/physicball.h>
+#include <game/client/components/bestclient/fast_actions.h>
+#include <game/client/components/bestclient/gradient.h>
 #include <game/client/components/bestclient/media_decoder.h>
 #include <game/client/components/bestclient/menu_media_background.h>
+#include <game/client/components/bestclient/physicball.h>
 #include <game/client/components/bestclient/settings_search.h>
 #include <game/client/components/bestclient/ui_theme/style.h>
 #include <game/client/components/bestclient/ui_theme/widgets.h>
@@ -37,11 +38,9 @@
 #include <game/client/ui_scrollregion.h>
 #include <game/localization.h>
 
-#include <generated/client_data.h>
-#include <generated/protocol.h>
-
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -432,85 +431,85 @@ static bool BcUiThemeImportFromText(const char *pText)
 namespace BestClientUiTheme
 {
 
-void AppendExport(char *pBuf, int Size, bool SkipDefaults)
-{
-	pBuf[0] = '\0';
-	auto AppendLine = [&](const char *pLine) {
-		str_append(pBuf, pLine, Size);
-		str_append(pBuf, "\n", Size);
-	};
-	AppendLine("BC_UI_THEME_EXPORT v1");
-	const int HeaderLen = str_length(pBuf);
-
-	if(!SkipDefaults || g_Config.m_BcCustomUiBackground != DefaultConfig::BcCustomUiBackground)
+	void AppendExport(char *pBuf, int Size, bool SkipDefaults)
 	{
-		char aLine[128];
-		str_format(aLine, sizeof(aLine), "background=%d", g_Config.m_BcCustomUiBackground);
-		AppendLine(aLine);
-	}
-	if(!SkipDefaults || g_Config.m_UiColor != DefaultConfig::UiColor)
-	{
-		char aLine[128];
-		str_format(aLine, sizeof(aLine), "ui_color=$%08X", g_Config.m_UiColor);
-		AppendLine(aLine);
-	}
-
-	int Count = 0;
-	const SBcUiThemeElem *pElems = BcUiThemeElems(Count);
-	for(int Elem = 0; Elem < Count; ++Elem)
-	{
-		const SBcUiThemeElem &Field = pElems[Elem];
-		const int Opacity = Field.m_pOpacity ? *Field.m_pOpacity : -1;
-		const int DefOpacity = Field.m_pOpacity ? Field.m_DefOpacity : -1;
-		if(SkipDefaults && *Field.m_pEnable == Field.m_DefEnable && *Field.m_pColor == Field.m_DefColor && *Field.m_pGradient == Field.m_DefGradient && *Field.m_pGradientColor == Field.m_DefGradientColor && *Field.m_pAccent == Field.m_DefAccent && *Field.m_pAccentColor == Field.m_DefAccentColor && *Field.m_pAnimate == Field.m_DefAnimate && Opacity == DefOpacity)
-			continue;
-		char aLine[320];
-		if(Opacity >= 0)
-			str_format(aLine, sizeof(aLine), "%s enable=%d color=$%08X gradient=%d gradient_color=$%08X accent=%d accent_color=$%08X opacity=%d animate=%d", Field.m_pName, *Field.m_pEnable, *Field.m_pColor, *Field.m_pGradient, *Field.m_pGradientColor, *Field.m_pAccent, *Field.m_pAccentColor, Opacity, *Field.m_pAnimate);
-		else
-			str_format(aLine, sizeof(aLine), "%s enable=%d color=$%08X gradient=%d gradient_color=$%08X accent=%d accent_color=$%08X animate=%d", Field.m_pName, *Field.m_pEnable, *Field.m_pColor, *Field.m_pGradient, *Field.m_pGradientColor, *Field.m_pAccent, *Field.m_pAccentColor, *Field.m_pAnimate);
-		AppendLine(aLine);
-	}
-
-	if(SkipDefaults && str_length(pBuf) == HeaderLen)
 		pBuf[0] = '\0';
-}
+		auto AppendLine = [&](const char *pLine) {
+			str_append(pBuf, pLine, Size);
+			str_append(pBuf, "\n", Size);
+		};
+		AppendLine("BC_UI_THEME_EXPORT v1");
+		const int HeaderLen = str_length(pBuf);
 
-void SaveFile(IStorage *pStorage)
-{
-	if(!pStorage)
-		return;
-	char aBuf[8192];
-	AppendExport(aBuf, sizeof(aBuf), true);
-	IOHANDLE File = pStorage->OpenFile(FILE_NAME, IOFLAG_WRITE, IStorage::TYPE_SAVE);
-	if(!File)
-		return;
-	if(aBuf[0] != '\0')
-		io_write(File, aBuf, str_length(aBuf));
-	io_close(File);
-}
+		if(!SkipDefaults || g_Config.m_BcCustomUiBackground != DefaultConfig::BcCustomUiBackground)
+		{
+			char aLine[128];
+			str_format(aLine, sizeof(aLine), "background=%d", g_Config.m_BcCustomUiBackground);
+			AppendLine(aLine);
+		}
+		if(!SkipDefaults || g_Config.m_UiColor != DefaultConfig::UiColor)
+		{
+			char aLine[128];
+			str_format(aLine, sizeof(aLine), "ui_color=$%08X", g_Config.m_UiColor);
+			AppendLine(aLine);
+		}
 
-void LoadFile(IStorage *pStorage)
-{
-	if(!pStorage)
-		return;
-	if(!pStorage->FileExists(FILE_NAME, IStorage::TYPE_SAVE))
-	{
-		if(g_Config.m_BcCustomUiGradientAnimateSpeed != DefaultConfig::BcCustomUiGradientAnimateSpeed)
-			BcUiThemeSetAllAnimateSpeeds(g_Config.m_BcCustomUiGradientAnimateSpeed);
-		return;
+		int Count = 0;
+		const SBcUiThemeElem *pElems = BcUiThemeElems(Count);
+		for(int Elem = 0; Elem < Count; ++Elem)
+		{
+			const SBcUiThemeElem &Field = pElems[Elem];
+			const int Opacity = Field.m_pOpacity ? *Field.m_pOpacity : -1;
+			const int DefOpacity = Field.m_pOpacity ? Field.m_DefOpacity : -1;
+			if(SkipDefaults && *Field.m_pEnable == Field.m_DefEnable && *Field.m_pColor == Field.m_DefColor && *Field.m_pGradient == Field.m_DefGradient && *Field.m_pGradientColor == Field.m_DefGradientColor && *Field.m_pAccent == Field.m_DefAccent && *Field.m_pAccentColor == Field.m_DefAccentColor && *Field.m_pAnimate == Field.m_DefAnimate && Opacity == DefOpacity)
+				continue;
+			char aLine[320];
+			if(Opacity >= 0)
+				str_format(aLine, sizeof(aLine), "%s enable=%d color=$%08X gradient=%d gradient_color=$%08X accent=%d accent_color=$%08X opacity=%d animate=%d", Field.m_pName, *Field.m_pEnable, *Field.m_pColor, *Field.m_pGradient, *Field.m_pGradientColor, *Field.m_pAccent, *Field.m_pAccentColor, Opacity, *Field.m_pAnimate);
+			else
+				str_format(aLine, sizeof(aLine), "%s enable=%d color=$%08X gradient=%d gradient_color=$%08X accent=%d accent_color=$%08X animate=%d", Field.m_pName, *Field.m_pEnable, *Field.m_pColor, *Field.m_pGradient, *Field.m_pGradientColor, *Field.m_pAccent, *Field.m_pAccentColor, *Field.m_pAnimate);
+			AppendLine(aLine);
+		}
+
+		if(SkipDefaults && str_length(pBuf) == HeaderLen)
+			pBuf[0] = '\0';
 	}
-	IOHANDLE File = pStorage->OpenFile(FILE_NAME, IOFLAG_READ, IStorage::TYPE_SAVE);
-	if(!File)
-		return;
-	char *pData = io_read_all_str(File);
-	io_close(File);
-	if(!pData)
-		return;
-	BcUiThemeApplyDefaults();
-	BcUiThemeImportFromText(pData);
-	free(pData);
-}
+
+	void SaveFile(IStorage *pStorage)
+	{
+		if(!pStorage)
+			return;
+		char aBuf[8192];
+		AppendExport(aBuf, sizeof(aBuf), true);
+		IOHANDLE File = pStorage->OpenFile(FILE_NAME, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+		if(!File)
+			return;
+		if(aBuf[0] != '\0')
+			io_write(File, aBuf, str_length(aBuf));
+		io_close(File);
+	}
+
+	void LoadFile(IStorage *pStorage)
+	{
+		if(!pStorage)
+			return;
+		if(!pStorage->FileExists(FILE_NAME, IStorage::TYPE_SAVE))
+		{
+			if(g_Config.m_BcCustomUiGradientAnimateSpeed != DefaultConfig::BcCustomUiGradientAnimateSpeed)
+				BcUiThemeSetAllAnimateSpeeds(g_Config.m_BcCustomUiGradientAnimateSpeed);
+			return;
+		}
+		IOHANDLE File = pStorage->OpenFile(FILE_NAME, IOFLAG_READ, IStorage::TYPE_SAVE);
+		if(!File)
+			return;
+		char *pData = io_read_all_str(File);
+		io_close(File);
+		if(!pData)
+			return;
+		BcUiThemeApplyDefaults();
+		BcUiThemeImportFromText(pData);
+		free(pData);
+	}
 
 } // namespace BestClientUiTheme
 
@@ -5124,7 +5123,8 @@ static std::vector<CChangelogLine> BuildChangelogLines(ITextRender *pTextRender,
 		{
 			Raw.erase(0, Level + 1);
 			TrimChangelogLine(Raw);
-			Line.m_FontSize = Level == 1 ? 18.0f : Level == 2 ? 16.0f : 14.5f;
+			Line.m_FontSize = Level == 1 ? 18.0f : Level == 2 ? 16.0f :
+									    14.5f;
 			MinHeight = Line.m_FontSize + 4.0f;
 		}
 		else if(Raw.size() >= 2 && (Raw[0] == '-' || Raw[0] == '*' || Raw[0] == '+') && Raw[1] == ' ')

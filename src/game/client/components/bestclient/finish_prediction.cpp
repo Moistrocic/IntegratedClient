@@ -9,6 +9,7 @@
 
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
+
 #include <generated/protocol.h>
 #include <generated/protocol7.h>
 
@@ -27,54 +28,54 @@
 
 namespace
 {
-CUIRect PushHudRectFromMusicPlayer(CGameClient *pGameClient, CUIRect Rect, float HudWidth, float HudHeight, bool ForcePreview)
-{
-	if(ForcePreview || pGameClient == nullptr || Rect.w <= 0.0f || Rect.h <= 0.0f)
+	CUIRect PushHudRectFromMusicPlayer(CGameClient *pGameClient, CUIRect Rect, float HudWidth, float HudHeight, bool ForcePreview)
+	{
+		if(ForcePreview || pGameClient == nullptr || Rect.w <= 0.0f || Rect.h <= 0.0f)
+			return Rect;
+
+		const vec2 Offset = pGameClient->m_MusicPlayer.GetHudPushOffsetForRect(Rect, HudWidth, HudHeight, 2.0f);
+		Rect.x += Offset.x;
+		Rect.y += Offset.y;
 		return Rect;
+	}
 
-	const vec2 Offset = pGameClient->m_MusicPlayer.GetHudPushOffsetForRect(Rect, HudWidth, HudHeight, 2.0f);
-	Rect.x += Offset.x;
-	Rect.y += Offset.y;
-	return Rect;
-}
+	void FormatPredictionTime(int64_t Milliseconds, bool ShowMillis, char *pBuf, size_t BufSize)
+	{
+		const int64_t TimeCentiseconds = std::max<int64_t>(0, (Milliseconds + 5) / 10);
+		str_time(TimeCentiseconds, ShowMillis ? ETimeFormat::HOURS_CENTISECS : ETimeFormat::HOURS, pBuf, BufSize);
+	}
 
-void FormatPredictionTime(int64_t Milliseconds, bool ShowMillis, char *pBuf, size_t BufSize)
-{
-	const int64_t TimeCentiseconds = std::max<int64_t>(0, (Milliseconds + 5) / 10);
-	str_time(TimeCentiseconds, ShowMillis ? ETimeFormat::HOURS_CENTISECS : ETimeFormat::HOURS, pBuf, BufSize);
-}
+	bool IsFinishPredictionHardBlocked(int GameTile, int FrontTile)
+	{
+		const auto Hard = [](int Tile) {
+			return Tile == TILE_SOLID || Tile == TILE_NOHOOK || Tile == TILE_DEATH;
+		};
+		return Hard(GameTile) || Hard(FrontTile);
+	}
 
-bool IsFinishPredictionHardBlocked(int GameTile, int FrontTile)
-{
-	const auto Hard = [](int Tile) {
-		return Tile == TILE_SOLID || Tile == TILE_NOHOOK || Tile == TILE_DEATH;
-	};
-	return Hard(GameTile) || Hard(FrontTile);
-}
+	bool IsFinishPredictionFreezeTile(int GameTile, int FrontTile)
+	{
+		const auto Freeze = [](int Tile) {
+			return Tile == TILE_FREEZE || Tile == TILE_DFREEZE;
+		};
+		return Freeze(GameTile) || Freeze(FrontTile);
+	}
 
-bool IsFinishPredictionFreezeTile(int GameTile, int FrontTile)
-{
-	const auto Freeze = [](int Tile) {
-		return Tile == TILE_FREEZE || Tile == TILE_DFREEZE;
-	};
-	return Freeze(GameTile) || Freeze(FrontTile);
-}
+	bool IsFinishPredictionSupportTile(int GameTile, int FrontTile)
+	{
+		const auto Support = [](int Tile) {
+			return Tile == TILE_SOLID || Tile == TILE_NOHOOK ||
+			       Tile == TILE_UNFREEZE || Tile == TILE_DUNFREEZE;
+		};
+		return Support(GameTile) || Support(FrontTile);
+	}
 
-bool IsFinishPredictionSupportTile(int GameTile, int FrontTile)
-{
-	const auto Support = [](int Tile) {
-		return Tile == TILE_SOLID || Tile == TILE_NOHOOK ||
-		       Tile == TILE_UNFREEZE || Tile == TILE_DUNFREEZE;
-	};
-	return Support(GameTile) || Support(FrontTile);
-}
+	constexpr int FINISH_PREDICTION_FREEZE_JUMP_COST = 26;
 
-constexpr int FINISH_PREDICTION_FREEZE_JUMP_COST = 26;
-
-CFastPractice &FinishPredictionFastPractice(CGameClient *pGameClient)
-{
-	return pGameClient->m_FastPractice;
-}
+	CFastPractice &FinishPredictionFastPractice(CGameClient *pGameClient)
+	{
+		return pGameClient->m_FastPractice;
+	}
 } // namespace
 
 void CFinishPrediction::OnReset()
@@ -176,11 +177,20 @@ void CFinishPrediction::MarkJumpableFreezeWalls()
 		return;
 
 	static const ivec2 s_aDirs4[] = {
-		{1, 0}, {-1, 0}, {0, 1}, {0, -1},
+		{1, 0},
+		{-1, 0},
+		{0, 1},
+		{0, -1},
 	};
 	static const ivec2 s_aDirs8[] = {
-		{1, 0}, {-1, 0}, {0, 1}, {0, -1},
-		{1, 1}, {1, -1}, {-1, 1}, {-1, -1},
+		{1, 0},
+		{-1, 0},
+		{0, 1},
+		{0, -1},
+		{1, 1},
+		{1, -1},
+		{-1, 1},
+		{-1, -1},
 	};
 
 	std::vector<unsigned char> vIsFreeze(MapSize, 0);
@@ -841,8 +851,8 @@ bool CFinishPrediction::GetState(SFinishPredictionState &State, bool ForcePrevie
 	}
 
 	const float StartDistance = m_RaceStartDistance > 0.0f ?
-					     std::max(m_RaceStartDistance, 1.0f) :
-					     std::max(GetStartDistance(), CurrentDistance);
+					    std::max(m_RaceStartDistance, 1.0f) :
+					    std::max(GetStartDistance(), CurrentDistance);
 	if(StartDistance <= 0.0f)
 	{
 		State.m_Progress = std::max(0.0f, m_LastProgress);

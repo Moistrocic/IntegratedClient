@@ -114,7 +114,7 @@ void CScrollRegion::ScrollHere(EScrollOption Option, bool Smooth)
 	case SCROLLHERE_CENTER:
 		m_RequestScrollPos = TopScroll - (ContentAreaSize() - LastAddedSize) * 0.5f;
 		break;
-	// bestclient
+		// bestclient
 
 	case SCROLLHERE_KEEP_IN_VIEW:
 	default:

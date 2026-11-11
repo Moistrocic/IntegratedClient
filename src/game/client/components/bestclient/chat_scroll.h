@@ -4,9 +4,9 @@
 
 #include <base/vmath.h>
 
-#include <game/client/components/bestclient/chat_message_actions.h>
-
 #include <engine/input.h>
+
+#include <game/client/components/bestclient/chat_message_actions.h>
 
 #include <string>
 

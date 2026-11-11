@@ -1,6 +1,4 @@
 /* Copyright © 2026 BestProject Team */
-#include <game/client/components/menus.h>
-
 #include <base/math.h>
 #include <base/time.h>
 
@@ -11,6 +9,7 @@
 #include <engine/shared/localization.h>
 #include <engine/textrender.h>
 
+#include <game/client/components/menus.h>
 #include <game/client/ui.h>
 #include <game/localization.h>
 
@@ -31,7 +30,6 @@ namespace
 	constexpr float LINE_SIZE = 20.0f;
 	constexpr float HEADLINE_FONT_SIZE = 20.0f;
 	constexpr float MARGIN_SMALL = 5.0f;
-
 
 	enum EFunGame
 	{
@@ -128,7 +126,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 	static CButtonContainer s_aGameButtons[NUM_FUN_GAMES];
 	const float AnimTime = time_get() / (float)time_freq();
 
-
 	const float BtnGap = MARGIN_SMALL;
 	const float BtnW = (MainView.w - BtnGap * (NUM_FUN_GAMES - 1)) / (float)NUM_FUN_GAMES;
 	const float BtnH = std::min(BtnW, 95.0f);
@@ -167,7 +164,8 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 			IconArea.y = BtnY + (Active ? sinf(AnimTime * 5.2f + i) * 1.2f : 0.0f);
 			IconArea.w = BtnW;
 			IconArea.h = BtnH * 0.60f;
-			const ColorRGBA IconColor = Active ? ColorRGBA(0.95f, 0.95f, 0.95f, 0.95f) : Hovered ? ColorRGBA(0.92f, 0.92f, 0.92f, 0.85f) : ColorRGBA(0.80f, 0.80f, 0.85f, 0.72f);
+			const ColorRGBA IconColor = Active ? ColorRGBA(0.95f, 0.95f, 0.95f, 0.95f) : Hovered ? ColorRGBA(0.92f, 0.92f, 0.92f, 0.85f) :
+													       ColorRGBA(0.80f, 0.80f, 0.85f, 0.72f);
 			RenderIconLabel(IconArea, s_aGames[i].m_pIcon, IconArea.h * 0.72f, TEXTALIGN_MC, &IconColor);
 
 			CUIRect NameArea;
@@ -296,11 +294,11 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 		Board.y = BoardArea.y + (BoardArea.h - Board.h) / 2.0f;
 
 		const bool AnyKey = Input()->KeyPress(KEY_UP) || Input()->KeyPress(KEY_W) ||
-			Input()->KeyPress(KEY_DOWN) || Input()->KeyPress(KEY_S) ||
-			Input()->KeyPress(KEY_LEFT) || Input()->KeyPress(KEY_A) ||
-			Input()->KeyPress(KEY_RIGHT) || Input()->KeyPress(KEY_D) ||
-			Input()->KeyPress(KEY_SPACE) || Input()->KeyPress(KEY_RETURN) || Input()->KeyPress(KEY_KP_ENTER) ||
-			(Ui()->MouseButtonClicked(0) && Ui()->MouseInside(&Board));
+				    Input()->KeyPress(KEY_DOWN) || Input()->KeyPress(KEY_S) ||
+				    Input()->KeyPress(KEY_LEFT) || Input()->KeyPress(KEY_A) ||
+				    Input()->KeyPress(KEY_RIGHT) || Input()->KeyPress(KEY_D) ||
+				    Input()->KeyPress(KEY_SPACE) || Input()->KeyPress(KEY_RETURN) || Input()->KeyPress(KEY_KP_ENTER) ||
+				    (Ui()->MouseButtonClicked(0) && Ui()->MouseInside(&Board));
 
 		if(s_Snake.m_Waiting)
 		{
@@ -775,12 +773,10 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 			float m_AnimStart = 0.0f;
 			float m_AnimDuration = 0.18f;
 
-
 			bool m_WhiteKingSideCastle = true;
 			bool m_WhiteQueenSideCastle = true;
 			bool m_BlackKingSideCastle = true;
 			bool m_BlackQueenSideCastle = true;
-
 
 			int m_EnPassantColumn = -1;
 
@@ -797,20 +793,16 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 		auto MakeStateKey = [&](const auto &Board) {
 			std::string Key;
 
-
 			for(int Y = 0; Y < 8; ++Y)
 				for(int X = 0; X < 8; ++X)
 					Key += Board[Y][X];
 
-
 			Key += s_Chess.m_WhiteTurn ? 'w' : 'b';
-
 
 			Key += s_Chess.m_WhiteKingSideCastle ? 'K' : '-';
 			Key += s_Chess.m_WhiteQueenSideCastle ? 'Q' : '-';
 			Key += s_Chess.m_BlackKingSideCastle ? 'k' : '-';
 			Key += s_Chess.m_BlackQueenSideCastle ? 'q' : '-';
-
 
 			if(s_Chess.m_EnPassantColumn != -1)
 				Key += ('a' + s_Chess.m_EnPassantColumn);
@@ -1085,7 +1077,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 			if(!IsBasicMoveValid)
 				return false;
 
-
 			TChessBoard TempBoard = CopyChessBoardFrom(Board);
 			TempBoard[ToY][ToX] = Piece;
 			TempBoard[FromY][FromX] = '.';
@@ -1207,10 +1198,8 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 			Board[Move.m_ToY][Move.m_ToX] = MovingPiece;
 			Board[Move.m_FromY][Move.m_FromX] = '.';
 
-
 			if(Upper == 'P' && (Move.m_ToY == 0 || Move.m_ToY == 7))
 				Board[Move.m_ToY][Move.m_ToX] = IsWhitePiece(MovingPiece) ? 'Q' : 'q';
-
 
 			if(Upper == 'K' && abs(Move.m_ToX - Move.m_FromX) == 2)
 			{
@@ -1220,7 +1209,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 				Board[Move.m_FromY][RookToX] = Board[Move.m_FromY][RookFromX];
 				Board[Move.m_FromY][RookFromX] = '.';
 			}
-
 
 			if(Upper == 'P' && Move.m_FromX != Move.m_ToX && CapturedPiece == '.')
 			{
@@ -1235,7 +1223,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 		};
 
 		auto EvaluateBoard = [&](const TChessBoard &Board) {
-
 			static const int s_aPstP[64] = {
 				0, 0, 0, 0, 0, 0, 0, 0,
 				50, 50, 50, 50, 50, 50, 50, 50,
@@ -1341,7 +1328,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 					int Local = Material + Pst;
 					if(Upper == 'P')
 					{
-
 						Local += White ? (6 - y) * 4 : (y - 1) * 4;
 					}
 					Score += White ? -Local : Local;
@@ -1352,7 +1338,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 				return -1000000;
 			if(!WhiteKingAlive)
 				return 1000000;
-
 
 			const int MaterialDiff = BlackMaterial - WhiteMaterial;
 			if(MaterialDiff > 200)
@@ -1444,7 +1429,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 				else
 					Score = Minimax(AfterBot, SEARCH_DEPTH - 1, -INF, INF, false);
 
-
 				if(Score > BestScore + 8)
 				{
 					BestScore = Score;
@@ -1500,7 +1484,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 					s_Chess.m_BlackKingSideCastle = false;
 			}
 
-
 			if(CapturedPiece == 'R' && Move.m_ToX == 0 && Move.m_ToY == 7)
 				s_Chess.m_WhiteQueenSideCastle = false;
 			else if(CapturedPiece == 'R' && Move.m_ToX == 7 && Move.m_ToY == 7)
@@ -1515,14 +1498,12 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 				const bool WhitePawn = IsWhitePiece(MovingPiece);
 				bool CanEnPassant = false;
 
-
 				if(Move.m_ToX > 0)
 				{
 					const char LeftPiece = s_Chess.m_aBoard[Move.m_ToY][Move.m_ToX - 1];
 					if((char)toupper((unsigned char)LeftPiece) == 'P' && IsWhitePiece(LeftPiece) != WhitePawn)
 						CanEnPassant = true;
 				}
-
 
 				if(Move.m_ToX < 7)
 				{
@@ -1550,7 +1531,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 
 			const std::string Key = MakeStateKey(s_Chess.m_aBoard);
 			s_Chess.m_RepetitionTable[Key]++;
-
 
 			if(IsCheckmateOnBoard(s_Chess.m_aBoard, s_Chess.m_WhiteTurn))
 			{
@@ -2033,9 +2013,9 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 
 		{
 			const bool AnyKey = Input()->KeyPress(KEY_W) || Input()->KeyPress(KEY_S) ||
-				Input()->KeyPress(KEY_UP) || Input()->KeyPress(KEY_DOWN) ||
-				Input()->KeyPress(KEY_SPACE) || Input()->KeyPress(KEY_RETURN) || Input()->KeyPress(KEY_KP_ENTER) ||
-				(Ui()->MouseButtonClicked(0) && Ui()->MouseInside(&Arena));
+					    Input()->KeyPress(KEY_UP) || Input()->KeyPress(KEY_DOWN) ||
+					    Input()->KeyPress(KEY_SPACE) || Input()->KeyPress(KEY_RETURN) || Input()->KeyPress(KEY_KP_ENTER) ||
+					    (Ui()->MouseButtonClicked(0) && Ui()->MouseInside(&Arena));
 			if(s_Pong.m_Waiting && AnyKey)
 			{
 				s_Pong.m_Waiting = false;
@@ -2560,7 +2540,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 				for(int x = 0; x < 9; ++x)
 					s_Sudoku.m_aSolution[y][x] = 0;
 
-
 			for(int Box = 0; Box < 3; ++Box)
 			{
 				int aNums[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -2597,7 +2576,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 
 				const int Backup = s_Sudoku.m_aGrid[Cell.y][Cell.x];
 				s_Sudoku.m_aGrid[Cell.y][Cell.x] = 0;
-
 
 				bool KeepRemoved = true;
 				if(UniqueFails < 18)
@@ -2723,7 +2701,7 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 				Cell.h = CellSize;
 
 				const bool InSelectedBox = s_Sudoku.m_SelectedX >= 0 &&
-					(x / 3) == (s_Sudoku.m_SelectedX / 3) && (y / 3) == (s_Sudoku.m_SelectedY / 3);
+							   (x / 3) == (s_Sudoku.m_SelectedX / 3) && (y / 3) == (s_Sudoku.m_SelectedY / 3);
 				const bool SameRowCol = s_Sudoku.m_SelectedX >= 0 && (x == s_Sudoku.m_SelectedX || y == s_Sudoku.m_SelectedY);
 				ColorRGBA Col = ((x / 3 + y / 3) % 2 == 0) ? ColorRGBA(0.14f, 0.16f, 0.20f, 0.96f) : ColorRGBA(0.11f, 0.13f, 0.17f, 0.96f);
 				if(SameRowCol || InSelectedBox)
@@ -2757,7 +2735,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 			}
 		}
 
-
 		for(int i = 0; i <= 3; ++i)
 		{
 			CUIRect LineH, LineV;
@@ -2773,7 +2750,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 			LineV.h = Board.h;
 			LineV.Draw(ColorRGBA(0.75f, 0.82f, 0.95f, 0.55f), IGraphics::CORNER_NONE, 0.0f);
 		}
-
 
 		{
 			CUIRect PadTitle;
@@ -3011,7 +2987,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 					s_Casino.m_MultiplierIdx = m;
 		}
 
-
 		CUIRect BetInfo;
 		Area.HSplitTop(LINE_SIZE, &BetInfo, &Area);
 		Area.HSplitTop(MARGIN_SMALL, nullptr, &Area);
@@ -3025,7 +3000,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 		TextRender()->TextColor(ColorRGBA(0.85f, 0.85f, 0.85f, 0.8f));
 		Ui()->DoLabel(&BetInfo, aBuf, FONT_SIZE * 0.88f, TEXTALIGN_ML);
 		TextRender()->TextColor(TextRender()->DefaultTextColor());
-
 
 		CUIRect ReelArea;
 		Area.HSplitTop(Area.h - 40.f - MARGIN_SMALL * 2.f, &ReelArea, &Area);
@@ -3042,9 +3016,7 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 			Reel.h = ReelArea.h - 8.f;
 
 			const bool Spinning = s_Casino.m_Spinning && !s_Casino.m_aLocked[i];
-			ColorRGBA ReelBg = Spinning
-						   ? ColorRGBA(0.14f, 0.14f, 0.18f, 0.9f)
-						   : ColorRGBA(0.10f, 0.10f, 0.14f, 0.9f);
+			ColorRGBA ReelBg = Spinning ? ColorRGBA(0.14f, 0.14f, 0.18f, 0.9f) : ColorRGBA(0.10f, 0.10f, 0.14f, 0.9f);
 			Reel.Draw(ReelBg, IGraphics::CORNER_ALL, 8.f);
 
 			Ui()->ClipEnable(&Reel);
@@ -3071,7 +3043,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 
 			if(Spinning)
 			{
-
 				const float Off = s_Casino.m_aScrollY[i] * Reel.h;
 				RenderSym(s_Casino.m_aScrollSym[i], -Reel.h + Off);
 				RenderSym((s_Casino.m_aScrollSym[i] + 1) % 6, Off);
@@ -3093,14 +3064,12 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 
 			Ui()->ClipDisable();
 
-
 			if(s_Casino.m_ShowResult && s_Casino.m_Won)
 			{
 				const float Alpha = sinf(AnimTime * 10.f) * 0.15f + 0.25f;
 				Reel.Draw(ColorRGBA(1.f, 0.85f, 0.1f, Alpha), IGraphics::CORNER_ALL, 8.f);
 			}
 		}
-
 
 		if(s_Casino.m_ShowResult)
 		{
@@ -3120,7 +3089,6 @@ void CMenus::RenderSettingsBestClientFun(CUIRect MainView)
 			Ui()->DoLabel(&ResLabel, aBuf, 18.f, TEXTALIGN_MC);
 			TextRender()->TextColor(TextRender()->DefaultTextColor());
 		}
-
 
 		Area.HSplitTop(MARGIN_SMALL, nullptr, &Area);
 		CUIRect SpinBtn;

@@ -6,7 +6,7 @@ class CGameClient;
 
 namespace CornerIndicator
 {
-void Render(CGameClient *pGameClient);
+	void Render(CGameClient *pGameClient);
 }
 
 #endif

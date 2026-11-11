@@ -21,217 +21,228 @@
 
 namespace
 {
-constexpr int64_t TRANSLATE_TIMEOUT = 20;
+	constexpr int64_t TRANSLATE_TIMEOUT = 20;
 
-void UrlEncode(const char *pText, char *pOut, size_t Length)
-{
-	if(!pText || Length == 0)
-		return;
-
-	size_t OutPos = 0;
-	for(const char *p = pText; *p && OutPos + 1 < Length; ++p)
+	void UrlEncode(const char *pText, char *pOut, size_t Length)
 	{
-		const unsigned char c = (unsigned char)*p;
-		if(isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
-		{
-			pOut[OutPos++] = c;
-		}
-		else
-		{
-			if(OutPos + 3 >= Length)
-				break;
-			snprintf(pOut + OutPos, 4, "%%%02X", c);
-			OutPos += 3;
-		}
-	}
-	pOut[OutPos] = '\0';
-}
-
-void NormalizeLanguageCode(const char *pLanguage, char *pOut, size_t Size)
-{
-	if(!pOut || Size == 0)
-		return;
-	pOut[0] = '\0';
-	if(!pLanguage || !pLanguage[0])
-		return;
-
-	char aLower[32] = "";
-	int Length = 0;
-	for(const char *p = pLanguage; *p && Length < (int)sizeof(aLower) - 1; ++p)
-	{
-		const unsigned char c = (unsigned char)*p;
-		if(c == '-' || c == '_' || c == ';' || c == ',' || c == '|' || isspace(c))
-			break;
-		if(isalnum(c))
-			aLower[Length++] = (char)tolower(c);
-	}
-	aLower[Length] = '\0';
-
-	struct SMapping
-	{
-		const char *m_pFrom;
-		const char *m_pTo;
-	};
-	static const SMapping s_aMappings[] = {
-		{"auto", "auto"},
-		{"ru", "ru"}, {"russian", "ru"},
-		{"en", "en"}, {"english", "en"},
-		{"de", "de"}, {"german", "de"},
-		{"fr", "fr"}, {"french", "fr"},
-		{"es", "es"}, {"spanish", "es"},
-		{"pl", "pl"}, {"polish", "pl"},
-		{"zh", "zh"}, {"cn", "zh"}, {"chinese", "zh"},
-		{"pt", "pt"}, {"portuguese", "pt"}, {"brazilian", "pt"},
-		{"tr", "tr"}, {"turkish", "tr"},
-	};
-	for(const SMapping &Mapping : s_aMappings)
-	{
-		if(str_comp(aLower, Mapping.m_pFrom) == 0)
-		{
-			str_copy(pOut, Mapping.m_pTo, Size);
+		if(!pText || Length == 0)
 			return;
-		}
-	}
-}
 
-bool IsAutoLanguage(const char *pLanguage)
-{
-	return !pLanguage || !pLanguage[0] || str_comp_nocase(pLanguage, "auto") == 0;
-}
-
-bool LanguagesEqual(const char *pA, const char *pB)
-{
-	if(IsAutoLanguage(pA) || IsAutoLanguage(pB))
-		return false;
-	return str_comp_nocase(pA, pB) == 0;
-}
-
-bool IsApostropheCodepoint(int Code)
-{
-	return Code == '\'' || Code == 0x2018 || Code == 0x2019 || Code == 0x02BC;
-}
-
-void StripApostrophesFromTranslatedText(char *pText)
-{
-	char *pWrite = pText;
-	const char *pRead = pText;
-	while(*pRead)
-	{
-		const char *pBefore = pRead;
-		const int Code = str_utf8_decode(&pRead);
-		if(Code < 0)
-			break;
-		if(IsApostropheCodepoint(Code))
-			continue;
-		while(pBefore < pRead)
-			*pWrite++ = *pBefore++;
-	}
-	*pWrite = '\0';
-}
-
-void NormalizeTranslatedText(char *pText, size_t Size)
-{
-	if(!pText || !pText[0])
-		return;
-
-	std::string Decoded;
-	bool HasEscape = false;
-	for(size_t i = 0; pText[i]; ++i)
-	{
-		if(pText[i] == '%' && pText[i + 1] && pText[i + 2] && isxdigit((unsigned char)pText[i + 1]) && isxdigit((unsigned char)pText[i + 2]))
+		size_t OutPos = 0;
+		for(const char *p = pText; *p && OutPos + 1 < Length; ++p)
 		{
-			const char aHex[] = {pText[i + 1], pText[i + 2], '\0'};
-			Decoded.push_back((char)strtol(aHex, nullptr, 16));
-			HasEscape = true;
-			i += 2;
+			const unsigned char c = (unsigned char)*p;
+			if(isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
+			{
+				pOut[OutPos++] = c;
+			}
+			else
+			{
+				if(OutPos + 3 >= Length)
+					break;
+				snprintf(pOut + OutPos, 4, "%%%02X", c);
+				OutPos += 3;
+			}
 		}
-		else if(pText[i] == '+')
-			Decoded.push_back(' ');
-		else
-			Decoded.push_back(pText[i]);
-	}
-	if(HasEscape)
-		str_copy(pText, Decoded.c_str(), Size);
-}
-
-bool ExtractOutgoingCommand(const char *pText, const char *pCommand, const char **ppArguments)
-{
-	if(!pText || pText[0] != '/' || !ppArguments)
-		return false;
-	const char *pStart = pText + 1;
-	const char *pEnd = pStart;
-	while(*pEnd && !isspace((unsigned char)*pEnd))
-		++pEnd;
-	if((size_t)(pEnd - pStart) != (size_t)str_length(pCommand) || str_comp_nocase(std::string(pStart, pEnd - pStart).c_str(), pCommand) != 0)
-		return false;
-	const char *pArgumentsStart = pEnd;
-	while(isspace((unsigned char)*pArgumentsStart))
-		++pArgumentsStart;
-	*ppArguments = pArgumentsStart;
-	return *pArgumentsStart != '\0';
-}
-
-bool ExtractOutgoingTranslatableText(const CGameClient &GameClient, const char *pText, char *pPrefix, size_t PrefixSize, char *pBody, size_t BodySize)
-{
-	pPrefix[0] = '\0';
-	pBody[0] = '\0';
-	if(!pText || !pText[0])
-		return false;
-
-	if(pText[0] == '/')
-	{
-		const char *pArguments = nullptr;
-		if(ExtractOutgoingCommand(pText, "c", &pArguments))
-		{
-			const int PrefixLength = (int)(pArguments - pText);
-			str_copy(pPrefix, std::string(pText, PrefixLength).c_str(), PrefixSize);
-			str_copy(pBody, pArguments, BodySize);
-			return pBody[0] != '\0';
-		}
-
-		if(ExtractOutgoingCommand(pText, "w", &pArguments) || ExtractOutgoingCommand(pText, "whisper", &pArguments))
-		{
-			const char *pBodyStart = str_find(pArguments, " ");
-			if(!pBodyStart)
-				return false;
-			while(isspace((unsigned char)*pBodyStart))
-				++pBodyStart;
-			if(!pBodyStart[0])
-				return false;
-			const int PrefixLength = (int)(pBodyStart - pText);
-			str_copy(pPrefix, std::string(pText, PrefixLength).c_str(), PrefixSize);
-			str_copy(pBody, pBodyStart, BodySize);
-			return true;
-		}
-		return false;
+		pOut[OutPos] = '\0';
 	}
 
-	const char *pColon = str_find(pText, ":");
-	if(pColon && pColon != pText)
+	void NormalizeLanguageCode(const char *pLanguage, char *pOut, size_t Size)
 	{
-		const int NameLength = (int)(pColon - pText);
-		for(const auto &Client : GameClient.m_aClients)
+		if(!pOut || Size == 0)
+			return;
+		pOut[0] = '\0';
+		if(!pLanguage || !pLanguage[0])
+			return;
+
+		char aLower[32] = "";
+		int Length = 0;
+		for(const char *p = pLanguage; *p && Length < (int)sizeof(aLower) - 1; ++p)
 		{
-			if(!Client.m_Active || str_length(Client.m_aName) != NameLength)
+			const unsigned char c = (unsigned char)*p;
+			if(c == '-' || c == '_' || c == ';' || c == ',' || c == '|' || isspace(c))
+				break;
+			if(isalnum(c))
+				aLower[Length++] = (char)tolower(c);
+		}
+		aLower[Length] = '\0';
+
+		struct SMapping
+		{
+			const char *m_pFrom;
+			const char *m_pTo;
+		};
+		static const SMapping s_aMappings[] = {
+			{"auto", "auto"},
+			{"ru", "ru"},
+			{"russian", "ru"},
+			{"en", "en"},
+			{"english", "en"},
+			{"de", "de"},
+			{"german", "de"},
+			{"fr", "fr"},
+			{"french", "fr"},
+			{"es", "es"},
+			{"spanish", "es"},
+			{"pl", "pl"},
+			{"polish", "pl"},
+			{"zh", "zh"},
+			{"cn", "zh"},
+			{"chinese", "zh"},
+			{"pt", "pt"},
+			{"portuguese", "pt"},
+			{"brazilian", "pt"},
+			{"tr", "tr"},
+			{"turkish", "tr"},
+		};
+		for(const SMapping &Mapping : s_aMappings)
+		{
+			if(str_comp(aLower, Mapping.m_pFrom) == 0)
+			{
+				str_copy(pOut, Mapping.m_pTo, Size);
+				return;
+			}
+		}
+	}
+
+	bool IsAutoLanguage(const char *pLanguage)
+	{
+		return !pLanguage || !pLanguage[0] || str_comp_nocase(pLanguage, "auto") == 0;
+	}
+
+	bool LanguagesEqual(const char *pA, const char *pB)
+	{
+		if(IsAutoLanguage(pA) || IsAutoLanguage(pB))
+			return false;
+		return str_comp_nocase(pA, pB) == 0;
+	}
+
+	bool IsApostropheCodepoint(int Code)
+	{
+		return Code == '\'' || Code == 0x2018 || Code == 0x2019 || Code == 0x02BC;
+	}
+
+	void StripApostrophesFromTranslatedText(char *pText)
+	{
+		char *pWrite = pText;
+		const char *pRead = pText;
+		while(*pRead)
+		{
+			const char *pBefore = pRead;
+			const int Code = str_utf8_decode(&pRead);
+			if(Code < 0)
+				break;
+			if(IsApostropheCodepoint(Code))
 				continue;
-			char aName[64] = "";
-			str_copy(aName, std::string(pText, NameLength).c_str(), sizeof(aName));
-			if(str_comp_nocase(Client.m_aName, aName) != 0)
-				continue;
-			const char *pBodyStart = pColon + 1;
-			while(isspace((unsigned char)*pBodyStart))
-				++pBodyStart;
-			if(!pBodyStart[0])
-				return false;
-			str_copy(pPrefix, std::string(pText, pBodyStart - pText).c_str(), PrefixSize);
-			str_copy(pBody, pBodyStart, BodySize);
-			return true;
+			while(pBefore < pRead)
+				*pWrite++ = *pBefore++;
 		}
+		*pWrite = '\0';
 	}
 
-	str_copy(pBody, pText, BodySize);
-	return pBody[0] != '\0';
-}
+	void NormalizeTranslatedText(char *pText, size_t Size)
+	{
+		if(!pText || !pText[0])
+			return;
+
+		std::string Decoded;
+		bool HasEscape = false;
+		for(size_t i = 0; pText[i]; ++i)
+		{
+			if(pText[i] == '%' && pText[i + 1] && pText[i + 2] && isxdigit((unsigned char)pText[i + 1]) && isxdigit((unsigned char)pText[i + 2]))
+			{
+				const char aHex[] = {pText[i + 1], pText[i + 2], '\0'};
+				Decoded.push_back((char)strtol(aHex, nullptr, 16));
+				HasEscape = true;
+				i += 2;
+			}
+			else if(pText[i] == '+')
+				Decoded.push_back(' ');
+			else
+				Decoded.push_back(pText[i]);
+		}
+		if(HasEscape)
+			str_copy(pText, Decoded.c_str(), Size);
+	}
+
+	bool ExtractOutgoingCommand(const char *pText, const char *pCommand, const char **ppArguments)
+	{
+		if(!pText || pText[0] != '/' || !ppArguments)
+			return false;
+		const char *pStart = pText + 1;
+		const char *pEnd = pStart;
+		while(*pEnd && !isspace((unsigned char)*pEnd))
+			++pEnd;
+		if((size_t)(pEnd - pStart) != (size_t)str_length(pCommand) || str_comp_nocase(std::string(pStart, pEnd - pStart).c_str(), pCommand) != 0)
+			return false;
+		const char *pArgumentsStart = pEnd;
+		while(isspace((unsigned char)*pArgumentsStart))
+			++pArgumentsStart;
+		*ppArguments = pArgumentsStart;
+		return *pArgumentsStart != '\0';
+	}
+
+	bool ExtractOutgoingTranslatableText(const CGameClient &GameClient, const char *pText, char *pPrefix, size_t PrefixSize, char *pBody, size_t BodySize)
+	{
+		pPrefix[0] = '\0';
+		pBody[0] = '\0';
+		if(!pText || !pText[0])
+			return false;
+
+		if(pText[0] == '/')
+		{
+			const char *pArguments = nullptr;
+			if(ExtractOutgoingCommand(pText, "c", &pArguments))
+			{
+				const int PrefixLength = (int)(pArguments - pText);
+				str_copy(pPrefix, std::string(pText, PrefixLength).c_str(), PrefixSize);
+				str_copy(pBody, pArguments, BodySize);
+				return pBody[0] != '\0';
+			}
+
+			if(ExtractOutgoingCommand(pText, "w", &pArguments) || ExtractOutgoingCommand(pText, "whisper", &pArguments))
+			{
+				const char *pBodyStart = str_find(pArguments, " ");
+				if(!pBodyStart)
+					return false;
+				while(isspace((unsigned char)*pBodyStart))
+					++pBodyStart;
+				if(!pBodyStart[0])
+					return false;
+				const int PrefixLength = (int)(pBodyStart - pText);
+				str_copy(pPrefix, std::string(pText, PrefixLength).c_str(), PrefixSize);
+				str_copy(pBody, pBodyStart, BodySize);
+				return true;
+			}
+			return false;
+		}
+
+		const char *pColon = str_find(pText, ":");
+		if(pColon && pColon != pText)
+		{
+			const int NameLength = (int)(pColon - pText);
+			for(const auto &Client : GameClient.m_aClients)
+			{
+				if(!Client.m_Active || str_length(Client.m_aName) != NameLength)
+					continue;
+				char aName[64] = "";
+				str_copy(aName, std::string(pText, NameLength).c_str(), sizeof(aName));
+				if(str_comp_nocase(Client.m_aName, aName) != 0)
+					continue;
+				const char *pBodyStart = pColon + 1;
+				while(isspace((unsigned char)*pBodyStart))
+					++pBodyStart;
+				if(!pBodyStart[0])
+					return false;
+				str_copy(pPrefix, std::string(pText, pBodyStart - pText).c_str(), PrefixSize);
+				str_copy(pBody, pBodyStart, BodySize);
+				return true;
+			}
+		}
+
+		str_copy(pBody, pText, BodySize);
+		return pBody[0] != '\0';
+	}
 }
 
 const char *ITranslateBackend::EncodeTarget(const char *pTarget) const
@@ -564,31 +575,104 @@ public:
 };
 
 static const std::vector<STranslateLanguage> s_vGoogleLanguages = {
-	{"Arabic", "ar"}, {"Bulgarian", "bg"}, {"Chinese (Simplified)", "zh"}, {"Chinese (Traditional)", "zh-TW"},
-	{"Croatian", "hr"}, {"Czech", "cs"}, {"Danish", "da"}, {"Dutch", "nl"}, {"English", "en"},
-	{"Estonian", "et"}, {"Finnish", "fi"}, {"French", "fr"}, {"German", "de"}, {"Greek", "el"},
-	{"Hebrew", "he"}, {"Hindi", "hi"}, {"Hungarian", "hu"}, {"Indonesian", "id"}, {"Italian", "it"},
-	{"Japanese", "ja"}, {"Korean", "ko"}, {"Latvian", "lv"}, {"Lithuanian", "lt"}, {"Norwegian", "no"},
-	{"Persian", "fa"}, {"Polish", "pl"}, {"Portuguese", "pt"}, {"Romanian", "ro"}, {"Russian", "ru"},
-	{"Serbian", "sr"}, {"Slovak", "sk"}, {"Slovenian", "sl"}, {"Spanish", "es"}, {"Swedish", "sv"},
-	{"Thai", "th"}, {"Turkish", "tr"}, {"Ukrainian", "uk"}, {"Vietnamese", "vi"},
+	{"Arabic", "ar"},
+	{"Bulgarian", "bg"},
+	{"Chinese (Simplified)", "zh"},
+	{"Chinese (Traditional)", "zh-TW"},
+	{"Croatian", "hr"},
+	{"Czech", "cs"},
+	{"Danish", "da"},
+	{"Dutch", "nl"},
+	{"English", "en"},
+	{"Estonian", "et"},
+	{"Finnish", "fi"},
+	{"French", "fr"},
+	{"German", "de"},
+	{"Greek", "el"},
+	{"Hebrew", "he"},
+	{"Hindi", "hi"},
+	{"Hungarian", "hu"},
+	{"Indonesian", "id"},
+	{"Italian", "it"},
+	{"Japanese", "ja"},
+	{"Korean", "ko"},
+	{"Latvian", "lv"},
+	{"Lithuanian", "lt"},
+	{"Norwegian", "no"},
+	{"Persian", "fa"},
+	{"Polish", "pl"},
+	{"Portuguese", "pt"},
+	{"Romanian", "ro"},
+	{"Russian", "ru"},
+	{"Serbian", "sr"},
+	{"Slovak", "sk"},
+	{"Slovenian", "sl"},
+	{"Spanish", "es"},
+	{"Swedish", "sv"},
+	{"Thai", "th"},
+	{"Turkish", "tr"},
+	{"Ukrainian", "uk"},
+	{"Vietnamese", "vi"},
 };
 
 static const std::vector<STranslateLanguage> s_vLibretranslateLanguages = {
-	{"Arabic", "ar"}, {"Chinese (Simplified)", "zh"}, {"Czech", "cs"}, {"Dutch", "nl"}, {"English", "en"},
-	{"Finnish", "fi"}, {"French", "fr"}, {"German", "de"}, {"Greek", "el"}, {"Hebrew", "he"},
-	{"Hindi", "hi"}, {"Hungarian", "hu"}, {"Indonesian", "id"}, {"Italian", "it"}, {"Japanese", "ja"},
-	{"Korean", "ko"}, {"Polish", "pl"}, {"Portuguese", "pt"}, {"Russian", "ru"}, {"Spanish", "es"},
-	{"Swedish", "sv"}, {"Turkish", "tr"}, {"Ukrainian", "uk"}, {"Vietnamese", "vi"},
+	{"Arabic", "ar"},
+	{"Chinese (Simplified)", "zh"},
+	{"Czech", "cs"},
+	{"Dutch", "nl"},
+	{"English", "en"},
+	{"Finnish", "fi"},
+	{"French", "fr"},
+	{"German", "de"},
+	{"Greek", "el"},
+	{"Hebrew", "he"},
+	{"Hindi", "hi"},
+	{"Hungarian", "hu"},
+	{"Indonesian", "id"},
+	{"Italian", "it"},
+	{"Japanese", "ja"},
+	{"Korean", "ko"},
+	{"Polish", "pl"},
+	{"Portuguese", "pt"},
+	{"Russian", "ru"},
+	{"Spanish", "es"},
+	{"Swedish", "sv"},
+	{"Turkish", "tr"},
+	{"Ukrainian", "uk"},
+	{"Vietnamese", "vi"},
 };
 
 static const std::vector<STranslateLanguage> s_vDeepLLanguages = {
-	{"Arabic", "ar"}, {"Bulgarian", "bg"}, {"Chinese (Simplified)", "zh"}, {"Czech", "cs"}, {"Danish", "da"},
-	{"Dutch", "nl"}, {"English", "en"}, {"Estonian", "et"}, {"Finnish", "fi"}, {"French", "fr"},
-	{"German", "de"}, {"Greek", "el"}, {"Hungarian", "hu"}, {"Indonesian", "id"}, {"Italian", "it"},
-	{"Japanese", "ja"}, {"Korean", "ko"}, {"Latvian", "lv"}, {"Lithuanian", "lt"}, {"Norwegian", "no"},
-	{"Polish", "pl"}, {"Portuguese", "pt"}, {"Romanian", "ro"}, {"Russian", "ru"}, {"Slovak", "sk"},
-	{"Slovenian", "sl"}, {"Spanish", "es"}, {"Swedish", "sv"}, {"Turkish", "tr"}, {"Ukrainian", "uk"},
+	{"Arabic", "ar"},
+	{"Bulgarian", "bg"},
+	{"Chinese (Simplified)", "zh"},
+	{"Czech", "cs"},
+	{"Danish", "da"},
+	{"Dutch", "nl"},
+	{"English", "en"},
+	{"Estonian", "et"},
+	{"Finnish", "fi"},
+	{"French", "fr"},
+	{"German", "de"},
+	{"Greek", "el"},
+	{"Hungarian", "hu"},
+	{"Indonesian", "id"},
+	{"Italian", "it"},
+	{"Japanese", "ja"},
+	{"Korean", "ko"},
+	{"Latvian", "lv"},
+	{"Lithuanian", "lt"},
+	{"Norwegian", "no"},
+	{"Polish", "pl"},
+	{"Portuguese", "pt"},
+	{"Romanian", "ro"},
+	{"Russian", "ru"},
+	{"Slovak", "sk"},
+	{"Slovenian", "sl"},
+	{"Spanish", "es"},
+	{"Swedish", "sv"},
+	{"Turkish", "tr"},
+	{"Ukrainian", "uk"},
 };
 
 const std::array<STranslateBackendInfo, 3> g_aTranslateBackends = {{

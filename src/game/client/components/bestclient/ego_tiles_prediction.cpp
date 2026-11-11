@@ -19,17 +19,17 @@
 
 namespace
 {
-enum
-{
-	EGO_QUADTYPE_NONE = -1,
-	EGO_QUADTYPE_FREEZE,
-	EGO_QUADTYPE_UNFREEZE,
-	EGO_NUM_QUADTYPES
-};
+	enum
+	{
+		EGO_QUADTYPE_NONE = -1,
+		EGO_QUADTYPE_FREEZE,
+		EGO_QUADTYPE_UNFREEZE,
+		EGO_NUM_QUADTYPES
+	};
 
-constexpr char s_aValidQuadNames[EGO_NUM_QUADTYPES][30] = {
-	"QFr",
-	"QUnFr"};
+	constexpr char s_aValidQuadNames[EGO_NUM_QUADTYPES][30] = {
+		"QFr",
+		"QUnFr"};
 }
 
 void CEgoTilesPrediction::CPredQuad::UpdateAabb()
@@ -75,9 +75,9 @@ bool CEgoTilesPrediction::InsideQuad(vec2 Pos, vec2 T0, vec2 T1, vec2 T2, vec2 T
 	};
 
 	return IsLeft(T0, T1, Pos) &&
-		IsLeft(T1, T3, Pos) &&
-		IsLeft(T3, T2, Pos) &&
-		IsLeft(T2, T0, Pos);
+	       IsLeft(T1, T3, Pos) &&
+	       IsLeft(T3, T2, Pos) &&
+	       IsLeft(T2, T0, Pos);
 }
 
 void CEgoTilesPrediction::Reset()

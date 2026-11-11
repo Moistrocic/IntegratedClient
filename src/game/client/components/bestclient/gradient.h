@@ -2,10 +2,10 @@
 #ifndef GAME_CLIENT_COMPONENTS_BESTCLIENT_GRADIENT_H
 #define GAME_CLIENT_COMPONENTS_BESTCLIENT_GRADIENT_H
 
-#include <game/client/component.h>
-
 #include <engine/shared/protocol.h>
 #include <engine/textrender.h>
+
+#include <game/client/component.h>
 
 #include <vector>
 

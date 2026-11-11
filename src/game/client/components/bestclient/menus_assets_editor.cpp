@@ -30,316 +30,316 @@ using namespace FontIcon;
 
 namespace
 {
-constexpr float FontSize = 14.0f;
-constexpr float EditBoxFontSize = 12.0f;
-constexpr float LineSize = 20.0f;
-constexpr float MarginSmall = 5.0f;
-constexpr float MarginExtraSmall = 2.5f;
+	constexpr float FontSize = 14.0f;
+	constexpr float EditBoxFontSize = 12.0f;
+	constexpr float LineSize = 20.0f;
+	constexpr float MarginSmall = 5.0f;
+	constexpr float MarginExtraSmall = 2.5f;
 
-constexpr int ASSETS_EDITOR_CAT_ENTITIES = 0;
-constexpr int ASSETS_EDITOR_CAT_GAME = 1;
-constexpr int ASSETS_EDITOR_CAT_EMOTICONS = 2;
-constexpr int ASSETS_EDITOR_CAT_PARTICLES = 3;
-constexpr int ASSETS_EDITOR_CAT_HUD = 4;
-constexpr int ASSETS_EDITOR_CAT_EXTRAS = 5;
-constexpr int ASSETS_EDITOR_CAT_CURSOR = 6;
-constexpr int ASSETS_EDITOR_CAT_ARROW = 7;
-constexpr int ASSETS_EDITOR_COLOR_BLEND_TEELIKE = 0;
-constexpr int ASSETS_EDITOR_COLOR_BLEND_SCREEN = 1;
-constexpr int ASSETS_EDITOR_COLOR_BLEND_MULTIPLY = 2;
-constexpr int ASSETS_EDITOR_COLOR_BLEND_OVERLAY = 3;
-constexpr int ASSETS_EDITOR_COLOR_BLEND_COUNT = 4;
+	constexpr int ASSETS_EDITOR_CAT_ENTITIES = 0;
+	constexpr int ASSETS_EDITOR_CAT_GAME = 1;
+	constexpr int ASSETS_EDITOR_CAT_EMOTICONS = 2;
+	constexpr int ASSETS_EDITOR_CAT_PARTICLES = 3;
+	constexpr int ASSETS_EDITOR_CAT_HUD = 4;
+	constexpr int ASSETS_EDITOR_CAT_EXTRAS = 5;
+	constexpr int ASSETS_EDITOR_CAT_CURSOR = 6;
+	constexpr int ASSETS_EDITOR_CAT_ARROW = 7;
+	constexpr int ASSETS_EDITOR_COLOR_BLEND_TEELIKE = 0;
+	constexpr int ASSETS_EDITOR_COLOR_BLEND_SCREEN = 1;
+	constexpr int ASSETS_EDITOR_COLOR_BLEND_MULTIPLY = 2;
+	constexpr int ASSETS_EDITOR_COLOR_BLEND_OVERLAY = 3;
+	constexpr int ASSETS_EDITOR_COLOR_BLEND_COUNT = 4;
 
-struct SScopedClip
-{
-	CUi *m_pUi;
-	~SScopedClip() { m_pUi->ClipDisable(); }
-};
-
-struct SAssetsEditorColorPopupContext : public SPopupMenuId
-{
-	CMenus *m_pMenus = nullptr;
-	int m_SlotIndex = -1;
-	CButtonContainer m_DoneButton;
-	CButtonContainer m_ClearButton;
-	CButtonContainer m_aBlendButtons[ASSETS_EDITOR_COLOR_BLEND_COUNT];
-	char m_OpacityScrollbarId = 0;
-};
-
-SAssetsEditorColorPopupContext gs_AssetsEditorColorPopup;
-
-const char *AssetsEditorBlendName(int Mode)
-{
-	switch(Mode)
+	struct SScopedClip
 	{
-	case ASSETS_EDITOR_COLOR_BLEND_TEELIKE: return Localize("TeeLike");
-	case ASSETS_EDITOR_COLOR_BLEND_SCREEN: return Localize("Screen");
-	case ASSETS_EDITOR_COLOR_BLEND_MULTIPLY: return Localize("Multiply");
-	case ASSETS_EDITOR_COLOR_BLEND_OVERLAY: return Localize("Overlay");
-	default: return Localize("TeeLike");
-	}
-}
+		CUi *m_pUi;
+		~SScopedClip() { m_pUi->ClipDisable(); }
+	};
 
-float AssetsEditorOverlayChannel(float Base, float Blend)
-{
-	if(Base < 0.5f)
-		return 2.0f * Base * Blend;
-	return 1.0f - 2.0f * (1.0f - Base) * (1.0f - Blend);
-}
-
-const char *AssetsEditorCategoryFolder(int Category)
-{
-	switch(Category)
+	struct SAssetsEditorColorPopupContext : public SPopupMenuId
 	{
-	case ASSETS_EDITOR_CAT_ENTITIES: return "entities";
-	case ASSETS_EDITOR_CAT_EMOTICONS: return "emoticons";
-	case ASSETS_EDITOR_CAT_PARTICLES: return "particles";
-	case ASSETS_EDITOR_CAT_HUD: return "hud";
-	case ASSETS_EDITOR_CAT_EXTRAS: return "extras";
-	case ASSETS_EDITOR_CAT_CURSOR: return "cursor";
-	case ASSETS_EDITOR_CAT_ARROW: return "arrow";
-	default: return "game";
-	}
-}
+		CMenus *m_pMenus = nullptr;
+		int m_SlotIndex = -1;
+		CButtonContainer m_DoneButton;
+		CButtonContainer m_ClearButton;
+		CButtonContainer m_aBlendButtons[ASSETS_EDITOR_COLOR_BLEND_COUNT];
+		char m_OpacityScrollbarId = 0;
+	};
 
-int AssetsEditorImageId(int Category)
-{
-	switch(Category)
+	SAssetsEditorColorPopupContext gs_AssetsEditorColorPopup;
+
+	const char *AssetsEditorBlendName(int Mode)
 	{
-	case ASSETS_EDITOR_CAT_EMOTICONS: return IMAGE_EMOTICONS;
-	case ASSETS_EDITOR_CAT_PARTICLES: return IMAGE_PARTICLES;
-	case ASSETS_EDITOR_CAT_HUD: return IMAGE_HUD;
-	case ASSETS_EDITOR_CAT_EXTRAS: return IMAGE_EXTRAS;
-	case ASSETS_EDITOR_CAT_CURSOR: return IMAGE_CURSOR;
-	case ASSETS_EDITOR_CAT_ARROW: return IMAGE_ARROW;
-	case ASSETS_EDITOR_CAT_ENTITIES: return -1;
-	default: return IMAGE_GAME;
+		switch(Mode)
+		{
+		case ASSETS_EDITOR_COLOR_BLEND_TEELIKE: return Localize("TeeLike");
+		case ASSETS_EDITOR_COLOR_BLEND_SCREEN: return Localize("Screen");
+		case ASSETS_EDITOR_COLOR_BLEND_MULTIPLY: return Localize("Multiply");
+		case ASSETS_EDITOR_COLOR_BLEND_OVERLAY: return Localize("Overlay");
+		default: return Localize("TeeLike");
+		}
 	}
-}
 
-int AssetsEditorGridSpriteId(int Category)
-{
-	switch(Category)
+	float AssetsEditorOverlayChannel(float Base, float Blend)
 	{
-	case ASSETS_EDITOR_CAT_EMOTICONS: return SPRITE_OOP;
-	case ASSETS_EDITOR_CAT_HUD: return SPRITE_HUD_AIRJUMP;
-	case ASSETS_EDITOR_CAT_PARTICLES: return SPRITE_PART_SLICE;
-	case ASSETS_EDITOR_CAT_EXTRAS: return SPRITE_PART_SNOWFLAKE;
-	default: return SPRITE_HEALTH_FULL;
+		if(Base < 0.5f)
+			return 2.0f * Base * Blend;
+		return 1.0f - 2.0f * (1.0f - Base) * (1.0f - Blend);
 	}
-}
 
-int AssetsEditorGridX(int Category)
-{
-	if(Category == ASSETS_EDITOR_CAT_ENTITIES)
-		return 16;
-	if(Category == ASSETS_EDITOR_CAT_CURSOR || Category == ASSETS_EDITOR_CAT_ARROW)
-		return 1;
-	const CDataSprite &Sprite = g_pData->m_aSprites[AssetsEditorGridSpriteId(Category)];
-	if(Sprite.m_pSet == nullptr || Sprite.m_pSet->m_Gridx <= 0)
-		return 1;
-	return Sprite.m_pSet->m_Gridx;
-}
+	const char *AssetsEditorCategoryFolder(int Category)
+	{
+		switch(Category)
+		{
+		case ASSETS_EDITOR_CAT_ENTITIES: return "entities";
+		case ASSETS_EDITOR_CAT_EMOTICONS: return "emoticons";
+		case ASSETS_EDITOR_CAT_PARTICLES: return "particles";
+		case ASSETS_EDITOR_CAT_HUD: return "hud";
+		case ASSETS_EDITOR_CAT_EXTRAS: return "extras";
+		case ASSETS_EDITOR_CAT_CURSOR: return "cursor";
+		case ASSETS_EDITOR_CAT_ARROW: return "arrow";
+		default: return "game";
+		}
+	}
 
-int AssetsEditorGridY(int Category)
-{
-	if(Category == ASSETS_EDITOR_CAT_ENTITIES)
-		return 16;
-	if(Category == ASSETS_EDITOR_CAT_CURSOR || Category == ASSETS_EDITOR_CAT_ARROW)
-		return 1;
-	const CDataSprite &Sprite = g_pData->m_aSprites[AssetsEditorGridSpriteId(Category)];
-	if(Sprite.m_pSet == nullptr || Sprite.m_pSet->m_Gridy <= 0)
-		return 1;
-	return Sprite.m_pSet->m_Gridy;
-}
+	int AssetsEditorImageId(int Category)
+	{
+		switch(Category)
+		{
+		case ASSETS_EDITOR_CAT_EMOTICONS: return IMAGE_EMOTICONS;
+		case ASSETS_EDITOR_CAT_PARTICLES: return IMAGE_PARTICLES;
+		case ASSETS_EDITOR_CAT_HUD: return IMAGE_HUD;
+		case ASSETS_EDITOR_CAT_EXTRAS: return IMAGE_EXTRAS;
+		case ASSETS_EDITOR_CAT_CURSOR: return IMAGE_CURSOR;
+		case ASSETS_EDITOR_CAT_ARROW: return IMAGE_ARROW;
+		case ASSETS_EDITOR_CAT_ENTITIES: return -1;
+		default: return IMAGE_GAME;
+		}
+	}
 
-int AssetsEditorFindSpriteIdByName(const char *pName, int ImageId)
-{
-	if(pName == nullptr || pName[0] == '\0')
+	int AssetsEditorGridSpriteId(int Category)
+	{
+		switch(Category)
+		{
+		case ASSETS_EDITOR_CAT_EMOTICONS: return SPRITE_OOP;
+		case ASSETS_EDITOR_CAT_HUD: return SPRITE_HUD_AIRJUMP;
+		case ASSETS_EDITOR_CAT_PARTICLES: return SPRITE_PART_SLICE;
+		case ASSETS_EDITOR_CAT_EXTRAS: return SPRITE_PART_SNOWFLAKE;
+		default: return SPRITE_HEALTH_FULL;
+		}
+	}
+
+	int AssetsEditorGridX(int Category)
+	{
+		if(Category == ASSETS_EDITOR_CAT_ENTITIES)
+			return 16;
+		if(Category == ASSETS_EDITOR_CAT_CURSOR || Category == ASSETS_EDITOR_CAT_ARROW)
+			return 1;
+		const CDataSprite &Sprite = g_pData->m_aSprites[AssetsEditorGridSpriteId(Category)];
+		if(Sprite.m_pSet == nullptr || Sprite.m_pSet->m_Gridx <= 0)
+			return 1;
+		return Sprite.m_pSet->m_Gridx;
+	}
+
+	int AssetsEditorGridY(int Category)
+	{
+		if(Category == ASSETS_EDITOR_CAT_ENTITIES)
+			return 16;
+		if(Category == ASSETS_EDITOR_CAT_CURSOR || Category == ASSETS_EDITOR_CAT_ARROW)
+			return 1;
+		const CDataSprite &Sprite = g_pData->m_aSprites[AssetsEditorGridSpriteId(Category)];
+		if(Sprite.m_pSet == nullptr || Sprite.m_pSet->m_Gridy <= 0)
+			return 1;
+		return Sprite.m_pSet->m_Gridy;
+	}
+
+	int AssetsEditorFindSpriteIdByName(const char *pName, int ImageId)
+	{
+		if(pName == nullptr || pName[0] == '\0')
+			return -1;
+		const CDataImage *pImage = ImageId >= 0 ? &g_pData->m_aImages[ImageId] : nullptr;
+		for(int SpriteId = 0; SpriteId < NUM_SPRITES; ++SpriteId)
+		{
+			const CDataSprite &Sprite = g_pData->m_aSprites[SpriteId];
+			if(Sprite.m_pName == nullptr || str_comp(Sprite.m_pName, pName) != 0)
+				continue;
+			if(Sprite.m_W <= 0 || Sprite.m_H <= 0 || Sprite.m_pSet == nullptr)
+				continue;
+			if(pImage != nullptr && Sprite.m_pSet->m_pImage != pImage)
+				continue;
+			return SpriteId;
+		}
 		return -1;
-	const CDataImage *pImage = ImageId >= 0 ? &g_pData->m_aImages[ImageId] : nullptr;
-	for(int SpriteId = 0; SpriteId < NUM_SPRITES; ++SpriteId)
-	{
-		const CDataSprite &Sprite = g_pData->m_aSprites[SpriteId];
-		if(Sprite.m_pName == nullptr || str_comp(Sprite.m_pName, pName) != 0)
-			continue;
-		if(Sprite.m_W <= 0 || Sprite.m_H <= 0 || Sprite.m_pSet == nullptr)
-			continue;
-		if(pImage != nullptr && Sprite.m_pSet->m_pImage != pImage)
-			continue;
-		return SpriteId;
 	}
-	return -1;
-}
 
-void AssetsEditorStripTrailingDigits(const char *pIn, char *pOut, int OutSize)
-{
-	str_copy(pOut, pIn, OutSize);
-	int Len = str_length(pOut);
-	while(Len > 0 && std::isdigit(static_cast<unsigned char>(pOut[Len - 1])))
-		pOut[--Len] = '\0';
-}
-
-void AssetsEditorBuildFamilyKey(int Category, const CDataSprite *pSprite, char *pOut, int OutSize)
-{
-	if(pOut == nullptr || OutSize <= 0)
-		return;
-	if(pSprite == nullptr || pSprite->m_pName == nullptr)
+	void AssetsEditorStripTrailingDigits(const char *pIn, char *pOut, int OutSize)
 	{
-		str_copy(pOut, "part", OutSize);
-		return;
+		str_copy(pOut, pIn, OutSize);
+		int Len = str_length(pOut);
+		while(Len > 0 && std::isdigit(static_cast<unsigned char>(pOut[Len - 1])))
+			pOut[--Len] = '\0';
 	}
-	const char *pName = pSprite->m_pName;
-	if(Category == ASSETS_EDITOR_CAT_GAME && str_comp_num(pName, "weapon_", 7) == 0)
+
+	void AssetsEditorBuildFamilyKey(int Category, const CDataSprite *pSprite, char *pOut, int OutSize)
 	{
-		const char *pAfterWeapon = pName + 7;
-		const char *pLastUnderscore = str_rchr(pAfterWeapon, '_');
-		if(pLastUnderscore != nullptr && pLastUnderscore[1] != '\0')
+		if(pOut == nullptr || OutSize <= 0)
+			return;
+		if(pSprite == nullptr || pSprite->m_pName == nullptr)
 		{
-			char aPart[64];
-			AssetsEditorStripTrailingDigits(pLastUnderscore + 1, aPart, sizeof(aPart));
-			str_format(pOut, OutSize, "weapon:*:%s", aPart);
+			str_copy(pOut, "part", OutSize);
 			return;
 		}
-	}
-	else if(Category == ASSETS_EDITOR_CAT_HUD)
-	{
-		if(str_find(pName, "_hit_disabled") != nullptr)
+		const char *pName = pSprite->m_pName;
+		if(Category == ASSETS_EDITOR_CAT_GAME && str_comp_num(pName, "weapon_", 7) == 0)
 		{
-			str_copy(pOut, "hud:*_hit_disabled", OutSize);
-			return;
+			const char *pAfterWeapon = pName + 7;
+			const char *pLastUnderscore = str_rchr(pAfterWeapon, '_');
+			if(pLastUnderscore != nullptr && pLastUnderscore[1] != '\0')
+			{
+				char aPart[64];
+				AssetsEditorStripTrailingDigits(pLastUnderscore + 1, aPart, sizeof(aPart));
+				str_format(pOut, OutSize, "weapon:*:%s", aPart);
+				return;
+			}
 		}
-		if(str_comp_num(pName, "hud_freeze_bar_", 15) == 0)
+		else if(Category == ASSETS_EDITOR_CAT_HUD)
 		{
-			str_copy(pOut, "hud:freeze_bar", OutSize);
-			return;
+			if(str_find(pName, "_hit_disabled") != nullptr)
+			{
+				str_copy(pOut, "hud:*_hit_disabled", OutSize);
+				return;
+			}
+			if(str_comp_num(pName, "hud_freeze_bar_", 15) == 0)
+			{
+				str_copy(pOut, "hud:freeze_bar", OutSize);
+				return;
+			}
+			if(str_comp_num(pName, "hud_ninja_bar_", 14) == 0)
+			{
+				str_copy(pOut, "hud:ninja_bar", OutSize);
+				return;
+			}
 		}
-		if(str_comp_num(pName, "hud_ninja_bar_", 14) == 0)
-		{
-			str_copy(pOut, "hud:ninja_bar", OutSize);
-			return;
-		}
+		char aNormalized[64];
+		AssetsEditorStripTrailingDigits(pName, aNormalized, sizeof(aNormalized));
+		str_copy(pOut, aNormalized, OutSize);
 	}
-	char aNormalized[64];
-	AssetsEditorStripTrailingDigits(pName, aNormalized, sizeof(aNormalized));
-	str_copy(pOut, aNormalized, OutSize);
-}
 
-bool AssetsEditorCalcFittedRect(const CUIRect &Rect, int SourceWidth, int SourceHeight, CUIRect &OutRect)
-{
-	if(SourceWidth <= 0 || SourceHeight <= 0 || Rect.w <= 0.0f || Rect.h <= 0.0f)
-		return false;
-	float DrawW = Rect.w;
-	float DrawH = DrawW * ((float)SourceHeight / (float)SourceWidth);
-	if(DrawH > Rect.h)
+	bool AssetsEditorCalcFittedRect(const CUIRect &Rect, int SourceWidth, int SourceHeight, CUIRect &OutRect)
 	{
-		DrawH = Rect.h;
-		DrawW = DrawH * ((float)SourceWidth / (float)SourceHeight);
-	}
-	OutRect.x = Rect.x + (Rect.w - DrawW) / 2.0f;
-	OutRect.y = Rect.y + (Rect.h - DrawH) / 2.0f;
-	OutRect.w = DrawW;
-	OutRect.h = DrawH;
-	return true;
-}
-
-bool AssetsEditorSlotRect(const CUIRect &FittedRect, int GridX, int GridY, int X, int Y, int W, int H, CUIRect &OutRect)
-{
-	GridX = std::max(1, GridX);
-	GridY = std::max(1, GridY);
-	if(W <= 0 || H <= 0)
-		return false;
-	OutRect.x = FittedRect.x + ((float)X / GridX) * FittedRect.w;
-	OutRect.y = FittedRect.y + ((float)Y / GridY) * FittedRect.h;
-	OutRect.w = ((float)W / GridX) * FittedRect.w;
-	OutRect.h = ((float)H / GridY) * FittedRect.h;
-	return true;
-}
-
-bool AssetsEditorDrawTextureFitted(const CUIRect &Rect, IGraphics::CTextureHandle Texture, int SourceWidth, int SourceHeight, IGraphics *pGraphics, CUIRect *pOutFittedRect)
-{
-	if(!Texture.IsValid())
-		return false;
-	CUIRect FittedRect;
-	if(!AssetsEditorCalcFittedRect(Rect, SourceWidth, SourceHeight, FittedRect))
-		return false;
-	if(pOutFittedRect != nullptr)
-		*pOutFittedRect = FittedRect;
-	pGraphics->WrapClamp();
-	pGraphics->TextureSet(Texture);
-	pGraphics->QuadsBegin();
-	pGraphics->SetColor(1, 1, 1, 1);
-	const IGraphics::CQuadItem Quad(FittedRect.x, FittedRect.y, FittedRect.w, FittedRect.h);
-	pGraphics->QuadsDrawTL(&Quad, 1);
-	pGraphics->QuadsEnd();
-	pGraphics->WrapNormal();
-	return true;
-}
-
-void AssetsEditorDrawSlot(const CUIRect &Rect, IGraphics::CTextureHandle Texture, int GridX, int GridY, int SrcX, int SrcY, int SrcW, int SrcH, float Alpha, IGraphics *pGraphics)
-{
-	if(!Texture.IsValid() || SrcW <= 0 || SrcH <= 0)
-		return;
-	GridX = std::max(1, GridX);
-	GridY = std::max(1, GridY);
-	const float U0 = (float)SrcX / GridX;
-	const float V0 = (float)SrcY / GridY;
-	const float U1 = (float)(SrcX + SrcW) / GridX;
-	const float V1 = (float)(SrcY + SrcH) / GridY;
-	pGraphics->WrapClamp();
-	pGraphics->TextureSet(Texture);
-	pGraphics->QuadsBegin();
-	pGraphics->SetColor(1.0f, 1.0f, 1.0f, Alpha);
-	pGraphics->QuadsSetSubset(U0, V0, U1, V1);
-	const IGraphics::CQuadItem Quad(Rect.x, Rect.y, Rect.w, Rect.h);
-	pGraphics->QuadsDrawTL(&Quad, 1);
-	pGraphics->QuadsSetSubset(0, 0, 1, 1);
-	pGraphics->QuadsEnd();
-	pGraphics->WrapNormal();
-}
-
-bool AssetsEditorExportNameValid(const char *pName)
-{
-	if(pName == nullptr || pName[0] == '\0' || str_comp(pName, "default") == 0 || str_comp(pName, ".") == 0 || str_comp(pName, "..") == 0)
-		return false;
-	if(str_find(pName, "..") != nullptr)
-		return false;
-	for(const char *pCursor = pName; *pCursor != '\0'; ++pCursor)
-	{
-		const unsigned char Char = static_cast<unsigned char>(*pCursor);
-		if(Char < 32 || std::strchr("\\/:*?\"<>|", *pCursor) != nullptr)
+		if(SourceWidth <= 0 || SourceHeight <= 0 || Rect.w <= 0.0f || Rect.h <= 0.0f)
 			return false;
+		float DrawW = Rect.w;
+		float DrawH = DrawW * ((float)SourceHeight / (float)SourceWidth);
+		if(DrawH > Rect.h)
+		{
+			DrawH = Rect.h;
+			DrawW = DrawH * ((float)SourceWidth / (float)SourceHeight);
+		}
+		OutRect.x = Rect.x + (Rect.w - DrawW) / 2.0f;
+		OutRect.y = Rect.y + (Rect.h - DrawH) / 2.0f;
+		OutRect.w = DrawW;
+		OutRect.h = DrawH;
+		return true;
 	}
-	return true;
-}
 
-void AssetsEditorSetIconFont(ITextRender *pTextRender)
-{
-	pTextRender->SetFontPreset(EFontPreset::ICON_FONT);
-	pTextRender->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
-}
+	bool AssetsEditorSlotRect(const CUIRect &FittedRect, int GridX, int GridY, int X, int Y, int W, int H, CUIRect &OutRect)
+	{
+		GridX = std::max(1, GridX);
+		GridY = std::max(1, GridY);
+		if(W <= 0 || H <= 0)
+			return false;
+		OutRect.x = FittedRect.x + ((float)X / GridX) * FittedRect.w;
+		OutRect.y = FittedRect.y + ((float)Y / GridY) * FittedRect.h;
+		OutRect.w = ((float)W / GridX) * FittedRect.w;
+		OutRect.h = ((float)H / GridY) * FittedRect.h;
+		return true;
+	}
 
-void AssetsEditorClearIconFont(ITextRender *pTextRender)
-{
-	pTextRender->SetRenderFlags(0);
-	pTextRender->SetFontPreset(EFontPreset::DEFAULT_FONT);
-}
+	bool AssetsEditorDrawTextureFitted(const CUIRect &Rect, IGraphics::CTextureHandle Texture, int SourceWidth, int SourceHeight, IGraphics *pGraphics, CUIRect *pOutFittedRect)
+	{
+		if(!Texture.IsValid())
+			return false;
+		CUIRect FittedRect;
+		if(!AssetsEditorCalcFittedRect(Rect, SourceWidth, SourceHeight, FittedRect))
+			return false;
+		if(pOutFittedRect != nullptr)
+			*pOutFittedRect = FittedRect;
+		pGraphics->WrapClamp();
+		pGraphics->TextureSet(Texture);
+		pGraphics->QuadsBegin();
+		pGraphics->SetColor(1, 1, 1, 1);
+		const IGraphics::CQuadItem Quad(FittedRect.x, FittedRect.y, FittedRect.w, FittedRect.h);
+		pGraphics->QuadsDrawTL(&Quad, 1);
+		pGraphics->QuadsEnd();
+		pGraphics->WrapNormal();
+		return true;
+	}
 
-void AssetsEditorDrawBrushCursor(CUi *pUi, ITextRender *pTextRender, float MouseX, float MouseY)
-{
-	const float Size = 22.0f;
-	CUIRect Icon;
-	Icon.w = Size;
-	Icon.h = Size;
-	Icon.x = MouseX;
-	Icon.y = MouseY - Size;
-	AssetsEditorSetIconFont(pTextRender);
-	pTextRender->TextColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
-	pUi->DoLabel(&Icon, BRUSH, Size * 0.9f, TEXTALIGN_BL);
-	pTextRender->TextColor(pTextRender->DefaultTextColor());
-	AssetsEditorClearIconFont(pTextRender);
-	SDL_ShowCursor(SDL_DISABLE);
-}
+	void AssetsEditorDrawSlot(const CUIRect &Rect, IGraphics::CTextureHandle Texture, int GridX, int GridY, int SrcX, int SrcY, int SrcW, int SrcH, float Alpha, IGraphics *pGraphics)
+	{
+		if(!Texture.IsValid() || SrcW <= 0 || SrcH <= 0)
+			return;
+		GridX = std::max(1, GridX);
+		GridY = std::max(1, GridY);
+		const float U0 = (float)SrcX / GridX;
+		const float V0 = (float)SrcY / GridY;
+		const float U1 = (float)(SrcX + SrcW) / GridX;
+		const float V1 = (float)(SrcY + SrcH) / GridY;
+		pGraphics->WrapClamp();
+		pGraphics->TextureSet(Texture);
+		pGraphics->QuadsBegin();
+		pGraphics->SetColor(1.0f, 1.0f, 1.0f, Alpha);
+		pGraphics->QuadsSetSubset(U0, V0, U1, V1);
+		const IGraphics::CQuadItem Quad(Rect.x, Rect.y, Rect.w, Rect.h);
+		pGraphics->QuadsDrawTL(&Quad, 1);
+		pGraphics->QuadsSetSubset(0, 0, 1, 1);
+		pGraphics->QuadsEnd();
+		pGraphics->WrapNormal();
+	}
+
+	bool AssetsEditorExportNameValid(const char *pName)
+	{
+		if(pName == nullptr || pName[0] == '\0' || str_comp(pName, "default") == 0 || str_comp(pName, ".") == 0 || str_comp(pName, "..") == 0)
+			return false;
+		if(str_find(pName, "..") != nullptr)
+			return false;
+		for(const char *pCursor = pName; *pCursor != '\0'; ++pCursor)
+		{
+			const unsigned char Char = static_cast<unsigned char>(*pCursor);
+			if(Char < 32 || std::strchr("\\/:*?\"<>|", *pCursor) != nullptr)
+				return false;
+		}
+		return true;
+	}
+
+	void AssetsEditorSetIconFont(ITextRender *pTextRender)
+	{
+		pTextRender->SetFontPreset(EFontPreset::ICON_FONT);
+		pTextRender->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+	}
+
+	void AssetsEditorClearIconFont(ITextRender *pTextRender)
+	{
+		pTextRender->SetRenderFlags(0);
+		pTextRender->SetFontPreset(EFontPreset::DEFAULT_FONT);
+	}
+
+	void AssetsEditorDrawBrushCursor(CUi *pUi, ITextRender *pTextRender, float MouseX, float MouseY)
+	{
+		const float Size = 22.0f;
+		CUIRect Icon;
+		Icon.w = Size;
+		Icon.h = Size;
+		Icon.x = MouseX;
+		Icon.y = MouseY - Size;
+		AssetsEditorSetIconFont(pTextRender);
+		pTextRender->TextColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
+		pUi->DoLabel(&Icon, BRUSH, Size * 0.9f, TEXTALIGN_BL);
+		pTextRender->TextColor(pTextRender->DefaultTextColor());
+		AssetsEditorClearIconFont(pTextRender);
+		SDL_ShowCursor(SDL_DISABLE);
+	}
 }
 
 bool CMenus::AssetsEditorResolvePath(int Category, const char *pName, char *pOut, int OutSize) const
@@ -999,7 +999,7 @@ int CMenus::AssetsEditorResolveHovered(const CUIRect &Rect, int Category, const 
 	const int MousePosY = (int)(Mouse.y * 10.0f);
 	const bool SamePosition = Cycle.m_PositionX == MousePosX && Cycle.m_PositionY == MousePosY;
 	const bool SameCandidates = Cycle.m_vCandidates.size() == vCandidates.size() &&
-		std::equal(Cycle.m_vCandidates.begin(), Cycle.m_vCandidates.end(), vCandidates.begin());
+				    std::equal(Cycle.m_vCandidates.begin(), Cycle.m_vCandidates.end(), vCandidates.begin());
 	if(!SamePosition || !SameCandidates)
 	{
 		Cycle.m_PositionX = MousePosX;

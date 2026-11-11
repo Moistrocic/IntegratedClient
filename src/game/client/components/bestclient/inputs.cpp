@@ -2,6 +2,7 @@
 #include "inputs.h"
 
 #include <base/math.h>
+
 #include <engine/shared/config.h>
 
 #include <algorithm>

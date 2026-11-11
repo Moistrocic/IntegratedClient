@@ -19,6 +19,7 @@
 
 // bestclient
 #include <base/net.h>
+
 #include <game/client/components/bestclient/bestclient.h>
 // bestclient
 

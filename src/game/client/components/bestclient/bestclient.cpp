@@ -28,9 +28,9 @@
 #include <game/client/components/bestclient/fx/own_tee.h>
 #include <game/client/components/bestclient/ui_theme/style.h>
 #include <game/client/components/mapimages.h>
-#include <game/client/components/sounds.h>
 #include <game/client/components/menus.h>
 #include <game/client/components/skins.h>
+#include <game/client/components/sounds.h>
 #include <game/client/gameclient.h>
 #include <game/client/render.h>
 #include <game/client/ui.h>
@@ -38,9 +38,10 @@
 
 #include <algorithm>
 #if defined(CONF_FAMILY_UNIX) && !defined(CONF_PLATFORM_ANDROID)
-#include <cerrno>
 #include <sys/wait.h>
 #include <unistd.h>
+
+#include <cerrno>
 #endif
 
 static const int FROZEN_SKIN_MAX_DARKEN = 70;
@@ -290,8 +291,7 @@ void CBestClient::OnConsoleInit()
 
 	Console()->Register("bc_saves", "", CFGFLAG_CLIENT, [](IConsole::IResult *, void *pUserData) {
 		CBestClient *pThis = static_cast<CBestClient *>(pUserData);
-		CChatQoL::ListSavesForCurrentMap(pThis->GameClient()->m_Chat);
-	}, this, "List team saves for the current map in chat");
+		CChatQoL::ListSavesForCurrentMap(pThis->GameClient()->m_Chat); }, this, "List team saves for the current map in chat");
 }
 
 void CBestClient::OnMapLoad()
@@ -700,28 +700,27 @@ void CBestClient::EnsureAudioDefaultPack()
 			io_close(File);
 		}
 		free(pData);
-		return 0;
-	}, Storage());
+		return 0; }, Storage());
 }
 
 namespace
 {
-bool JsonIntField(const json_value *pValue, int *pOut)
-{
-	if(!pValue || pValue == &json_value_none || !pOut)
+	bool JsonIntField(const json_value *pValue, int *pOut)
+	{
+		if(!pValue || pValue == &json_value_none || !pOut)
+			return false;
+		if(pValue->type == json_integer)
+		{
+			*pOut = (int)pValue->u.integer;
+			return true;
+		}
+		if(pValue->type == json_double)
+		{
+			*pOut = (int)pValue->u.dbl;
+			return true;
+		}
 		return false;
-	if(pValue->type == json_integer)
-	{
-		*pOut = (int)pValue->u.integer;
-		return true;
 	}
-	if(pValue->type == json_double)
-	{
-		*pOut = (int)pValue->u.dbl;
-		return true;
-	}
-	return false;
-}
 }
 
 void CBestClient::ResetFindHours()

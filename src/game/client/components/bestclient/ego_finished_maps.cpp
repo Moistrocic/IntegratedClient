@@ -12,41 +12,41 @@
 
 namespace
 {
-bool IsEgoServer(const CServerInfo *pServer)
-{
-	return pServer &&
-		(str_comp_nocase(pServer->m_aCommunityId, "ego") == 0 ||
-			str_find_nocase(pServer->m_aGameType, "e-gores") != nullptr ||
-			str_find_nocase(pServer->m_aGameType, "e_gores") != nullptr ||
-			str_find_nocase(pServer->m_aName, "EGO |") != nullptr ||
-			str_find_nocase(pServer->m_aName, "eternal-gores") != nullptr ||
-			str_find_nocase(pServer->m_aName, "eternal gores") != nullptr);
-}
-
-bool ParseFinishedMaps(const json_value *pRoot, std::unordered_set<std::string> *pFinishedMaps)
-{
-	if(!pRoot || pRoot == &json_value_none || pRoot->type != json_object || !pFinishedMaps)
-		return false;
-
-	const json_value *pRecords = json_object_get(pRoot, "records");
-	if(pRecords == &json_value_none || pRecords->type != json_array)
-		return false;
-
-	for(unsigned RecordIndex = 0; RecordIndex < pRecords->u.array.length; ++RecordIndex)
+	bool IsEgoServer(const CServerInfo *pServer)
 	{
-		const json_value *pRecord = pRecords->u.array.values[RecordIndex];
-		if(!pRecord || pRecord->type != json_object)
-			continue;
-
-		const json_value *pMapName = json_object_get(pRecord, "raw_map_name");
-		if(pMapName == &json_value_none)
-			pMapName = json_object_get(pRecord, "map_name");
-		if(pMapName && pMapName != &json_value_none && pMapName->type == json_string && pMapName->u.string.ptr[0] != '\0')
-			pFinishedMaps->emplace(pMapName->u.string.ptr);
+		return pServer &&
+		       (str_comp_nocase(pServer->m_aCommunityId, "ego") == 0 ||
+			       str_find_nocase(pServer->m_aGameType, "e-gores") != nullptr ||
+			       str_find_nocase(pServer->m_aGameType, "e_gores") != nullptr ||
+			       str_find_nocase(pServer->m_aName, "EGO |") != nullptr ||
+			       str_find_nocase(pServer->m_aName, "eternal-gores") != nullptr ||
+			       str_find_nocase(pServer->m_aName, "eternal gores") != nullptr);
 	}
 
-	return true;
-}
+	bool ParseFinishedMaps(const json_value *pRoot, std::unordered_set<std::string> *pFinishedMaps)
+	{
+		if(!pRoot || pRoot == &json_value_none || pRoot->type != json_object || !pFinishedMaps)
+			return false;
+
+		const json_value *pRecords = json_object_get(pRoot, "records");
+		if(pRecords == &json_value_none || pRecords->type != json_array)
+			return false;
+
+		for(unsigned RecordIndex = 0; RecordIndex < pRecords->u.array.length; ++RecordIndex)
+		{
+			const json_value *pRecord = pRecords->u.array.values[RecordIndex];
+			if(!pRecord || pRecord->type != json_object)
+				continue;
+
+			const json_value *pMapName = json_object_get(pRecord, "raw_map_name");
+			if(pMapName == &json_value_none)
+				pMapName = json_object_get(pRecord, "map_name");
+			if(pMapName && pMapName != &json_value_none && pMapName->type == json_string && pMapName->u.string.ptr[0] != '\0')
+				pFinishedMaps->emplace(pMapName->u.string.ptr);
+		}
+
+		return true;
+	}
 }
 
 bool CEgoFinishedMaps::Enabled() const

@@ -14,11 +14,11 @@
 // bestclient
 #include <game/client/components/bestclient/better_preview.h>
 // bestclient
+#include <generated/client_data.h>
+
 #include <game/client/gameclient.h>
 #include <game/client/ui_listbox.h>
 #include <game/localization.h>
-
-#include <generated/client_data.h>
 
 #include <algorithm>
 #include <chrono>

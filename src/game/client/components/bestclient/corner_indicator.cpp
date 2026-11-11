@@ -19,27 +19,27 @@
 
 namespace
 {
-bool IsFrozen(const CGameClient::CClientData &Client, int CurTick)
-{
-	return Client.m_DeepFrozen || Client.m_LiveFrozen || (Client.m_FreezeEnd != 0 && Client.m_FreezeEnd > CurTick);
-}
+	bool IsFrozen(const CGameClient::CClientData &Client, int CurTick)
+	{
+		return Client.m_DeepFrozen || Client.m_LiveFrozen || (Client.m_FreezeEnd != 0 && Client.m_FreezeEnd > CurTick);
+	}
 
-bool RenderLivePlayerIcon(CGameClient *pGameClient, int ClientId, vec2 Pos, float Size, float Alpha, const CTeeRenderInfo *pRenderInfoOverride)
-{
-	if(!in_range(ClientId, MAX_CLIENTS - 1) || !pGameClient->m_Snap.m_apPlayerInfos[ClientId] || !pGameClient->m_Snap.m_aCharacters[ClientId].m_Active)
-		return false;
+	bool RenderLivePlayerIcon(CGameClient *pGameClient, int ClientId, vec2 Pos, float Size, float Alpha, const CTeeRenderInfo *pRenderInfoOverride)
+	{
+		if(!in_range(ClientId, MAX_CLIENTS - 1) || !pGameClient->m_Snap.m_apPlayerInfos[ClientId] || !pGameClient->m_Snap.m_aCharacters[ClientId].m_Active)
+			return false;
 
-	CTeeRenderInfo RenderInfo = pRenderInfoOverride ? *pRenderInfoOverride : pGameClient->m_aClients[ClientId].m_RenderInfo;
-	RenderInfo.m_Size = Size;
-	const CNetObj_Character &Player = pGameClient->m_aClients[ClientId].m_RenderCur;
-	const CNetObj_Character &Prev = pGameClient->m_aClients[ClientId].m_RenderPrev;
-	const float Intra = pGameClient->m_aClients[ClientId].m_IsPredicted ? pGameClient->Client()->PredIntraGameTick(g_Config.m_ClDummy) : pGameClient->Client()->IntraGameTick(g_Config.m_ClDummy);
-	const float Angle = pGameClient->m_Players.GetPlayerTargetAngle(&Prev, &Player, ClientId, Intra);
-	RenderInfo.m_GotAirJump = !(Player.m_Jumped & 2);
-	RenderInfo.m_FeetFlipped = false;
-	pGameClient->RenderTools()->RenderTee(CAnimState::GetIdle(), &RenderInfo, Player.m_Emote, direction(Angle), Pos, Alpha);
-	return true;
-}
+		CTeeRenderInfo RenderInfo = pRenderInfoOverride ? *pRenderInfoOverride : pGameClient->m_aClients[ClientId].m_RenderInfo;
+		RenderInfo.m_Size = Size;
+		const CNetObj_Character &Player = pGameClient->m_aClients[ClientId].m_RenderCur;
+		const CNetObj_Character &Prev = pGameClient->m_aClients[ClientId].m_RenderPrev;
+		const float Intra = pGameClient->m_aClients[ClientId].m_IsPredicted ? pGameClient->Client()->PredIntraGameTick(g_Config.m_ClDummy) : pGameClient->Client()->IntraGameTick(g_Config.m_ClDummy);
+		const float Angle = pGameClient->m_Players.GetPlayerTargetAngle(&Prev, &Player, ClientId, Intra);
+		RenderInfo.m_GotAirJump = !(Player.m_Jumped & 2);
+		RenderInfo.m_FeetFlipped = false;
+		pGameClient->RenderTools()->RenderTee(CAnimState::GetIdle(), &RenderInfo, Player.m_Emote, direction(Angle), Pos, Alpha);
+		return true;
+	}
 }
 
 void CornerIndicator::Render(CGameClient *pGameClient)

@@ -1,13 +1,12 @@
 /* Copyright © 2026 BestProject Team */
-#ifndef GAME_CLIENT_COMPONENTS_HOOKGRIP_H
-#define GAME_CLIENT_COMPONENTS_HOOKGRIP_H
+#ifndef GAME_CLIENT_COMPONENTS_BESTCLIENT_FX_HOOKGRIP_H
+#define GAME_CLIENT_COMPONENTS_BESTCLIENT_FX_HOOKGRIP_H
+#include <base/color.h>
 #include <base/vmath.h>
 
 #include <engine/shared/protocol.h>
 
 #include <functional>
-
-#include <base/color.h>
 
 class CGameClient;
 

@@ -1,6 +1,6 @@
 /* Copyright © 2026 BestProject Team */
-#ifndef GAME_CLIENT_COMPONENTS_FGF_GLOW_H
-#define GAME_CLIENT_COMPONENTS_FGF_GLOW_H
+#ifndef GAME_CLIENT_COMPONENTS_BESTCLIENT_FX_FGF_GLOW_H
+#define GAME_CLIENT_COMPONENTS_BESTCLIENT_FX_FGF_GLOW_H
 #include <base/color.h>
 #include <base/vmath.h>
 
@@ -8,23 +8,23 @@
 
 namespace FgfGlow
 {
-IGraphics::CTextureHandle CreateGlowTexture(IGraphics *pGraphics);
-IGraphics::CTextureHandle CreateRingTexture(IGraphics *pGraphics);
-IGraphics::CTextureHandle CreateDiscTexture(IGraphics *pGraphics);
-IGraphics::CTextureHandle CreateBeamTexture(IGraphics *pGraphics);
-IGraphics::CTextureHandle CreateLeafTexture(IGraphics *pGraphics);
+	IGraphics::CTextureHandle CreateGlowTexture(IGraphics *pGraphics);
+	IGraphics::CTextureHandle CreateRingTexture(IGraphics *pGraphics);
+	IGraphics::CTextureHandle CreateDiscTexture(IGraphics *pGraphics);
+	IGraphics::CTextureHandle CreateBeamTexture(IGraphics *pGraphics);
+	IGraphics::CTextureHandle CreateLeafTexture(IGraphics *pGraphics);
 
-ColorRGBA Whiten(ColorRGBA Color, float Amount);
-ColorRGBA Blend(ColorRGBA A, ColorRGBA B, float Amount);
+	ColorRGBA Whiten(ColorRGBA Color, float Amount);
+	ColorRGBA Blend(ColorRGBA A, ColorRGBA B, float Amount);
 
-enum
-{
-	MAX_STRIP_POINTS = 64,
-};
+	enum
+	{
+		MAX_STRIP_POINTS = 64,
+	};
 
-void DrawStrip(IGraphics *pGraphics, const vec2 *pPoints, const float *pWidths, int NumPoints, ColorRGBA Color);
-void DrawStripScaled(IGraphics *pGraphics, const vec2 *pPoints, const float *pScales, int NumPoints, const float *pLayerWidths, const ColorRGBA *pLayerColors, int NumLayers);
-void BeginStrips(IGraphics *pGraphics, IGraphics::CTextureHandle BeamTexture);
+	void DrawStrip(IGraphics *pGraphics, const vec2 *pPoints, const float *pWidths, int NumPoints, ColorRGBA Color);
+	void DrawStripScaled(IGraphics *pGraphics, const vec2 *pPoints, const float *pScales, int NumPoints, const float *pLayerWidths, const ColorRGBA *pLayerColors, int NumLayers);
+	void BeginStrips(IGraphics *pGraphics, IGraphics::CTextureHandle BeamTexture);
 }
 
 class CGlowParticles

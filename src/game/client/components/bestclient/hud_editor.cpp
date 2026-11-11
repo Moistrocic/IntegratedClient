@@ -856,8 +856,8 @@ void CHudEditor::StartResetAnimation(HudLayout::EModule Module, int Kind)
 		HudLayout::ResetSettings(Module);
 
 	pAnim->m_TargetRect = Module == HudLayout::MODULE_MUSIC_PLAYER ?
-		ClampToBounds(GameClient()->m_MusicPlayer.GetHudEditorRect(true), HudWidth(), HudHeight()) :
-		GetModuleVisual(Module).m_Rect;
+				      ClampToBounds(GameClient()->m_MusicPlayer.GetHudEditorRect(true), HudWidth(), HudHeight()) :
+				      GetModuleVisual(Module).m_Rect;
 	pAnim->m_TargetScale = HudLayout::Get(Module, HudWidth(), HudHeight()).m_Scale;
 
 	HudLayout::SetScale(Module, pAnim->m_StartScale);

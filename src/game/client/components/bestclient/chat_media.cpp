@@ -274,7 +274,6 @@ SChatMediaLine::~SChatMediaLine() = default;
 SChatMediaLine::SChatMediaLine(SChatMediaLine &&) noexcept = default;
 SChatMediaLine &SChatMediaLine::operator=(SChatMediaLine &&) noexcept = default;
 
-
 static bool IsUrlStart(const char *pStr)
 {
 	return str_startswith(pStr, "http://") || str_startswith(pStr, "https://");
@@ -288,7 +287,7 @@ static bool IsTokenEnd(char c)
 static bool IsTrimmedUrlChar(char c)
 {
 	return c == '.' || c == ',' || c == '!' || c == '?' || c == ';' || c == ':' ||
-		c == ')' || c == ']' || c == '}' || c == '"' || c == '\'' || c == '>';
+	       c == ')' || c == ']' || c == '}' || c == '"' || c == '\'' || c == '>';
 }
 
 static std::string ExtractUrlHostLower(const std::string &Url)
@@ -450,10 +449,10 @@ static bool IsYouTubeUrl(const std::string &Url)
 		return false;
 
 	return HostIsOrEndsWith(HostLower, "youtube.com") ||
-		HostIsOrEndsWith(HostLower, "youtu.be") ||
-		HostIsOrEndsWith(HostLower, "youtube-nocookie.com") ||
-		HostIsOrEndsWith(HostLower, "ytimg.com") ||
-		HostIsOrEndsWith(HostLower, "googlevideo.com");
+	       HostIsOrEndsWith(HostLower, "youtu.be") ||
+	       HostIsOrEndsWith(HostLower, "youtube-nocookie.com") ||
+	       HostIsOrEndsWith(HostLower, "ytimg.com") ||
+	       HostIsOrEndsWith(HostLower, "googlevideo.com");
 }
 
 static std::string ExtractUrlPath(const std::string &Url)
@@ -612,8 +611,8 @@ static bool IsLikelyAnimatedImageExtension(const std::string &Ext)
 static bool IsLikelyVideoExtension(const std::string &Ext)
 {
 	return Ext == "mp4" || Ext == "webm" || Ext == "mov" || Ext == "m4v" || Ext == "mkv" || Ext == "avi" ||
-		Ext == "gifv" || Ext == "mpg" || Ext == "mpeg" || Ext == "ogv" || Ext == "3gp" || Ext == "3g2" ||
-		Ext == "flv" || Ext == "wmv" || Ext == "asf" || Ext == "ts" || Ext == "m2ts" || Ext == "mts" || Ext == "f4v";
+	       Ext == "gifv" || Ext == "mpg" || Ext == "mpeg" || Ext == "ogv" || Ext == "3gp" || Ext == "3g2" ||
+	       Ext == "flv" || Ext == "wmv" || Ext == "asf" || Ext == "ts" || Ext == "m2ts" || Ext == "mts" || Ext == "f4v";
 }
 
 static bool IsBlockedMediaExtension(const std::string &Ext)
@@ -692,8 +691,8 @@ static bool IsImagePayloadSignature(const unsigned char *pData, size_t DataSize)
 static bool IsVideoPayloadSignature(const unsigned char *pData, size_t DataSize)
 {
 	return IsMp4LikeSignature(pData, DataSize) || IsWebmSignature(pData, DataSize) || IsOggSignature(pData, DataSize) ||
-		IsAviSignature(pData, DataSize) || IsFlvSignature(pData, DataSize) || IsMpegProgramStreamSignature(pData, DataSize) ||
-		IsMpegTransportStreamSignature(pData, DataSize);
+	       IsAviSignature(pData, DataSize) || IsFlvSignature(pData, DataSize) || IsMpegProgramStreamSignature(pData, DataSize) ||
+	       IsMpegTransportStreamSignature(pData, DataSize);
 }
 
 static std::string ToLowerAscii(std::string Value)
@@ -884,9 +883,9 @@ static bool IsLikelyHtmlDocument(const unsigned char *pData, size_t DataSize)
 	std::string Prefix((const char *)pData, ScanSize);
 	const std::string PrefixLower = ToLowerAscii(Prefix);
 	return PrefixLower.find("<!doctype html") != std::string::npos ||
-		PrefixLower.find("<html") != std::string::npos ||
-		PrefixLower.find("<head") != std::string::npos ||
-		PrefixLower.find("<meta") != std::string::npos;
+	       PrefixLower.find("<html") != std::string::npos ||
+	       PrefixLower.find("<head") != std::string::npos ||
+	       PrefixLower.find("<meta") != std::string::npos;
 }
 
 static void FindMetaContentsByKey(const std::string &Html, const std::string &HtmlLower, const char *pKey, std::vector<std::string> &vOutValues)
@@ -1614,7 +1613,6 @@ bool CChatMedia::StartMediaDecode(SChatMediaLine &Media, EChatMediaKind MediaKin
 	return true;
 }
 
-
 bool CChatMedia::AnyMediaAllowed() const
 {
 	return g_Config.m_BcChatMediaPhotos != 0 || g_Config.m_BcChatMediaGifs != 0;
@@ -2175,7 +2173,6 @@ std::string CChatMedia::BuildVisibleMessageText(const SChatMediaLine &Media, con
 	return Compacted;
 }
 
-
 void ComputeChatMediaPreviewSize(int MediaWidth, int MediaHeight, float MaxPreviewWidth, float MaxPreviewHeight, float &PreviewW, float &PreviewH)
 {
 	if(MediaWidth <= 0 || MediaHeight <= 0 || MaxPreviewWidth <= 0.0f || MaxPreviewHeight <= 0.0f)
@@ -2251,7 +2248,7 @@ vec2 CChatMedia::ChatMousePos() const
 bool CChatMedia::OnChatInput(CChat &Chat, const IInput::CEvent &Event)
 {
 	const bool MenuCoversGame = GameClient()->m_Menus.IsActive() &&
-		(GameClient()->m_Menus.Popup() != CMenus::POPUP_NONE || !GameClient()->m_Menus.IsIngameGamePage());
+				    (GameClient()->m_Menus.Popup() != CMenus::POPUP_NONE || !GameClient()->m_Menus.IsIngameGamePage());
 	if(MenuCoversGame)
 		return false;
 

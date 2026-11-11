@@ -464,18 +464,6 @@ Date
 DDNet
 == DDNet
 
-DDNet %s is available:
-== Доступний DDNet %s:
-
-DDNet %s is out!
-== Вийшов DDNet %s!
-
-DDNet Client needs to be restarted to complete update!
-== Потрібно перезапустити клієнт DDNet для завершення оновлення!
-
-DDNet Client updated!
-== Клієнт DDNet оновлено!
-
 DDRace HUD
 == HUD DDRace
 
@@ -570,9 +558,6 @@ Download community skins
 
 Download skins
 == Завантажувати скіни
-
-Downloading %s:
-== Завантаження %s:
 
 Downloading map
 == Завантаження мапи
@@ -897,12 +882,6 @@ Hook collisions
 Hook Strength
 == Сила гака
 
-https://ddnet.org/discord
-== https://ddnet.org/discord
-
-https://wiki.ddnet.org/
-== https://wiki.ddnet.org/
-
 https://wiki.ddnet.org/wiki/Mapping
 == https://wiki.ddnet.org/wiki/Mapping
 
@@ -990,9 +969,6 @@ Laser
 
 Leak IP
 == Витік IP
-
-Learn
-== Вікі
 
 Length
 == Тривалість
@@ -1151,9 +1127,6 @@ New name:
 
 New random timeout code
 == Новий випадковий код тайм-ауту
-
-News
-== Новини
 
 Next weapon
 == Наст. зброя
@@ -1466,9 +1439,6 @@ Save skin
 
 Save the best demo of each race
 == Зберігати найкраще демо кожного забігу
-
-Saving settings to '%s' failed
-== Не вдалося зберегти налаштування до '%s'
 
 Score
 == Бали
@@ -1831,9 +1801,6 @@ Try again
 Trying to determine UDP connectivity…
 == Спроба визначити UDP-з’єднання…
 
-Tutorial
-== Посібник
-
 Type
 == Тип
 
@@ -1888,9 +1855,6 @@ Unregister protocol and file extensions
 
 Unsaved changes
 == Незбережені зміни
-
-Update failed! Check log…
-== Помилка оновлення! Перевірте журнал…
 
 Update now
 == Оновити
@@ -2690,6 +2654,33 @@ Always predict frozen players
 No country flags match your filter criteria
 == Немає прапорів країн, що відповідають вашим критеріям
 
+BETA
+== 
+
+Message button
+== 
+
+Yours
+== 
+
+Remove apostrophes
+== 
+
+Endpoint
+== 
+
+API key
+== 
+
+Chat translate settings
+== 
+
+Translated text hidden due to streamer mode
+== 
+
+Checkpoint:
+== 
+
 [Important alert message]
 Tap to dismiss…
 == 
@@ -2697,14 +2688,3237 @@ Tap to dismiss…
 Initializing layers
 == 
 
+Changelog
+== 
+
+Choose UI style
+== 
+
+Show BestClient only
+== 
+
+Versions
+== 
+
+Refresh BestClient list
+== 
+
+All BestClient players: %d
+== 
+
+No BestClient users in the current server list
+== 
+
+BestClient players: %d
+== 
+
+No BestClient users on the selected server
+== 
+
+Click to select server. Double click to connect.
+== 
+
+BestClient
+== 
+
+Configure demo camera effects
+== 
+
+Demo camera effects
+== 
+
+Camera drift
+== 
+
+Drift amount
+== 
+
+Drift smoothness
+== 
+
+Reverse drift direction
+== 
+
+Dynamic FOV
+== 
+
+FOV amount
+== 
+
+FOV smoothness
+== 
+
+Numpad move (2/4/6/8)
+== 
+
+Freeview speed
+== 
+
+Freeview smoothness
+== 
+
+Exporting tee edits from 0.7 demos is not supported
+== 
+
+Unable to save demo
+== 
+
+Could not open the demo in a second client
+== 
+
+Open the selected demo in a second client
+== 
+
+Stop practice
+== 
+
+Fast practice
+== 
+
+TClient
+== 
+
+Profiles
+== 
+
+Configs
+== 
+
 Credits
+== 
+
+BestClient update downloaded! Restart to apply.
+== 
+
+Show dummy position
+== 
+
+Show dummy speed
+== 
+
+Show dummy target angle
+== 
+
+Show only tags and private messages
+== 
+
+Unable to delete the asset '%s'
+== 
+
+Cursor
+== 
+
+Arrow
+== 
+
+Audio
+== 
+
+Delete asset
+== 
+
+Delete this asset from your assets directory.
+== 
+
+Click to remove this item from your favorites.
+== 
+
+Click to add this item to your favorites.
+== 
+
+Toggle between composed preview and raw texture
+== 
+
+Select a random asset
+== 
+
+Assets editor
+== 
+
+Admin Panel
+== 
+
+Dummy pseudo
+== 
+
+Reset on switch
+== 
+
+Deepfly toggle
+== 
+
+45 deg bind
+== 
+
+Small sens bind
+== 
+
+Left jump
+== 
+
+Right jump
+== 
+
+Find teleport
+== 
+
+Find finish
+== 
+
+say /r
+== 
+
+say /invincible
+== 
+
+say /telecursor
+== 
+
+say /weapons
+== 
+
+say /unweapons
+== 
+
+Bind list
+== 
+
+Keybind map
+== 
+
+BestClient Practice
+== 
+
+Mouse max distance
+== 
+
+BestClient %s is out!
+== 
+
+Preparing update...
+== 
+
+BestClient updated!
+== 
+
+Update failed
+== 
+
+Mute hook sounds of other players
+== 
+
+Mute hammer sounds of other players
+== 
+
+Mute double jump sounds of other players
+== 
+
+Skin quality
+== 
+
+Maximum skin texture size. Lower this if VRAM runs out with many high-resolution skins.
+== 
+
+warning
+== 
+
+high skin quality may exhaust VRAM
+== 
+
+and crash your game
+== 
+
+Skin
+== 
+
+Choose country flag
+== 
+
+Telegram
+== 
+
+Check update
+== 
+
+Try Light
+== 
+
+Downloading %d%%
+== 
+
+Update downloaded
+== 
+
+Install
+== 
+
+Points
+== 
+
+not bound
+== 
+
+Show cursor
+== 
+
+Remove from teammates
+== 
+
+Add to teammates
+== 
+
+Remove from warlist
+== 
+
+Add to warlist
+== 
+
+Profile
+== 
+
+Whisper
+== 
+
+Copy Skin
+== 
+
+Vote Kick
+== 
+
+Find Hours
+== 
+
+Clip Name
+== 
+
+/Swap
+== 
+
+Voice unmute
+== 
+
+Voice mute
+== 
+
+Exit
 == 
 
 Join
 == 
 
-'%s' not bound.
+Invite
 == 
 
-Press '%s' to show cursor.
+Kick
+== 
+
+Lock
+== 
+
+Change map to Kobra 3
+== 
+
+Editor preview
+== 
+
+Say
+== 
+
+Say team
+== 
+
+Broadcast
+== 
+
+Ban
+== 
+
+Respawn
+== 
+
+Force pause
+== 
+
+Vote mute (10 min)
+== 
+
+Vote unmute
+== 
+
+Teleport to me
+== 
+
+Teleport to player
+== 
+
+Force unpause
+== 
+
+Move to spectators
+== 
+
+Return to game
+== 
+
+Username
+== 
+
+Search tunings
+== 
+
+Value
+== 
+
+Reason
+== 
+
+Duration
+== 
+
+Muted by admin panel
+== 
+
+Seconds
+== 
+
+Banned by admin panel
+== 
+
+Minutes
+== 
+
+Kicked by admin panel
+== 
+
+Respawned by admin panel
+== 
+
+Message
+== 
+
+RCON login
+== 
+
+RCON password
+== 
+
+Login
+== 
+
+Loading commands
+== 
+
+Server uses username and password rcon.
+== 
+
+Server uses password-only rcon.
+== 
+
+Tunings
+== 
+
+Logs
+== 
+
+Actions for %s
+== 
+
+Player actions
+== 
+
+Select a player to enable player actions
+== 
+
+Select a player
+== 
+
+Invincible
+== 
+
+Jetpack
+== 
+
+Endless jump
+== 
+
+Endless hook
+== 
+
+Solo
+== 
+
+Deep frozen
+== 
+
+Live freeze
+== 
+
+Frozen
+== 
+
+Normal
+== 
+
+Client ID
+== 
+
+No other players
+== 
+
+Player info
+== 
+
+Tuning editor
+== 
+
+Select a tuning
+== 
+
+Parameter
+== 
+
+New value
+== 
+
+Apply
+== 
+
+Reset all
+== 
+
+RCON log
+== 
+
+Clear
+== 
+
+No log entries yet
+== 
+
+Duration (min)
+== 
+
+Duration (sec)
+== 
+
+5 min
+== 
+
+30 sec
+== 
+
+10 min
+== 
+
+60 sec
+== 
+
+60 min
+== 
+
+300 sec
+== 
+
+Admin
+== 
+
+Moderator
+== 
+
+Helper
+== 
+
+RCON
+== 
+
+Logout
+== 
+
+RCON not authenticated
+== 
+
+Keep this aspect ratio? Reverting in %d...
+== 
+
+Revert
+== 
+
+Frozen skin
+== 
+
+Skin to show on frozen players, empty keeps the default behavior
+== 
+
+Darken
+== 
+
+Request already in progress
+== 
+
+Find hours failed
+== 
+
+Player %s has %d hours and %d points
+== 
+
+No skin found
+== 
+
+Copied skin from %s
+== 
+
+No saves for this map
+== 
+
+Found %d saves on %s. Type !saves to see them
+== 
+
+Saves on %s: %d
+== 
+
+and %d more
+== 
+
+Demo tee editor
+== 
+
+Choose a skin
+== 
+
+Slot %d is empty
+== 
+
+practice local: %s
+== 
+
+manual
+== 
+
+Finish
+== 
+
+Left
+== 
+
+Enabled
+== 
+
+Scale
+== 
+
+Reset scale
+== 
+
+Reset position
+== 
+
+disabled
+== 
+
+preview
+== 
+
+Reset All
+== 
+
+you below \\/
+== 
+
+Select a key
+== 
+
+Not bound
+== 
+
+Disabled.
+== 
+
+Failed to load PNG.
+== 
+
+Failed to upload PNG.
+== 
+
+Loaded image.
+== 
+
+Failed to read file.
+== 
+
+Failed to upload image.
+== 
+
+Failed to decode image.
+== 
+
+Loaded animated image.
+== 
+
+Video backgrounds are unavailable in this build.
+== 
+
+Failed to open video.
+== 
+
+Failed to read video info.
+== 
+
+No video stream found.
+== 
+
+Unsupported video codec.
+== 
+
+Failed to initialize video decoder.
+== 
+
+Invalid video dimensions.
+== 
+
+Failed to allocate video frames.
+== 
+
+Failed to allocate RGBA frame.
+== 
+
+Failed to initialize video scaler.
+== 
+
+Failed to decode first video frame.
+== 
+
+Failed to create video texture.
+== 
+
+Loaded video.
+== 
+
+No media selected.
+== 
+
+Failed while decoding video.
+== 
+
+TeeLike
+== 
+
+Multiply
+== 
+
+Overlay
+== 
+
+Failed to load asset.
+== 
+
+Loaded %s.
+== 
+
+No assets available for composition.
+== 
+
+Preview built with %d skipped slot(s).
+== 
+
+Export name contains invalid characters.
+== 
+
+Asset with this name already exists.
+== 
+
+Failed to write PNG export.
+== 
+
+Exported to %s
+== 
+
+Save asset before closing?
+== 
+
+You have unsaved changes.
+== 
+
+Part updated.
+== 
+
+Part reset.
+== 
+
+Custom color
+== 
+
+Blend mode
+== 
+
+Done
+== 
+
+No preview
+== 
+
+Reloaded images.
+== 
+
+Reload
+== 
+
+Export
+== 
+
+Donor
+== 
+
+Result
+== 
+
+Explore
+== 
+
+%s from %s
+== 
+
+Drop on the right to replace one part.
+== 
+
+Drag from left to right. Left-click colors, right-click resets.
+== 
+
+Checkbox
+== 
+
+Sample text Aa
+== 
+
+Color
+== 
+
+Legacy
+== 
+
+Better UI
+== 
+
+Choose Legacy
+== 
+
+Choose Better UI
+== 
+
+Chat Media
+== 
+
+Render media previews from chat links
+== 
+
+Show photos in chat media
+== 
+
+Show GIFs in chat media
+== 
+
+Content filtering
+== 
+
+Allowed media domains
+== 
+
+Media preview width
+== 
+
+Hide media bind
+== 
+
+Load
+== 
+
+Override
+== 
+
+Saved: %d
+== 
+
+Changes: %d
+== 
+
+Visuals
+== 
+
+Others
+== 
+
+high fps intake
+== 
+
+HUD editor
+== 
+
+Open in HUD editor
+== 
+
+Join a game first
+== 
+
+Visuals QoL
+== 
+
+Map preview in server list
+== 
+
+Show coordinates above tees
+== 
+
+Show real hitbox
+== 
+
+Real hitbox dot color
+== 
+
+Show player below indicator
+== 
+
+Show current checkpoint in hud
+== 
+
+Show points in tab
+== 
+
+Show friend icon in scoreboard
+== 
+
+Show spectator nicknames
+== 
+
+Show vote percentage
+== 
+
+Display max FPS
+== 
+
+Bestclient discord rpc (restart requires)
+== 
+
+Bind/Emote wheel scale
+== 
+
+Scoreboard scale
+== 
+
+UI scale
+== 
+
+Jelly Tee
+== 
+
+Enable Jelly Tee
+== 
+
+Jelly Others
+== 
+
+Jelly strength
+== 
+
+Jelly duration
+== 
+
+Corner indicator
+== 
+
+Enable corner indicator
+== 
+
+Only in team
+== 
+
+Show alive teammates
+== 
+
+Show frozen teammates
+== 
+
+Indicate last teammate
+== 
+
+Scale by distance
+== 
+
+Ninja skin when frozen
+== 
+
+Alive size
+== 
+
+Frozen size
+== 
+
+Last teammate size
+== 
+
+Use custom colors
+== 
+
+Alive color
+== 
+
+Frozen color
+== 
+
+Last teammate color
+== 
+
+Looks like you're on a server where this feature is forbidden
+== 
+
+Chat Bubbles
+== 
+
+Show chat bubbles above players
+== 
+
+Show chat bubbles above you
+== 
+
+Show chat bubbles in demo
+== 
+
+Chat bubble size
+== 
+
+Show for
+== 
+
+Fade in
+== 
+
+Fade out
+== 
+
+Stack animation
+== 
+
+Corner rounding
+== 
+
+Text
+== 
+
+Outline
+== 
+
+Gradient
+== 
+
+Gradient nicknames
+== 
+
+Gradient clans
+== 
+
+Gradient skin
+== 
+
+Gradient everything
+== 
+
+Animate speed
+== 
+
+Mode
+== 
+
+Rainbow
+== 
+
+[Gradient]
+Apply to
+== 
+
+[Gradient]
+Own
+== 
+
+[Gradient]
+Others
+== 
+
+[Gradient]
+All
+== 
+
+Color count
+== 
+
+Color 1
+== 
+
+Color 2
+== 
+
+Color 3
+== 
+
+Color 4
+== 
+
+Flying Name Plates
+== 
+
+Enable flying name plates
+== 
+
+Hide line
+== 
+
+Lift above player
+== 
+
+Movement drag
+== 
+
+Follow speed
+== 
+
+3D Particles
+== 
+
+Enable 3D Particles
+== 
+
+Density
+== 
+
+Particle type
+== 
+
+Cube
+== 
+
+Heart
+== 
+
+Mixed
+== 
+
+Color mode
+== 
+
+Random
+== 
+
+Glow
+== 
+
+Media Background
+== 
+
+Enable to main menu
+== 
+
+Enable to game background
+== 
+
+No media files in backgrounds folder
+== 
+
+Map offset
+== 
+
+0 keeps the image fixed to the screen. Higher values add camera parallax. Move the camera to see the effect.
+== 
+
+Hidden: overlay entities is 0.
+== 
+
+Cursor Trail
+== 
+
+Enable
+== 
+
+Trail size
+== 
+
+Number of frames
+== 
+
+Sampling FPS
+== 
+
+Disable movement
+== 
+
+Trail image
+== 
+
+No images in CTrails folder
+== 
+
+Enable better UI
+== 
+
+Better checkbox
+== 
+
+Better scrollbar
+== 
+
+Better tab option
+== 
+
+Right
+== 
+
+Better color picker
+== 
+
+Better font
+== 
+
+UI Themes
+== 
+
+Scrollbar
+== 
+
+Button
+== 
+
+Droplist
+== 
+
+Input field
+== 
+
+Function block
+== 
+
+UI background
+== 
+
+Settings tabs
+== 
+
+Badge
+== 
+
+Binds
+== 
+
+Accent
+== 
+
+Enable colorable background
+== 
+
+Background color
+== 
+
+Exported!
+== 
+
+Imported!
+== 
+
+Import
+== 
+
+Copy theme to clipboard
+== 
+
+Paste theme from clipboard
+== 
+
+Motion Blur
+== 
+
+Enable motion blur
+== 
+
+Blend strength
+== 
+
+Animations
+== 
+
+Enable animations
+== 
+
+Settings animation
+== 
+
+Settings (ms)
+== 
+
+Chat message animations
+== 
+
+Chat message (ms)
+== 
+
+Chat open animation
+== 
+
+Chat open (ms)
+== 
+
+Chat typing animation
+== 
+
+Chat typing (ms)
+== 
+
+Killfeed animation
+== 
+
+Killfeed (ms)
+== 
+
+Main menu animation
+== 
+
+Main menu speed
+== 
+
+Music Player
+== 
+
+Enable music player
+== 
+
+Static
+== 
+
+Cover
+== 
+
+Static color
+== 
+
+Visualizer mode
+== 
+
+Bottom
+== 
+
+Center
+== 
+
+Up
+== 
+
+Text scale
+== 
+
+Columns
+== 
+
+Rounding
+== 
+
+Soft
+== 
+
+Show song lyrics
+== 
+
+Show current time
+== 
+
+Keystrokes
+== 
+
+Classic
+== 
+
+Minecraft
+== 
+
+Enable keyboard
+== 
+
+Full
+== 
+
+Minimal
+== 
+
+Micro
+== 
+
+Only A/D
+== 
+
+Pressed opacity
+== 
+
+Enable LMB
+== 
+
+Enable RMB
+== 
+
+Enable Space
+== 
+
+Enable mouse
+== 
+
+Dot Dot
+== 
+
+Nothing
+== 
+
+Aspect Ratio
+== 
+
+Off (default)
+== 
+
+Preset
+== 
+
+Game only
+== 
+
+Game no HUD
+== 
+
+Cursor as without stretch
+== 
+
+Custom size
+== 
+
+Unavailable while camera zoom is disabled
+== 
+
+Physic Balls
+== 
+
+Ball amount: %d
+== 
+
+Clear all balls
+== 
+
+Ball skin
+== 
+
+Spawn count
+== 
+
+New Ball
+== 
+
+New Ball Cursor
+== 
+
+ticks
+== 
+
+Inputs
+== 
+
+Enable Inputs
+== 
+
+Fast
+== 
+
+Saiko
+== 
+
+Delta
+== 
+
+F
+== 
+
+Cloud
+== 
+
+Prediction offset
+== 
+
+Fast Input others
+== 
+
+Smoothing
+== 
+
+Latency compensation
+== 
+
+Interpolation
+== 
+
+Best input others
+== 
+
+Saiko input others
+== 
+
+Delta input others
+== 
+
+F input others
+== 
+
+Cloud input others
+== 
+
+Sub-Tick aiming
+== 
+
+Repredict on mid-tick hook direction change (may lag)
+== 
+
+Auto margin
+== 
+
+Input Debounce
+== 
+
+Snap Tap
+== 
+
+Off
+== 
+
+Delay
+== 
+
+Gores mode
+== 
+
+Enable gores mode
+== 
+
+Disable if you have shotgun, grenade or laser
+== 
+
+Optimizer
+== 
+
+Enable optimizer
+== 
+
+Disable all particles render
+== 
+
+Disable map quads render
+== 
+
+Disable high detail
+== 
+
+FPS fog (cull outside limit)
+== 
+
+Render FPS fog rectangle
+== 
+
+Cull map tiles outside FPS fog
+== 
+
+Radius
+== 
+
+Zoom %
+== 
+
+Radius (tiles)
+== 
+
+Visible area (%)
+== 
+
+Performance
+== 
+
+High DDNet Process Priority
+== 
+
+Lower Discords Process Priority
+== 
+
+Gameplay QoL
+== 
+
+Automatic update
+== 
+
+Cinematic camera
+== 
+
+Strength
+== 
+
+Extend zoom (0.5 steps)
+== 
+
+Better spectate
+== 
+
+Replace your say /pause bind (default: Q) with +specpause (pause/spec radio)
+== 
+
+Show delay
+== 
+
+Notify when moved in spec
+== 
+
+Notification text
+== 
+
+Lock team automatically after joining
+== 
+
+Auto lock delay
+== 
+
+Confirm before quitting
+== 
+
+Moving/ego tiles prediction
+== 
+
+Fast Actions
+== 
+
+Enable Fast Actions
+== 
+
+Selected slot
+== 
+
+Name:
+== 
+
+Name (optional)
+== 
+
+Command:
+== 
+
+Clear command
+== 
+
+In game: hold bind key, press 1..6, release key to execute
+== 
+
+Fast Actions key
+== 
+
+Finish Prediction
+== 
+
+Enable finish prediction
+== 
+
+Show time
+== 
+
+Time left
+== 
+
+Finish time
+== 
+
+Show milliseconds
+== 
+
+Show percentage
+== 
+
+Show always
+== 
+
+Consider freeze walls
+== 
+
+Edge Info
+== 
+
+Show edge info
+== 
+
+Show edge info about freeze
+== 
+
+Show edge info about jumps
+== 
+
+Color when over freeze
+== 
+
+Color when over kill
+== 
+
+Color when falling safely
+== 
+
+Chat QoL
+== 
+
+Save unsent messages
+== 
+
+Silent typing
+== 
+
+Commands in other layout
+== 
+
+Reply/copy message menu
+== 
+
+Notify about saves on map
+== 
+
+Twitch Chat
+== 
+
+Nick
+== 
+
+Stop
+== 
+
+Start
+== 
+
+Browser Utils
+== 
+
+Auto server list refresh
+== 
+
+Short EGO/KoG server name
+== 
+
+Show finished map on EGO
+== 
+
+Show finished map on Legit Network
+== 
+
+Use BestClient MasterServer
+== 
+
+Rollback Demo
+== 
+
+Enable rollback demo recording
+== 
+
+Rollback length
+== 
+
+Rollback bind
+== 
+
+Focus Mode
+== 
+
+Enable Focus Mode
+== 
+
+Hide Player Names
+== 
+
+Hide Visual Effects
+== 
+
+Hide HUD
+== 
+
+Hide Song Player
+== 
+
+Hide Unnecessary UI
+== 
+
+Hide Chat
+== 
+
+Hide Scoreboard
+== 
+
+Auto reply when chat is hidden
+== 
+
+Focus mode bind
+== 
+
+Voice Moderation
+== 
+
+Voice Binds
+== 
+
+Push-to-talk
+== 
+
+Mute microphone
+== 
+
+Mute headphones
+== 
+
+Client Indicator
+== 
+
+Show indicator in name plates
+== 
+
+Show above yourself
+== 
+
+Name plate indicator size
+== 
+
+Show indicator in scoreboard
+== 
+
+Scoreboard indicator size
+== 
+
+Not connected to voice server
+== 
+
+Voice Moderator Login
+== 
+
+Mod key:
+== 
+
+Authenticating...
+== 
+
+Wrong key
+== 
+
+Login as Voice Mod
+== 
+
+Voice players on this server
+== 
+
+Refresh
+== 
+
+No players in current voice room
+== 
+
+Action
+== 
+
+slot %d
+== 
+
+Mini games
+== 
+
+BestClient Links
+== 
+
+Config Files
+== 
+
+BestClient Settings
+== 
+
+BestClient Developers
+== 
+
+Hide Settings Tabs
+== 
+
+Laser Glow
+== 
+
+Shotgun Glow
+== 
+
+Rocket Glow
+== 
+
+Rocket
+== 
+
+Prism
+== 
+
+Pulse
+== 
+
+Crystal
+== 
+
+Power
+== 
+
+Nuke effects
+== 
+
+Enable Nuke effects
+== 
+
+Screen shake
+== 
+
+Nuke size
+== 
+
+No description
+== 
+
+Updating...
+== 
+
+Loading releases...
+== 
+
+No releases
+== 
+
+Latest
+== 
+
+Pre-release
+== 
+
+Open
+== 
+
+Custom hooks
+== 
+
+None
+== 
+
+Whirlwind
+== 
+
+Black hole
+== 
+
+Magic
+== 
+
+Troll
+== 
+
+Lightning
+== 
+
+Tentacle
+== 
+
+Style the hook
+== 
+
+Style the tip
+== 
+
+Grow time
+== 
+
+Grab gust
+== 
+
+Eye
+== 
+
+Wind lines
+== 
+
+Spin speed
+== 
+
+Line thickness
+== 
+
+Wind opacity
+== 
+
+Leaves
+== 
+
+Dust
+== 
+
+Wind color
+== 
+
+Disk
+== 
+
+Matter
+== 
+
+Spin
+== 
+
+Disk color
+== 
+
+Runes
+== 
+
+Sparkles
+== 
+
+Spell color
+== 
+
+Smoke
+== 
+
+Flames
+== 
+
+Embers
+== 
+
+Fire color
+== 
+
+Rays
+== 
+
+Flow
+== 
+
+Glitter
+== 
+
+Ribbon width
+== 
+
+Wall arcs
+== 
+
+Jitter
+== 
+
+Forks
+== 
+
+Sparks
+== 
+
+Lightning color
+== 
+
+Suckers
+== 
+
+Writhing
+== 
+
+Thickness
+== 
+
+Slime
+== 
+
+Flesh color
+== 
+
+Hook effects
+== 
+
+Air jump ring
+== 
+
+Disable jump particles
+== 
+
+Hammer slash
+== 
+
+Disable hammer particles
+== 
+
+Hook lasso
+== 
+
+Hook box
+== 
+
+Hook hold
+== 
+
+Hold aura
+== 
+
+Hold burst
+== 
+
+Energy motes
+== 
+
+Weather
+== 
+
+Snow
+== 
+
+Rain
+== 
+
+Fireflies
+== 
+
+Amount
+== 
+
+Dust color
+== 
+
+Tilt
+== 
+
+Rain color
+== 
+
+Firefly color
+== 
+
+Dots
+== 
+
+Snowflakes
+== 
+
+Snow color
+== 
+
+Freeze lifesteal
+== 
+
+Shield
+== 
+
+Reach
+== 
+
+Frost
+== 
+
+Custom hook color
+== 
+
+Cold color
+== 
+
+Freeze lightning
+== 
+
+Impact
+== 
+
+Branches
+== 
+
+Shake
+== 
+
+Strike me
+== 
+
+Join a server to preview the lightning
+== 
+
+Back to Info
+== 
+
+Press any key to start
+== 
+
+Game Over
+== 
+
+Victory
+== 
+
+Draw - Stalemate
+== 
+
+Draw - Fifty move rule
+== 
+
+Draw - Threefold repetition
+== 
+
+Winner: White
+== 
+
+Winner: Black
+== 
+
+Turn: White
+== 
+
+Turn: Black
+== 
+
+White Wins
+== 
+
+Black Wins
+== 
+
+All pairs found
+== 
+
+You Win
+== 
+
+Bot Wins
+== 
+
+All bricks cleared
+== 
+
+Numbers
+== 
+
+Sudoku Solved
+== 
+
+Get $200
+== 
+
+Multiplier:
+== 
+
+Not enough funds
+== 
+
+Spinning...
+== 
+
+SPIN
+== 
+
+No media
+== 
+
+Unknown artist
+== 
+
+Save/Load Assets
+== 
+
+Assets (%d)
+== 
+
+Press Ctrl+Shift+P to disable profiler.
+== 
+
+share of the frame
+== 
+
+Collecting samples...
+== 
+
+No profiler data for the last minute
+== 
+
+Could not save profiler dump
+== 
+
+Profiler dump saved
+== 
+
+45° on
+== 
+
+45° off
+== 
+
+small sens on
+== 
+
+small sens off
+== 
+
+Deepfly off
+== 
+
+No old bind in memory. Binding +fire
+== 
+
+Deepfly on
+== 
+
+Rollback is only available while online
+== 
+
+Enable rollback demo recording first
+== 
+
+Rollback recorder is not ready yet
+== 
+
+Wait at least 1 second before rollback
+== 
+
+Preview unavailable
+== 
+
+Bind Wheel
+== 
+
+War List
+== 
+
+Chat Binds
+== 
+
+Status Bar
+== 
+
+Type to search settings
+== 
+
+Translation queue is busy; message was not sent
+== 
+
+Translation queue is full
+== 
+
+Invalid translate backend
+== 
+
+Translation timed out; message was not sent
+== 
+
+Translation failed; message was not sent: %s
+== 
+
+Translation failed; message was not sent
+== 
+
+Translation timed out
+== 
+
+Translation failed: %s
+== 
+
+System default
+== 
+
+Device #%d
+== 
+
+Voice
+== 
+
+Enable voice chat
+== 
+
+In-Game Only
+== 
+
+Use team0
+== 
+
+Enable your group
+== 
+
+Radius filter
+== 
+
+Activation mode
+== 
+
+Automatic
+== 
+
+VAD threshold (%)
+== 
+
+VAD release delay (ms)
+== 
+
+Mic check (loopback)
+== 
+
+Mic level
+== 
+
+Mic gain
+== 
+
+Voice volume
+== 
+
+Microphone
+== 
+
+Headphones
+== 
+
+Offline
+== 
+
+Reload servers
+== 
+
+Available servers
+== 
+
+Loading server list...
+== 
+
+No servers loaded
+== 
+
+Voice commands
+== 
+
+!vmute "name" / !vunmute "name"
+== 
+
+!volume "name" 0-100
+== 
+
+!vradius on/off/<tiles>
+== 
+
+Usage: !vmute "nickname"
+== 
+
+Voice mute: invalid nickname
+== 
+
+Voice mute: already muted
+== 
+
+Voice mute: ok
+== 
+
+Usage: !vunmute "nickname"
+== 
+
+Voice unmute: invalid nickname
+== 
+
+Voice unmute: nickname not muted
+== 
+
+Voice unmute: ok
+== 
+
+Usage: !volume "nickname" <0-100>
+== 
+
+Voice volume: invalid nickname
+== 
+
+Voice volume: value must be 0-100
+== 
+
+Voice volume: %d%%
+== 
+
+Voice radius: %s (%d tiles)
+== 
+
+On
+== 
+
+Usage: !vradius on/off/<tiles>
+== 
+
+Voice radius: tiles must be 1-500
+== 
+
+Participant
+== 
+
+You are muted. Your voice was muted by a moderator.
+== 
+
+Voice chat is only for the original BestClient. Your client was detected as fake.
+== 
+
+[bgdraw]
+Failed to create bgdraw folder
+== 
+
+[bgdraw]
+No items to write
+== 
+
+[bgdraw]
+No changes since last save
+== 
+
+[bgdraw]
+Writing item %d failed
+== 
+
+[bgdraw]
+Written %d items
+== 
+
+[bgdraw]
+Loaded %d items
+== 
+
+[bgdraw]
+Loaded %d items (discarded %d items)
+== 
+
+Kaomoji
+== 
+
+Shrug:
+== 
+
+Flip:
+== 
+
+Unflip:
+== 
+
+Cute:
+== 
+
+Lenny:
+== 
+
+Warlist
+== 
+
+Add war name:
+== 
+
+Add war clan:
+== 
+
+Add team name:
+== 
+
+Add team clan:
+== 
+
+Remove war name:
+== 
+
+Remove war clan:
+== 
+
+Remove team name:
+== 
+
+Remove team clan:
+== 
+
+Add [group] [name] [reason]:
+== 
+
+Add [group] [clan] [reason]:
+== 
+
+Remove [group] [name]:
+== 
+
+Remove [group] [clan]:
+== 
+
+Other
+== 
+
+Translate:
+== 
+
+Translate ID:
+== 
+
+Mute:
+== 
+
+Unmute:
+== 
+
+Visual
+== 
+
+Custom Font: 
+== 
+
+[Hammer Mode]
+Normal
+== 
+
+[Hammer Mode]
+Rotate with cursor
+== 
+
+[Hammer Mode]
+Rotate with cursor like gun
+== 
+
+Hammer Mode: 
+== 
+
+Ingame cursor scale
+== 
+
+Ingame tee scale
+== 
+
+Wheel animate
+== 
+
+Show ping colored circle in nameplates
+== 
+
+Show country flags in nameplates
+== 
+
+Hide nameplates in spec
+== 
+
+Show skin names in nameplate
+== 
+
+Freeze stars
+== 
+
+Colored frozen tee skins
+== 
+
+Show katan on frozen players
+== 
+
+Render weapons as the gun sprite
+== 
+
+Render all custom colored feet as white feet skin
+== 
+
+Tiny Tees
+== 
+
+Own
+== 
+
+Tiny Tee Size
+== 
+
+Fake CTF flags
+== 
+
+Red
+== 
+
+Blue
+== 
+
+Show moving tiles in entities
+== 
+
+Anti Latency Tools
+== 
+
+Prediction Margin
+== 
+
+Remove prediction & antiping in freeze
+== 
+
+Dont predict other players if you are frozen
+== 
+
+Adjust your prediction margin while frozen
+== 
+
+Frozen Margin
+== 
+
+Anti Ping Smoothing
+== 
+
+Use new smoothing algorithm
+== 
+
+Optimistic prediction in stable direction
+== 
+
+Remember instability for longer
+== 
+
+Uncertainty duration
+== 
+
+Auto execute
+== 
+
+Execute before connect
+== 
+
+Run a console command before connect
+== 
+
+Execute on join
+== 
+
+Run a console command on join
+== 
+
+Auto vote no to map changes when far
+== 
+
+Minimum Time
+== 
+
+Message to send in chat:
+== 
+
+Leave empty to disable
+== 
+
+Auto Reply
+== 
+
+Auto reply to muted players
+== 
+
+Auto reply when tabbed out
+== 
+
+Player Indicator
+== 
+
+Show any enabled Indicators
+== 
+
+Hide indicator for tees on your screen
+== 
+
+Show only freeze Players
+== 
+
+Only show after joining a team
+== 
+
+Render tiny tees instead of circles
+== 
+
+Use warlist groups for indicator
+== 
+
+Indicator size
+== 
+
+Indicator opacity
+== 
+
+Change indicator offset based on distance to other tees
+== 
+
+Indicator min offset
+== 
+
+Indicator max offset
+== 
+
+Indicator max distance
+== 
+
+Indicator offset
+== 
+
+Use warlist colors instead of regular colors
+== 
+
+Show all warlist groups
+== 
+
+Indicator alive color
+== 
+
+Indicator in freeze color
+== 
+
+Indicator safe color
+== 
+
+Pet
+== 
+
+Show the pet
+== 
+
+Pet size
+== 
+
+Pet alpha
+== 
+
+Pet Skin:
+== 
+
+Show mini vote HUD
+== 
+
+Show position and angle (mini debug)
+== 
+
+Show your cursor when in free spectate
+== 
+
+Spectate cursor alpha
+== 
+
+Show when you are the last alive
+== 
+
+Last!
+== 
+
+Font Size
+== 
+
+Show screen center lines
+== 
+
+Screen center line color
+== 
+
+Screen center line width
+== 
+
+Frozen Tee Display
+== 
+
+Show frozen tee display
+== 
+
+Use skins instead of ninja tees
+== 
+
+Expand direction
+== 
+
+Max Rows
+== 
+
+Tee Size
+== 
+
+Tees left alive text
+== 
+
+Count frozen tees
+== 
+
+Tile Outlines
+== 
+
+Show any enabled outlines
+== 
+
+Only show outlines in entities
+== 
+
+[Outlines]
+Width
+== 
+
+Unhook & hook
+== 
+
+Freeze & deep
+== 
+
+Unfreeze & undeep
+== 
+
+Tele
+== 
+
+Outline freeze & deep
+== 
+
+Outline walls
+== 
+
+Outline teleporter
+== 
+
+Outline unfreeze & undeep
+== 
+
+Outline kill
+== 
+
+Outline width
+== 
+
+Outline alpha
+== 
+
+Outline Alpha (walls)
+== 
+
+Freeze outline color
+== 
+
+Walls outline color
+== 
+
+Teleporter outline color
+== 
+
+Unfreeze outline color
+== 
+
+Kill outline color
+== 
+
+Ghost Tools
+== 
+
+Show unpredicted ghosts for other players
+== 
+
+Swap ghosts and normal players
+== 
+
+Predicted alpha
+== 
+
+Unpredicted alpha
+== 
+
+Hide ghosts of frozen players
+== 
+
+Render ghosts as circles
+== 
+
+Toggle ghosts key
+== 
+
+Rainbow Tees
+== 
+
+Rainbow weapons
+== 
+
+Rainbow hook
+== 
+
+Rainbow others
+== 
+
+Black
+== 
+
+Rainbow speed
+== 
+
+Tee Trails
+== 
+
+Enable tee trails
+== 
+
+Show other tees' trails
+== 
+
+Fade trail alpha
+== 
+
+Taper trail width
+== 
+
+Solid
+== 
+
+Tee trail color
+== 
+
+Trail width
+== 
+
+Trail length
+== 
+
+Trail alpha
+== 
+
+Background Draw
+== 
+
+Time until strokes disappear
+== 
+
+ seconds (never)
+== 
+
+ seconds
+== 
+
+Eraser size
+== 
+
+Draw where mouse is
+== 
+
+Erase where mouse is
+== 
+
+Finish Name
+== 
+
+Attempt to change your name when near finish
+== 
+
+Finish Name:
+== 
+
+Override Selected
+== 
+
+Add Bind
+== 
+
+Remove Bind
+== 
+
+The command is ran in console not chat
+== 
+
+Use left mouse to select
+== 
+
+Use right mouse to swap with selected
+== 
+
+Use middle mouse select without copy
+== 
+
+Bind Wheel Key
+== 
+
+Reset position of mouse when opening bindwheel
+== 
+
+War Entries
+== 
+
+Edit Entry
+== 
+
+Override Entry
+== 
+
+Add Entry
+== 
+
+Allow Duplicate Entries
+== 
+
+Enable warlist
+== 
+
+Colors in chat
+== 
+
+Colors in scoreboard
+== 
+
+Colors in spectate select
+== 
+
+Show clan if war
+== 
+
+War Groups
+== 
+
+Are you sure that you want to remove '%s' from your war groups?
+== 
+
+Remove War Group
+== 
+
+Override Group
+== 
+
+Add Group
+== 
+
+Online Players
+== 
+
+Show status bar
+== 
+
+Show labels on status bar items
+== 
+
+Status bar height
+== 
+
+Local Time
+== 
+
+Use 12 hour clock
+== 
+
+Show seconds on clock
+== 
+
+Colors
+== 
+
+Status bar color
+== 
+
+Text color
+== 
+
+Status bar alpha
+== 
+
+Text alpha
+== 
+
+Status Bar Codes:
+== 
+
+a = Angle
+== 
+
+p = Ping
+== 
+
+d = Prediction
+== 
+
+c = Position
+== 
+
+l = Local Time
+== 
+
+r = Race Time
+== 
+
+f = FPS
+== 
+
+v = Velocity
+== 
+
+z = Zoom
+== 
+
+_ or ' ' = Space
+== 
+
+Status Scheme:
+== 
+
+Add Item
+== 
+
+Remove Item
+== 
+
+TClient Links
+== 
+
+Github
+== 
+
+Support ♥
+== 
+
+TClient Settings
+== 
+
+TClient Developers
+== 
+
+Integration
+== 
+
+Enable Discord Integration
+== 
+
+Name: %s
+== 
+
+Clan: %s
+== 
+
+Skin: %s
+== 
+
+Your profile
+== 
+
+After Load
+== 
+
+Save/Load Skin
+== 
+
+Save/Load Colors
+== 
+
+Save/Load Emote
+== 
+
+Save/Load Name
+== 
+
+Save/Load Clan
+== 
+
+Save/Load Flag
+== 
+
+Enable Deleting
+== 
+
+Overwrite clan even if empty
+== 
+
+Profiles file
+== 
+
+Apply Changes
+== 
+
+Clear Changes
+== 
+
+Compact List
+== 
+
+Only modified
+== 
+
+Activating mod weapon on %d: %s\n
+== 
+
+[data_version.h]
+You have probably only installed the TClient DDNet.exe which is not supported, please use the entire TClient folder
+== 
+
+Changing name to %s near finish
 == 

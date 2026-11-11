@@ -4,8 +4,8 @@
 #include <base/str.h>
 #include <base/time.h>
 
-#include <engine/shared/config.h>
 #include <engine/serverbrowser.h>
+#include <engine/shared/config.h>
 
 #include <game/client/gameclient.h>
 
@@ -94,8 +94,8 @@ bool CSnapTap::IsBlockedByCommunity() const
 {
 	auto IsBlockedGameType = [](const char *pGameType) -> bool {
 		return pGameType != nullptr && pGameType[0] != '\0' &&
-			(str_find_nocase(pGameType, "ddracenet") != nullptr ||
-				str_find_nocase(pGameType, "0xf") != nullptr);
+		       (str_find_nocase(pGameType, "ddracenet") != nullptr ||
+			       str_find_nocase(pGameType, "0xf") != nullptr);
 	};
 
 	const char *pCommunityId = nullptr;

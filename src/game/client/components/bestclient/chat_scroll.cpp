@@ -21,7 +21,7 @@
 
 namespace
 {
-constexpr float CHAT_WHEEL_SCROLL_UNIT = 40.0f;
+	constexpr float CHAT_WHEEL_SCROLL_UNIT = 40.0f;
 }
 
 float CChatScroll::LineHeight(const CChat &Chat, int LineIndex, int OffsetType, float FontSize, float RealMsgPaddingY)
@@ -430,7 +430,7 @@ void CChatScroll::NoteLineHover(SActionFrame &Frame, CChat &Chat, int ArrayIndex
 	if(!g_Config.m_BcChatMessageActions)
 		return;
 	const bool InsideLine = !Frame.m_MouseOverMenu && InteractionActive && Chat.m_Mode != CChat::MODE_NONE && !Chat.m_ScrollbarDragging &&
-		Frame.m_MousePos.x >= X && Frame.m_MousePos.x <= X + LineW && Frame.m_MousePos.y >= LineRenderY && Frame.m_MousePos.y <= LineRenderY + LineH;
+				Frame.m_MousePos.x >= X && Frame.m_MousePos.x <= X + LineW && Frame.m_MousePos.y >= LineRenderY && Frame.m_MousePos.y <= LineRenderY + LineH;
 	if(InsideLine)
 		Frame.m_HotLineIndex = ArrayIndex;
 }

@@ -10,30 +10,30 @@
 
 namespace BestClientIndicatorClient
 {
-struct CLocalClientIdSnapshot
-{
-	std::array<bool, MAX_CLIENTS> m_aActive{};
-	std::vector<int> m_vClientIds;
-
-	bool Contains(int ClientId) const
+	struct CLocalClientIdSnapshot
 	{
-		return ClientId >= 0 && ClientId < MAX_CLIENTS && m_aActive[ClientId];
-	}
-};
+		std::array<bool, MAX_CLIENTS> m_aActive{};
+		std::vector<int> m_vClientIds;
 
-inline CLocalClientIdSnapshot CollectActiveLocalClientIds(const int (&aLocalIds)[NUM_DUMMIES], const std::array<bool, MAX_CLIENTS> &aClientActive)
-{
-	CLocalClientIdSnapshot Snapshot;
-	Snapshot.m_vClientIds.reserve(NUM_DUMMIES);
-	for(const int ClientId : aLocalIds)
+		bool Contains(int ClientId) const
+		{
+			return ClientId >= 0 && ClientId < MAX_CLIENTS && m_aActive[ClientId];
+		}
+	};
+
+	inline CLocalClientIdSnapshot CollectActiveLocalClientIds(const int (&aLocalIds)[NUM_DUMMIES], const std::array<bool, MAX_CLIENTS> &aClientActive)
 	{
-		if(ClientId < 0 || ClientId >= MAX_CLIENTS || !aClientActive[ClientId] || Snapshot.m_aActive[ClientId])
-			continue;
-		Snapshot.m_aActive[ClientId] = true;
-		Snapshot.m_vClientIds.push_back(ClientId);
+		CLocalClientIdSnapshot Snapshot;
+		Snapshot.m_vClientIds.reserve(NUM_DUMMIES);
+		for(const int ClientId : aLocalIds)
+		{
+			if(ClientId < 0 || ClientId >= MAX_CLIENTS || !aClientActive[ClientId] || Snapshot.m_aActive[ClientId])
+				continue;
+			Snapshot.m_aActive[ClientId] = true;
+			Snapshot.m_vClientIds.push_back(ClientId);
+		}
+		return Snapshot;
 	}
-	return Snapshot;
-}
 }
 
 #endif

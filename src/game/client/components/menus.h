@@ -30,13 +30,12 @@
 #include <game/client/ui.h>
 #include <game/voting.h>
 
+#include <array>
 #include <chrono>
 #include <optional>
-#include <vector>
-
-#include <array>
 #include <set>
 #include <string>
+#include <vector>
 
 class CDemoTeeEditor; // bestclient
 
@@ -814,7 +813,7 @@ public:
 	bool IsServerBrowserPageActive() const
 	{
 		return (Client()->State() == IClient::STATE_OFFLINE && m_MenuPage >= PAGE_INTERNET && m_MenuPage <= PAGE_FAVORITE_COMMUNITY_5) ||
-			(Client()->State() == IClient::STATE_ONLINE && m_GamePage == PAGE_NETWORK);
+		       (Client()->State() == IClient::STATE_ONLINE && m_GamePage == PAGE_NETWORK);
 	}
 	bool IsMainMenuOpen() const
 	{

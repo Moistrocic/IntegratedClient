@@ -1,6 +1,6 @@
 /* Copyright © 2026 BestProject Team */
-#ifndef GAME_CLIENT_COMPONENTS_HOOKFIRE_H
-#define GAME_CLIENT_COMPONENTS_HOOKFIRE_H
+#ifndef GAME_CLIENT_COMPONENTS_BESTCLIENT_FX_HOOKFIRE_H
+#define GAME_CLIENT_COMPONENTS_BESTCLIENT_FX_HOOKFIRE_H
 #include "fgf_glow.h"
 #include "hookgrip.h"
 

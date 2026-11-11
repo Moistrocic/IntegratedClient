@@ -2,6 +2,9 @@
 #ifndef GAME_CLIENT_COMPONENTS_BESTCLIENT_BESTCLIENT_H
 #define GAME_CLIENT_COMPONENTS_BESTCLIENT_BESTCLIENT_H
 
+#include "changelog.h"
+#include "menu_media_background.h"
+
 #include <base/color.h>
 #include <base/vmath.h>
 
@@ -9,9 +12,6 @@
 
 #include <game/client/component.h>
 #include <game/teamscore.h>
-
-#include "changelog.h"
-#include "menu_media_background.h"
 
 #include <memory>
 

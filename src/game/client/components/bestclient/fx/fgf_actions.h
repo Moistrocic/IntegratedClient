@@ -1,15 +1,16 @@
 /* Copyright © 2026 BestProject Team */
-#ifndef GAME_CLIENT_COMPONENTS_FGF_ACTIONS_H
-#define GAME_CLIENT_COMPONENTS_FGF_ACTIONS_H
+#ifndef GAME_CLIENT_COMPONENTS_BESTCLIENT_FX_FGF_ACTIONS_H
+#define GAME_CLIENT_COMPONENTS_BESTCLIENT_FX_FGF_ACTIONS_H
+#include "fgf_glow.h"
+
 #include <base/color.h>
 #include <base/vmath.h>
 
-#include <engine/graphics.h>
 #include <engine/client/enums.h>
+#include <engine/graphics.h>
 #include <engine/shared/protocol.h>
 
 #include <game/client/component.h>
-#include "fgf_glow.h"
 
 class CFgfActions : public CComponent
 {

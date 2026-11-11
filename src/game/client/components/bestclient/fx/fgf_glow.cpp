@@ -42,25 +42,25 @@ static float BeamAlpha(float Dx, float Dy)
 
 namespace
 {
-struct CSharedTextures
-{
-	IGraphics *m_pGraphics = nullptr;
-	IGraphics::CTextureHandle m_Glow;
-	IGraphics::CTextureHandle m_Ring;
-	IGraphics::CTextureHandle m_Disc;
-	IGraphics::CTextureHandle m_Beam;
-	IGraphics::CTextureHandle m_Leaf;
-};
+	struct CSharedTextures
+	{
+		IGraphics *m_pGraphics = nullptr;
+		IGraphics::CTextureHandle m_Glow;
+		IGraphics::CTextureHandle m_Ring;
+		IGraphics::CTextureHandle m_Disc;
+		IGraphics::CTextureHandle m_Beam;
+		IGraphics::CTextureHandle m_Leaf;
+	};
 
-CSharedTextures s_SharedTextures;
+	CSharedTextures s_SharedTextures;
 
-void BindGraphics(IGraphics *pGraphics)
-{
-	if(s_SharedTextures.m_pGraphics == pGraphics)
-		return;
-	s_SharedTextures = {};
-	s_SharedTextures.m_pGraphics = pGraphics;
-}
+	void BindGraphics(IGraphics *pGraphics)
+	{
+		if(s_SharedTextures.m_pGraphics == pGraphics)
+			return;
+		s_SharedTextures = {};
+		s_SharedTextures.m_pGraphics = pGraphics;
+	}
 }
 
 static IGraphics::CTextureHandle CreateTexture(IGraphics *pGraphics, int Width, int Height, float (*pAlpha)(float Dx, float Dy), const char *pName)

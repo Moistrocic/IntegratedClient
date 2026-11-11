@@ -1,11 +1,12 @@
 /* Copyright © 2026 BestProject Team */
 #include "fgf_weather.h"
 
+#include "own_tee.h"
+
 #include <base/math.h>
+#include <base/time.h>
 
 #include <engine/shared/config.h>
-
-#include <base/time.h>
 
 #include <generated/client_data.h>
 
@@ -13,8 +14,6 @@
 #include <game/client/gameclient.h>
 #include <game/collision.h>
 #include <game/mapitems.h>
-
-#include "own_tee.h"
 
 #include <algorithm>
 #include <cmath>

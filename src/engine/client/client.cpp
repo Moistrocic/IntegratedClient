@@ -65,10 +65,9 @@
 #include <generated/protocol7.h>
 #include <generated/protocolglue.h>
 
+#include <game/client/components/bestclient/profiler.h> // bestclient
 #include <game/localization.h>
 #include <game/version.h>
-
-#include <game/client/components/bestclient/profiler.h> // bestclient
 
 #if defined(CONF_VIDEORECORDER)
 #include "video.h"

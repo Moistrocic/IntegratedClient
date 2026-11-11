@@ -10,6 +10,7 @@
 #include <engine/shared/config.h>
 // bestclient
 #include <engine/updater.h>
+
 #include <SDL.h>
 // bestclient
 
@@ -18,9 +19,9 @@
 #include <game/client/ui.h>
 #include <game/client/ui_listbox.h> // bestclient
 // bestclient
+#include <game/client/components/bestclient/settings_search.h>
 #include <game/client/components/bestclient/ui_theme/settings_nav.h>
 #include <game/client/components/bestclient/ui_theme/style.h>
-#include <game/client/components/bestclient/settings_search.h>
 // bestclient
 #include <game/localization.h>
 
@@ -166,7 +167,7 @@ void CMenus::RenderSettings(CUIRect MainView)
 			const bool ExploreLock = m_AssetsEditorState.m_Open && m_AssetsEditorState.m_ExploreSide >= 0;
 			const bool AssetsTab = i == SETTINGS_ASSETS;
 			if(DoButton_MenuTab(&s_aTabButtons[i], apTabs[i], g_Config.m_UiSettingsPage == i, &Button, TabCorners, &m_aAnimatorsSettingsTab[i], nullptr, nullptr, nullptr, 10.0f, nullptr, true, IGraphics::CORNER_NONE, -1.0f, ExploreLock && !AssetsTab ? 0.35f : 1.0f) && (!ExploreLock || AssetsTab))
-			// bestclient
+				// bestclient
 				g_Config.m_UiSettingsPage = i;
 		}
 		// bestclient

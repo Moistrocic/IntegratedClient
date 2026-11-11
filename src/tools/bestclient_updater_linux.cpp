@@ -3,17 +3,15 @@
 #include "bestclient_updater_linux_fs.h"
 
 #include <SDL.h>
-
 #include <dirent.h>
-#include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #include <cerrno>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <string>
 
 static const int WND_W = 480;
@@ -61,7 +59,6 @@ static void Fail(const char *pMsg)
 {
 	SDL_AtomicSet(&g_Failed, 1);
 	SetStatus(pMsg);
-
 }
 
 static int RunProcessSync(const char *pFile, char *const apArgv[])
@@ -106,13 +103,11 @@ static int WorkerThreadFn(void *pData)
 {
 	auto *pArgs = static_cast<SWorkerArgs *>(pData);
 
-
 	SetStatus("Waiting for client to close...");
 	SetPercent(2);
 	while(!ProcessGone(pArgs->Pid))
 		usleep(200 * 1000);
 	SetPercent(8);
-
 
 	const std::string Extract = pArgs->InstallDir + "/update/extract";
 	BcFs::DeleteTree(Extract.c_str());
@@ -122,7 +117,6 @@ static int WorkerThreadFn(void *pData)
 		delete pArgs;
 		return 1;
 	}
-
 
 	SetStatus("Extracting update...");
 	{
@@ -136,7 +130,6 @@ static int WorkerThreadFn(void *pData)
 		}
 	}
 	SetPercent(50);
-
 
 	std::string CopyRoot = Extract;
 	{
@@ -165,7 +158,6 @@ static int WorkerThreadFn(void *pData)
 		}
 	}
 
-
 	SetStatus("Backing up settings...");
 	const std::string Backup = pArgs->InstallDir + "/update/backup_" + std::to_string((long long)pArgs->Pid);
 	BcFs::DeleteTree(Backup.c_str());
@@ -177,7 +169,6 @@ static int WorkerThreadFn(void *pData)
 			BcFs::CopyTree(Src.c_str(), Dst.c_str());
 	}
 	SetPercent(55);
-
 
 	SetStatus("Installing files...");
 	{
@@ -191,7 +182,6 @@ static int WorkerThreadFn(void *pData)
 	}
 	SetPercent(90);
 
-
 	SetStatus("Restoring settings...");
 	for(const char *pRel : k_apUserDirs)
 	{
@@ -202,13 +192,11 @@ static int WorkerThreadFn(void *pData)
 	}
 	SetPercent(95);
 
-
 	SetStatus("Cleaning up...");
 	unlink(pArgs->Archive.c_str());
 	BcFs::DeleteTree(Extract.c_str());
 	BcFs::DeleteTree(Backup.c_str());
 	SetPercent(100);
-
 
 	SetStatus("Launching BestClient...");
 	usleep(500 * 1000);

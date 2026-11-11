@@ -5,8 +5,6 @@
 #include <base/dbg.h>
 #include <base/time.h>
 
-#include <cmath>
-
 #include <engine/console.h>
 #include <engine/demo.h>
 #include <engine/font_icons.h>
@@ -16,11 +14,11 @@
 #include <engine/shared/config.h>
 #include <engine/textrender.h>
 
-#include <game/client/components/bestclient/bestclient.h> // bestclient
 #include <generated/client_data7.h>
 #include <generated/protocol.h>
 
 #include <game/client/animstate.h>
+#include <game/client/components/bestclient/bestclient.h> // bestclient
 #include <game/client/components/bestclient/gradient.h> // bestclient
 #include <game/client/components/countryflags.h>
 #include <game/client/components/motd.h>
@@ -28,6 +26,8 @@
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/localization.h>
+
+#include <cmath>
 
 // Horizontal spacing of the scoreboard contents, both to its edges and between columns
 static constexpr float MARGIN = 10.0f;

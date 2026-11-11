@@ -240,8 +240,6 @@ namespace MediaDecoder
 		(void)pGraphics;
 		Image.Free();
 
-		
-		
 		if(IsPngSignature(pData, DataSize))
 		{
 			CByteBufferReader Reader(pData, DataSize);
@@ -587,27 +585,24 @@ namespace MediaDecoder
 
 				if(ImplicitTiming)
 				{
-					constexpr int MaxReasonableImplicitMs = 200; 
+					constexpr int MaxReasonableImplicitMs = 200;
 					if(DurationMs > MaxReasonableImplicitMs)
 						DurationMs = FallbackFrameDurationMs;
 				}
 			}
 
-			
 			{
-				constexpr int MaxReasonableFallbackUpdateMs = 200; 
+				constexpr int MaxReasonableFallbackUpdateMs = 200;
 				if(DurationMs > 0 && DurationMs <= MaxReasonableFallbackUpdateMs)
 					FallbackFrameDurationMs = std::min(FallbackFrameDurationMs, ClampFrameDurationMs(DurationMs));
 			}
 
-			
-			
 			{
 				constexpr size_t StartupFrameClampCount = 60;
 				const size_t FrameIndex = DecodedFrames.m_vFrames.size();
 				if(FrameIndex < StartupFrameClampCount && FallbackFrameDurationMs > 0)
 				{
-					constexpr int MaxStartupFrameMsAbs = 200; 
+					constexpr int MaxStartupFrameMsAbs = 200;
 					const int StartupMaxFrameMs = std::min(MaxStartupFrameMsAbs, ClampFrameDurationMs(FallbackFrameDurationMs * 2));
 					if(DurationMs > StartupMaxFrameMs)
 						DurationMs = StartupMaxFrameMs;
@@ -624,7 +619,6 @@ namespace MediaDecoder
 				DecodedTimelineMs += DecodedFrames.m_vFrames.back().m_DurationMs;
 				if(Limits.m_MaxAnimationDurationMs > 0 && DecodedTimelineMs > Limits.m_MaxAnimationDurationMs)
 				{
-					
 					DecodeAllFrames = false;
 					if(!DecodedFrames.m_vFrames.empty())
 						DecodedFrames.m_vFrames.resize(1);
@@ -662,7 +656,6 @@ namespace MediaDecoder
 			if(!pCodecCtx || avcodec_parameters_to_context(pCodecCtx, pStream->codecpar) < 0 || avcodec_open2(pCodecCtx, pCodec, nullptr) < 0)
 				break;
 
-			
 			{
 				AVRational Rate = pStream->avg_frame_rate;
 				if(Rate.num <= 0 || Rate.den <= 0)
@@ -674,8 +667,8 @@ namespace MediaDecoder
 				if(Rate.num > 0 && Rate.den > 0)
 				{
 					const int64_t Ms = (1000ll * (int64_t)Rate.den) / (int64_t)Rate.num;
-					
-					constexpr int64_t MaxReasonableFallbackMs = 200; 
+
+					constexpr int64_t MaxReasonableFallbackMs = 200;
 					if(Ms > 0 && Ms <= MaxReasonableFallbackMs)
 					{
 						const int CandidateMs = ClampFrameDurationMs((int)Ms);
@@ -829,8 +822,7 @@ namespace MediaDecoder
 			return false;
 
 		CImageInfo Image;
-		
-		
+
 		if(IsPngSignature(pData, DataSize))
 		{
 			CByteBufferReader Reader(pData, DataSize);

@@ -739,8 +739,8 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 			Box.VSplitLeft(BrowserButtonWidth, &Button, &Box);
 			const int Page = PAGE_FAVORITE_COMMUNITY_1 + FavoriteCommunityIndex;
 			const bool IsLastVisibleCommunity = FavoriteCommunityIndex + 1 >= ServerBrowser()->FavoriteCommunities().size() ||
-							   FavoriteCommunityIndex + 1 >= std::size(s_aFavoriteCommunityButtons) ||
-							   Box.w < BrowserButtonWidth;
+							    FavoriteCommunityIndex + 1 >= std::size(s_aFavoriteCommunityButtons) ||
+							    Box.w < BrowserButtonWidth;
 			const int CommunityCorners = IsLastVisibleCommunity ? IGraphics::CORNER_TR : IGraphics::CORNER_NONE;
 			if(DoButton_MenuTab(&s_aFavoriteCommunityButtons[FavoriteCommunityIndex], FontIcon::ELLIPSIS, ActivePage == Page, &Button, CommunityCorners, &m_aAnimatorsBigPage[BIT_TAB_FAVORITE_COMMUNITY_1 + FavoriteCommunityIndex], nullptr, nullptr, nullptr, BrowserTabRounding, m_CommunityIcons.Find(pCommunity->Id()), false, IGraphics::CORNER_T, BrowserTabHoverRounding))
 			{
@@ -1294,10 +1294,10 @@ void CMenus::Render()
 
 			// bestclient
 			const bool AssetsEditorConfirmOpen = m_AssetsEditorState.m_Open &&
-				m_AssetsEditorState.m_ExploreSide < 0 && m_AssetsEditorState.m_ShowExitConfirm &&
-				g_Config.m_UiSettingsPage == SETTINGS_ASSETS;
+							     m_AssetsEditorState.m_ExploreSide < 0 && m_AssetsEditorState.m_ShowExitConfirm &&
+							     g_Config.m_UiSettingsPage == SETTINGS_ASSETS;
 			if(!AssetsEditorConfirmOpen)
-			// bestclient
+				// bestclient
 				RenderMenubar(TabBar, ClientState);
 		}
 		break;
@@ -1358,10 +1358,10 @@ void CMenus::Render()
 
 			// bestclient
 			const bool AssetsEditorConfirmOpen = m_AssetsEditorState.m_Open &&
-				m_AssetsEditorState.m_ExploreSide < 0 && m_AssetsEditorState.m_ShowExitConfirm &&
-				g_Config.m_UiSettingsPage == SETTINGS_ASSETS;
+							     m_AssetsEditorState.m_ExploreSide < 0 && m_AssetsEditorState.m_ShowExitConfirm &&
+							     g_Config.m_UiSettingsPage == SETTINGS_ASSETS;
 			if(!AssetsEditorConfirmOpen)
-			// bestclient
+				// bestclient
 				RenderMenubar(TabBar, ClientState);
 		}
 		break;

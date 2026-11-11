@@ -5,9 +5,9 @@
 #include <base/str.h>
 #include <base/time.h>
 
+#include <engine/font_icons.h>
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
-#include <engine/font_icons.h>
 #include <engine/shared/localization.h>
 #include <engine/textrender.h>
 
@@ -25,89 +25,89 @@
 
 namespace
 {
-constexpr float PANEL_PADDING = 10.0f;
-constexpr float HEADER_HEIGHT = 26.0f;
-constexpr float TAB_HEIGHT = 24.0f;
-constexpr float LIST_ROW_HEIGHT = 26.0f;
-constexpr float ACTION_BUTTON_HEIGHT = 22.0f;
-constexpr float ACTION_SPACING = 4.0f;
-constexpr float ACTION_LABEL_HEIGHT = 16.0f;
-constexpr float ACTION_BLOCK_MARGIN = 8.0f;
-constexpr float INFO_ROW_HEIGHT = 16.0f;
-constexpr float INFO_BLOCK_HEIGHT = 38.0f;
-constexpr float LOGIN_ROW_HEIGHT = 24.0f;
-constexpr int MAX_LOG_LINES = 200;
-constexpr int MAX_LOG_LENGTH = 256;
+	constexpr float PANEL_PADDING = 10.0f;
+	constexpr float HEADER_HEIGHT = 26.0f;
+	constexpr float TAB_HEIGHT = 24.0f;
+	constexpr float LIST_ROW_HEIGHT = 26.0f;
+	constexpr float ACTION_BUTTON_HEIGHT = 22.0f;
+	constexpr float ACTION_SPACING = 4.0f;
+	constexpr float ACTION_LABEL_HEIGHT = 16.0f;
+	constexpr float ACTION_BLOCK_MARGIN = 8.0f;
+	constexpr float INFO_ROW_HEIGHT = 16.0f;
+	constexpr float INFO_BLOCK_HEIGHT = 38.0f;
+	constexpr float LOGIN_ROW_HEIGHT = 24.0f;
+	constexpr int MAX_LOG_LINES = 200;
+	constexpr int MAX_LOG_LENGTH = 256;
 
-constexpr ColorRGBA PANEL_COLOR(0.05f, 0.06f, 0.08f, 0.82f);
-constexpr ColorRGBA SECTION_COLOR(0.0f, 0.0f, 0.0f, 0.32f);
-constexpr ColorRGBA SECTION_DARK_COLOR(0.0f, 0.0f, 0.0f, 0.42f);
-constexpr ColorRGBA INFO_BLOCK_COLOR(0.0f, 0.0f, 0.0f, 0.45f);
-constexpr ColorRGBA INFO_LABEL_COLOR(0.62f, 0.62f, 0.62f, 1.0f);
-constexpr ColorRGBA DISABLED_TEXT_COLOR(0.65f, 0.65f, 0.65f, 0.85f);
+	constexpr ColorRGBA PANEL_COLOR(0.05f, 0.06f, 0.08f, 0.82f);
+	constexpr ColorRGBA SECTION_COLOR(0.0f, 0.0f, 0.0f, 0.32f);
+	constexpr ColorRGBA SECTION_DARK_COLOR(0.0f, 0.0f, 0.0f, 0.42f);
+	constexpr ColorRGBA INFO_BLOCK_COLOR(0.0f, 0.0f, 0.0f, 0.45f);
+	constexpr ColorRGBA INFO_LABEL_COLOR(0.62f, 0.62f, 0.62f, 1.0f);
+	constexpr ColorRGBA DISABLED_TEXT_COLOR(0.65f, 0.65f, 0.65f, 0.85f);
 
-const CAdminPanel::SActionSpec s_aActionSpecs[] = {
-	{CAdminPanel::EAction::SAY, "say", CAdminPanel::AUTH_FALLBACK_HELPER, false, CAdminPanel::EActionField::MESSAGE},
-	{CAdminPanel::EAction::SAY_TEAM, "say_team", CAdminPanel::AUTH_FALLBACK_HELPER, false, CAdminPanel::EActionField::MESSAGE},
-	{CAdminPanel::EAction::BROADCAST, "broadcast", CAdminPanel::AUTH_FALLBACK_HELPER, false, CAdminPanel::EActionField::MESSAGE},
-	{CAdminPanel::EAction::MUTE, "muteid", CAdminPanel::AUTH_FALLBACK_HELPER, true, CAdminPanel::EActionField::REASON_DURATION_SECONDS},
-	{CAdminPanel::EAction::BAN, "ban", CAdminPanel::AUTH_FALLBACK_MOD, true, CAdminPanel::EActionField::REASON_DURATION_MINUTES},
-	{CAdminPanel::EAction::KICK, "kick", CAdminPanel::AUTH_FALLBACK_MOD, true, CAdminPanel::EActionField::REASON},
-	{CAdminPanel::EAction::RESPAWN, "respawn", CAdminPanel::AUTH_FALLBACK_MOD, true, CAdminPanel::EActionField::REASON},
-	{CAdminPanel::EAction::FORCE_PAUSE, "force_pause", CAdminPanel::AUTH_FALLBACK_MOD, true, CAdminPanel::EActionField::DURATION_SECONDS},
-};
+	const CAdminPanel::SActionSpec s_aActionSpecs[] = {
+		{CAdminPanel::EAction::SAY, "say", CAdminPanel::AUTH_FALLBACK_HELPER, false, CAdminPanel::EActionField::MESSAGE},
+		{CAdminPanel::EAction::SAY_TEAM, "say_team", CAdminPanel::AUTH_FALLBACK_HELPER, false, CAdminPanel::EActionField::MESSAGE},
+		{CAdminPanel::EAction::BROADCAST, "broadcast", CAdminPanel::AUTH_FALLBACK_HELPER, false, CAdminPanel::EActionField::MESSAGE},
+		{CAdminPanel::EAction::MUTE, "muteid", CAdminPanel::AUTH_FALLBACK_HELPER, true, CAdminPanel::EActionField::REASON_DURATION_SECONDS},
+		{CAdminPanel::EAction::BAN, "ban", CAdminPanel::AUTH_FALLBACK_MOD, true, CAdminPanel::EActionField::REASON_DURATION_MINUTES},
+		{CAdminPanel::EAction::KICK, "kick", CAdminPanel::AUTH_FALLBACK_MOD, true, CAdminPanel::EActionField::REASON},
+		{CAdminPanel::EAction::RESPAWN, "respawn", CAdminPanel::AUTH_FALLBACK_MOD, true, CAdminPanel::EActionField::REASON},
+		{CAdminPanel::EAction::FORCE_PAUSE, "force_pause", CAdminPanel::AUTH_FALLBACK_MOD, true, CAdminPanel::EActionField::DURATION_SECONDS},
+	};
 
-ColorRGBA ButtonTextColor(bool Enabled)
-{
-	return Enabled ? ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f) : DISABLED_TEXT_COLOR;
-}
-
-const char *ActionLabel(CAdminPanel::EAction Action)
-{
-	switch(Action)
+	ColorRGBA ButtonTextColor(bool Enabled)
 	{
-	case CAdminPanel::EAction::SAY:
-		return Localize("Say");
-	case CAdminPanel::EAction::SAY_TEAM:
-		return Localize("Say team");
-	case CAdminPanel::EAction::BROADCAST:
-		return Localize("Broadcast");
-	case CAdminPanel::EAction::MUTE:
-		return Localize("Mute");
-	case CAdminPanel::EAction::BAN:
-		return Localize("Ban");
-	case CAdminPanel::EAction::KICK:
-		return Localize("Kick");
-	case CAdminPanel::EAction::RESPAWN:
-		return Localize("Respawn");
-	case CAdminPanel::EAction::FORCE_PAUSE:
-		return Localize("Force pause");
-	case CAdminPanel::EAction::NONE:
-		break;
+		return Enabled ? ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f) : DISABLED_TEXT_COLOR;
 	}
-	return "";
-}
 
-const char *DirectActionLabel(const char *pCommand, CButtonContainer *pButton, CButtonContainer *pVoteMuteButton, CButtonContainer *pTeleportButton, CButtonContainer *pTeleportToPlayerButton, CButtonContainer *pSpectateButton, CButtonContainer *pUnspectateButton)
-{
-	if(str_comp(pCommand, "unmuteid") == 0)
-		return Localize("Unmute");
-	if(pButton == pVoteMuteButton)
-		return Localize("Vote mute (10 min)");
-	if(str_comp(pCommand, "vote_unmuteid") == 0)
-		return Localize("Vote unmute");
-	if(pButton == pTeleportButton)
-		return Localize("Teleport to me");
-	if(pButton == pTeleportToPlayerButton)
-		return Localize("Teleport to player");
-	if(str_comp(pCommand, "force_unpause") == 0)
-		return Localize("Force unpause");
-	if(pButton == pSpectateButton)
-		return Localize("Move to spectators");
-	if(pButton == pUnspectateButton)
-		return Localize("Return to game");
-	return "";
-}
+	const char *ActionLabel(CAdminPanel::EAction Action)
+	{
+		switch(Action)
+		{
+		case CAdminPanel::EAction::SAY:
+			return Localize("Say");
+		case CAdminPanel::EAction::SAY_TEAM:
+			return Localize("Say team");
+		case CAdminPanel::EAction::BROADCAST:
+			return Localize("Broadcast");
+		case CAdminPanel::EAction::MUTE:
+			return Localize("Mute");
+		case CAdminPanel::EAction::BAN:
+			return Localize("Ban");
+		case CAdminPanel::EAction::KICK:
+			return Localize("Kick");
+		case CAdminPanel::EAction::RESPAWN:
+			return Localize("Respawn");
+		case CAdminPanel::EAction::FORCE_PAUSE:
+			return Localize("Force pause");
+		case CAdminPanel::EAction::NONE:
+			break;
+		}
+		return "";
+	}
+
+	const char *DirectActionLabel(const char *pCommand, CButtonContainer *pButton, CButtonContainer *pVoteMuteButton, CButtonContainer *pTeleportButton, CButtonContainer *pTeleportToPlayerButton, CButtonContainer *pSpectateButton, CButtonContainer *pUnspectateButton)
+	{
+		if(str_comp(pCommand, "unmuteid") == 0)
+			return Localize("Unmute");
+		if(pButton == pVoteMuteButton)
+			return Localize("Vote mute (10 min)");
+		if(str_comp(pCommand, "vote_unmuteid") == 0)
+			return Localize("Vote unmute");
+		if(pButton == pTeleportButton)
+			return Localize("Teleport to me");
+		if(pButton == pTeleportToPlayerButton)
+			return Localize("Teleport to player");
+		if(str_comp(pCommand, "force_unpause") == 0)
+			return Localize("Force unpause");
+		if(pButton == pSpectateButton)
+			return Localize("Move to spectators");
+		if(pButton == pUnspectateButton)
+			return Localize("Return to game");
+		return "";
+	}
 } // namespace
 
 CAdminPanel::CAdminPanel()
@@ -744,7 +744,8 @@ void CAdminPanel::RenderPlayersTab(CUIRect View)
 				Label.VSplitRight(Label.h, &NameRect, &AuthRect);
 				Ui()->DoLabel(&NameRect, GameClient()->m_aClients[aPlayerIds[i]].m_aName, 13.0f, TEXTALIGN_ML);
 				TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-				TextRender()->TextColor(PlayerAuth == AUTHED_ADMIN ? ColorRGBA(1.0f, 0.7f, 0.2f, 1.0f) : PlayerAuth == AUTHED_MOD ? ColorRGBA(0.4f, 0.8f, 1.0f, 1.0f) : ColorRGBA(0.5f, 1.0f, 0.5f, 1.0f));
+				TextRender()->TextColor(PlayerAuth == AUTHED_ADMIN ? ColorRGBA(1.0f, 0.7f, 0.2f, 1.0f) : PlayerAuth == AUTHED_MOD ? ColorRGBA(0.4f, 0.8f, 1.0f, 1.0f) :
+																		    ColorRGBA(0.5f, 1.0f, 0.5f, 1.0f));
 				Ui()->DoLabel(&AuthRect, FontIcon::LOCK, AuthRect.h * 0.65f, TEXTALIGN_MC);
 				TextRender()->TextColor(TextRender()->DefaultTextColor());
 				TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
@@ -1122,7 +1123,9 @@ void CAdminPanel::RenderPanel(const CUIRect &Screen)
 	if(Client()->RconAuthed())
 	{
 		const int LocalAuth = LocalAuthLevel();
-		const char *pAuth = LocalAuth == AUTHED_ADMIN ? Localize("Admin") : LocalAuth == AUTHED_MOD ? Localize("Moderator") : LocalAuth == AUTHED_HELPER ? Localize("Helper") : Localize("RCON");
+		const char *pAuth = LocalAuth == AUTHED_ADMIN ? Localize("Admin") : LocalAuth == AUTHED_MOD ? Localize("Moderator") :
+									    LocalAuth == AUTHED_HELPER      ? Localize("Helper") :
+													      Localize("RCON");
 		CUIRect LogoutButton;
 		HeaderRight.VSplitRight(100.0f, &HeaderRight, &LogoutButton);
 		HeaderRight.VSplitRight(8.0f, &HeaderRight, nullptr);

@@ -10,9 +10,11 @@
 #include <engine/shared/config.h>
 
 #if defined(CONF_FAMILY_WINDOWS)
+// clang-format off
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <processthreadsapi.h>
+// clang-format on
 
 static bool IsDiscordProcessName(const wchar_t *pProcessName)
 {

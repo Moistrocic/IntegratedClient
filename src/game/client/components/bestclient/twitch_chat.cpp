@@ -15,37 +15,37 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cinttypes>
 #include <chrono>
+#include <cinttypes>
 
 namespace
 {
-constexpr ColorRGBA TWITCH_CHAT_COLOR = ColorRGBA(0.35f, 0.65f, 1.0f, 1.0f);
-constexpr const char *TWITCH_IRC_HOST = "irc.chat.twitch.tv";
-constexpr int TWITCH_IRC_PORT = 6667;
-constexpr int TWITCH_ANONYMOUS_SESSION_SECONDS = 20;
-constexpr int TWITCH_IDLE_PING_SECONDS = 240;
-constexpr int TWITCH_RESPONSE_TIMEOUT_SECONDS = 30;
+	constexpr ColorRGBA TWITCH_CHAT_COLOR = ColorRGBA(0.35f, 0.65f, 1.0f, 1.0f);
+	constexpr const char *TWITCH_IRC_HOST = "irc.chat.twitch.tv";
+	constexpr int TWITCH_IRC_PORT = 6667;
+	constexpr int TWITCH_ANONYMOUS_SESSION_SECONDS = 20;
+	constexpr int TWITCH_IDLE_PING_SECONDS = 240;
+	constexpr int TWITCH_RESPONSE_TIMEOUT_SECONDS = 30;
 
-bool SendAll(NETSOCKET Socket, const char *pData, int Size)
-{
-	int SentTotal = 0;
-	while(SentTotal < Size)
+	bool SendAll(NETSOCKET Socket, const char *pData, int Size)
 	{
-		const int Sent = net_tcp_send(Socket, pData + SentTotal, Size - SentTotal);
-		if(Sent <= 0)
-			return false;
-		SentTotal += Sent;
+		int SentTotal = 0;
+		while(SentTotal < Size)
+		{
+			const int Sent = net_tcp_send(Socket, pData + SentTotal, Size - SentTotal);
+			if(Sent <= 0)
+				return false;
+			SentTotal += Sent;
+		}
+		return true;
 	}
-	return true;
-}
 
-bool SendLine(NETSOCKET Socket, const char *pLine)
-{
-	char aBuf[512];
-	str_format(aBuf, sizeof(aBuf), "%s\r\n", pLine);
-	return SendAll(Socket, aBuf, str_length(aBuf));
-}
+	bool SendLine(NETSOCKET Socket, const char *pLine)
+	{
+		char aBuf[512];
+		str_format(aBuf, sizeof(aBuf), "%s\r\n", pLine);
+		return SendAll(Socket, aBuf, str_length(aBuf));
+	}
 }
 
 void CTwitchChat::OnUpdate()

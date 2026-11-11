@@ -9,19 +9,19 @@
 namespace BestClientVisualizer
 {
 
-class IVisualizerSource
-{
-public:
-	virtual ~IVisualizerSource() = default;
+	class IVisualizerSource
+	{
+	public:
+		virtual ~IVisualizerSource() = default;
 
-	virtual void SetPlaybackHint(const SVisualizerPlaybackHint &Hint) = 0;
-	virtual void SetConfig(const SVisualizerConfig &Config) = 0;
-	virtual bool PollFrame(SVisualizerFrame &OutFrame) = 0;
-};
+		virtual void SetPlaybackHint(const SVisualizerPlaybackHint &Hint) = 0;
+		virtual void SetConfig(const SVisualizerConfig &Config) = 0;
+		virtual bool PollFrame(SVisualizerFrame &OutFrame) = 0;
+	};
 
-std::unique_ptr<IVisualizerSource> CreatePulseVisualizerSource();
-std::unique_ptr<IVisualizerSource> CreateWasapiVisualizerSource();
-std::unique_ptr<IVisualizerSource> CreatePassiveVisualizerSource();
+	std::unique_ptr<IVisualizerSource> CreatePulseVisualizerSource();
+	std::unique_ptr<IVisualizerSource> CreateWasapiVisualizerSource();
+	std::unique_ptr<IVisualizerSource> CreatePassiveVisualizerSource();
 
 } // namespace BestClientVisualizer
 

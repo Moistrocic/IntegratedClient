@@ -23,8 +23,9 @@
 
 #include <algorithm>
 // bestclient
-#include <cmath>
 #include <game/client/components/bestclient/motion_blur.h>
+
+#include <cmath>
 // bestclient
 #include <array>
 #include <condition_variable>

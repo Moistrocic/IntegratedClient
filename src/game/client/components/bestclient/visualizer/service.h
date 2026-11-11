@@ -9,23 +9,23 @@
 namespace BestClientVisualizer
 {
 
-class IVisualizerSource;
+	class IVisualizerSource;
 
-class CRealtimeMusicVisualizer
-{
-	std::unique_ptr<IVisualizerSource> m_pSource;
-	SVisualizerConfig m_Config;
-	bool m_ConfigInitialized = false;
+	class CRealtimeMusicVisualizer
+	{
+		std::unique_ptr<IVisualizerSource> m_pSource;
+		SVisualizerConfig m_Config;
+		bool m_ConfigInitialized = false;
 
-	void RefreshConfig();
+		void RefreshConfig();
 
-public:
-	CRealtimeMusicVisualizer();
-	~CRealtimeMusicVisualizer();
+	public:
+		CRealtimeMusicVisualizer();
+		~CRealtimeMusicVisualizer();
 
-	void SetPlaybackHint(const SVisualizerPlaybackHint &Hint);
-	bool PollFrame(SVisualizerFrame &OutFrame);
-};
+		void SetPlaybackHint(const SVisualizerPlaybackHint &Hint);
+		bool PollFrame(SVisualizerFrame &OutFrame);
+	};
 
 } // namespace BestClientVisualizer
 

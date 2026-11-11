@@ -140,7 +140,6 @@ public:
 
 
 def gen_network_source():
-
 	print("""\
 #include "protocol.h"
 

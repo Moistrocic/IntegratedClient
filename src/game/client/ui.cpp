@@ -1165,9 +1165,7 @@ int CUi::DoButton_Menu(CUIElement &UIElement, const CButtonContainer *pId, const
 	}
 
 	// bestclient
-	const bool UseLiveGradient = Props.m_ShowDropDownIcon
-		? BestClientUiTheme::IsCustomUiDropdown() && BestClientUiTheme::DropdownGrad()
-		: BestClientUiTheme::IsCustomUiButton() && BestClientUiTheme::ButtonGrad();
+	const bool UseLiveGradient = Props.m_ShowDropDownIcon ? BestClientUiTheme::IsCustomUiDropdown() && BestClientUiTheme::DropdownGrad() : BestClientUiTheme::IsCustomUiButton() && BestClientUiTheme::ButtonGrad();
 	if(UseLiveGradient)
 	{
 		const bool Accent = CheckActiveItem(pId) || HotItem() == pId || Props.m_Checked;

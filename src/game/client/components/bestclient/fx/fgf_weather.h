@@ -1,13 +1,14 @@
 /* Copyright © 2026 BestProject Team */
-#ifndef GAME_CLIENT_COMPONENTS_FGF_WEATHER_H
-#define GAME_CLIENT_COMPONENTS_FGF_WEATHER_H
+#ifndef GAME_CLIENT_COMPONENTS_BESTCLIENT_FX_FGF_WEATHER_H
+#define GAME_CLIENT_COMPONENTS_BESTCLIENT_FX_FGF_WEATHER_H
+#include "fgf_glow.h"
+
 #include <base/color.h>
 #include <base/vmath.h>
 
 #include <engine/graphics.h>
 
 #include <game/client/component.h>
-#include "fgf_glow.h"
 
 #include <vector>
 

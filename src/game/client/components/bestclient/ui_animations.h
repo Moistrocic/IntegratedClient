@@ -19,156 +19,156 @@
 
 namespace BCUiAnimations
 {
-inline bool Enabled()
-{
-	return g_Config.m_BcAnimations != 0;
-}
-
-inline bool SettingsUiAnimationEnabled()
-{
-	return Enabled() && g_Config.m_BcModuleUiRevealAnimation != 0;
-}
-
-inline float Clamp01(float v)
-{
-	return std::clamp(v, 0.0f, 1.0f);
-}
-
-inline float MsToSeconds(int Ms)
-{
-	return std::max(0, Ms) / 1000.0f;
-}
-
-inline float EaseInOutQuad(float t)
-{
-	t = Clamp01(t);
-	if(t < 0.5f)
-		return 2.0f * t * t;
-	return 1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) / 2.0f;
-}
-
-inline float EaseOutCubic(float t)
-{
-	t = Clamp01(t);
-	const float Inv = 1.0f - t;
-	return 1.0f - Inv * Inv * Inv;
-}
-
-inline float UpdatePhase(float &Phase, float Target, float Dt, float DurationSeconds)
-{
-	Target = Clamp01(Target);
-	if(DurationSeconds <= 0.0f || Dt <= 0.0f)
+	inline bool Enabled()
 	{
-		Phase = Target;
+		return g_Config.m_BcAnimations != 0;
+	}
+
+	inline bool SettingsUiAnimationEnabled()
+	{
+		return Enabled() && g_Config.m_BcModuleUiRevealAnimation != 0;
+	}
+
+	inline float Clamp01(float v)
+	{
+		return std::clamp(v, 0.0f, 1.0f);
+	}
+
+	inline float MsToSeconds(int Ms)
+	{
+		return std::max(0, Ms) / 1000.0f;
+	}
+
+	inline float EaseInOutQuad(float t)
+	{
+		t = Clamp01(t);
+		if(t < 0.5f)
+			return 2.0f * t * t;
+		return 1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) / 2.0f;
+	}
+
+	inline float EaseOutCubic(float t)
+	{
+		t = Clamp01(t);
+		const float Inv = 1.0f - t;
+		return 1.0f - Inv * Inv * Inv;
+	}
+
+	inline float UpdatePhase(float &Phase, float Target, float Dt, float DurationSeconds)
+	{
+		Target = Clamp01(Target);
+		if(DurationSeconds <= 0.0f || Dt <= 0.0f)
+		{
+			Phase = Target;
+			return Phase;
+		}
+
+		const float Speed = 1.0f / DurationSeconds;
+		if(Phase < Target)
+			Phase = std::min(Target, Phase + Dt * Speed);
+		else if(Phase > Target)
+			Phase = std::max(Target, Phase - Dt * Speed);
 		return Phase;
 	}
 
-	const float Speed = 1.0f / DurationSeconds;
-	if(Phase < Target)
-		Phase = std::min(Target, Phase + Dt * Speed);
-	else if(Phase > Target)
-		Phase = std::max(Target, Phase - Dt * Speed);
-	return Phase;
-}
-
-inline void UpdateModuleRevealPhase(float &Phase, bool Expanded, float Dt)
-{
-	if(SettingsUiAnimationEnabled())
-		UpdatePhase(Phase, Expanded ? 1.0f : 0.0f, Dt, MsToSeconds(g_Config.m_BcModuleUiRevealAnimationMs));
-	else
-		Phase = Expanded ? 1.0f : 0.0f;
-}
-
-inline float ModuleReveal(float &Phase, bool Expanded, float TargetHeight, float Dt)
-{
-	UpdateModuleRevealPhase(Phase, Expanded, Dt);
-	return TargetHeight * EaseOutCubic(Phase);
-}
-
-inline float ModuleReveal(float &Phase, bool Expanded, float TargetHeight, float Dt, float DurationSeconds)
-{
-	if(SettingsUiAnimationEnabled())
-		UpdatePhase(Phase, Expanded ? 1.0f : 0.0f, Dt, DurationSeconds);
-	else
-		Phase = Expanded ? 1.0f : 0.0f;
-	return TargetHeight * EaseOutCubic(Phase);
-}
-
-struct STabSwitch
-{
-	float m_Progress = 1.0f;
-	int m_FromIndex = 0;
-	int m_ToIndex = 0;
-};
-
-inline STabSwitch AnimateTabSwitch(int SelectedIndex, int Count, float DeltaTime, int Channel = 0)
-{
-	STabSwitch Result;
-	if(Count <= 0)
-		return Result;
-
-	struct STabSwitchAnimState
+	inline void UpdateModuleRevealPhase(float &Phase, bool Expanded, float Dt)
 	{
-		bool m_Initialized = false;
-		int m_FromTab = 0;
-		int m_ToTab = 0;
+		if(SettingsUiAnimationEnabled())
+			UpdatePhase(Phase, Expanded ? 1.0f : 0.0f, Dt, MsToSeconds(g_Config.m_BcModuleUiRevealAnimationMs));
+		else
+			Phase = Expanded ? 1.0f : 0.0f;
+	}
+
+	inline float ModuleReveal(float &Phase, bool Expanded, float TargetHeight, float Dt)
+	{
+		UpdateModuleRevealPhase(Phase, Expanded, Dt);
+		return TargetHeight * EaseOutCubic(Phase);
+	}
+
+	inline float ModuleReveal(float &Phase, bool Expanded, float TargetHeight, float Dt, float DurationSeconds)
+	{
+		if(SettingsUiAnimationEnabled())
+			UpdatePhase(Phase, Expanded ? 1.0f : 0.0f, Dt, DurationSeconds);
+		else
+			Phase = Expanded ? 1.0f : 0.0f;
+		return TargetHeight * EaseOutCubic(Phase);
+	}
+
+	struct STabSwitch
+	{
 		float m_Progress = 1.0f;
+		int m_FromIndex = 0;
+		int m_ToIndex = 0;
 	};
-	static STabSwitchAnimState s_aAnimState[2];
-	Channel = std::clamp(Channel, 0, 1);
-	STabSwitchAnimState &AnimState = s_aAnimState[Channel];
 
-	SelectedIndex = std::clamp(SelectedIndex, 0, Count - 1);
-	if(!AnimState.m_Initialized)
+	inline STabSwitch AnimateTabSwitch(int SelectedIndex, int Count, float DeltaTime, int Channel = 0)
 	{
-		AnimState.m_Initialized = true;
-		AnimState.m_FromTab = SelectedIndex;
-		AnimState.m_ToTab = SelectedIndex;
-		AnimState.m_Progress = 1.0f;
-	}
-	if(SelectedIndex != AnimState.m_ToTab)
-	{
-		AnimState.m_FromTab = AnimState.m_ToTab;
-		AnimState.m_ToTab = SelectedIndex;
-		AnimState.m_Progress = 0.0f;
-	}
-	AnimState.m_FromTab = std::clamp(AnimState.m_FromTab, 0, Count - 1);
-	AnimState.m_ToTab = std::clamp(AnimState.m_ToTab, 0, Count - 1);
+		STabSwitch Result;
+		if(Count <= 0)
+			return Result;
 
-	if(!SettingsUiAnimationEnabled())
-	{
-		AnimState.m_FromTab = SelectedIndex;
-		AnimState.m_ToTab = SelectedIndex;
-		AnimState.m_Progress = 1.0f;
-	}
-	else if(AnimState.m_Progress < 1.0f)
-	{
-		const float Step = std::clamp(DeltaTime * 12.0f, 0.0f, 1.0f);
-		AnimState.m_Progress += (1.0f - AnimState.m_Progress) * Step;
-		if(AnimState.m_Progress > 0.995f)
+		struct STabSwitchAnimState
+		{
+			bool m_Initialized = false;
+			int m_FromTab = 0;
+			int m_ToTab = 0;
+			float m_Progress = 1.0f;
+		};
+		static STabSwitchAnimState s_aAnimState[2];
+		Channel = std::clamp(Channel, 0, 1);
+		STabSwitchAnimState &AnimState = s_aAnimState[Channel];
+
+		SelectedIndex = std::clamp(SelectedIndex, 0, Count - 1);
+		if(!AnimState.m_Initialized)
+		{
+			AnimState.m_Initialized = true;
+			AnimState.m_FromTab = SelectedIndex;
+			AnimState.m_ToTab = SelectedIndex;
 			AnimState.m_Progress = 1.0f;
+		}
+		if(SelectedIndex != AnimState.m_ToTab)
+		{
+			AnimState.m_FromTab = AnimState.m_ToTab;
+			AnimState.m_ToTab = SelectedIndex;
+			AnimState.m_Progress = 0.0f;
+		}
+		AnimState.m_FromTab = std::clamp(AnimState.m_FromTab, 0, Count - 1);
+		AnimState.m_ToTab = std::clamp(AnimState.m_ToTab, 0, Count - 1);
+
+		if(!SettingsUiAnimationEnabled())
+		{
+			AnimState.m_FromTab = SelectedIndex;
+			AnimState.m_ToTab = SelectedIndex;
+			AnimState.m_Progress = 1.0f;
+		}
+		else if(AnimState.m_Progress < 1.0f)
+		{
+			const float Step = std::clamp(DeltaTime * 12.0f, 0.0f, 1.0f);
+			AnimState.m_Progress += (1.0f - AnimState.m_Progress) * Step;
+			if(AnimState.m_Progress > 0.995f)
+				AnimState.m_Progress = 1.0f;
+		}
+
+		Result.m_Progress = AnimState.m_Progress;
+		Result.m_FromIndex = AnimState.m_FromTab;
+		Result.m_ToIndex = AnimState.m_ToTab;
+		return Result;
 	}
 
-	Result.m_Progress = AnimState.m_Progress;
-	Result.m_FromIndex = AnimState.m_FromTab;
-	Result.m_ToIndex = AnimState.m_ToTab;
-	return Result;
-}
+	inline void TabSwitchContentOffsets(float Progress, int FromIndex, int ToIndex, float Width, float &FromOffset, float &ToOffset)
+	{
+		const float Eased = EaseOutCubic(Progress);
+		const float SlideDistance = Width + 6.0f;
+		const int Direction = ToIndex >= FromIndex ? 1 : -1;
+		FromOffset = -Direction * Eased * SlideDistance;
+		ToOffset = Direction * (1.0f - Eased) * SlideDistance;
+	}
 
-inline void TabSwitchContentOffsets(float Progress, int FromIndex, int ToIndex, float Width, float &FromOffset, float &ToOffset)
-{
-	const float Eased = EaseOutCubic(Progress);
-	const float SlideDistance = Width + 6.0f;
-	const int Direction = ToIndex >= FromIndex ? 1 : -1;
-	FromOffset = -Direction * Eased * SlideDistance;
-	ToOffset = Direction * (1.0f - Eased) * SlideDistance;
-}
-
-inline ColorRGBA MultiplyAlpha(ColorRGBA Color, float AlphaMul)
-{
-	Color.a *= AlphaMul;
-	return Color;
-}
+	inline ColorRGBA MultiplyAlpha(ColorRGBA Color, float AlphaMul)
+	{
+		Color.a *= AlphaMul;
+		return Color;
+	}
 } // namespace BCUiAnimations
 
 #define BC_MODULE_REVEAL(Expanded, TargetHeight, Dt) \

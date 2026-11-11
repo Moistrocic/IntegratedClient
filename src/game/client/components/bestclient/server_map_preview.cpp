@@ -16,9 +16,9 @@
 #include <game/client/components/envelope_state.h>
 #include <game/client/components/mapimages.h>
 #include <game/client/gameclient.h>
-#include <game/map/map_renderer.h>
 #include <game/layers.h>
 #include <game/localization.h>
+#include <game/map/map_renderer.h>
 #include <game/mapitems.h>
 
 #include <algorithm>
@@ -30,204 +30,204 @@
 
 namespace
 {
-constexpr float ZOOM_MIN = 0.08f;
-constexpr float ZOOM_MAX = 2.0f;
-constexpr float ZOOM_STEP = 1.15f;
-constexpr float CORNER_RADIUS = 12.0f;
-constexpr float EXPAND_SECONDS = 0.35f;
-constexpr float HEIGHT_MIN = 72.0f;
-constexpr float HEIGHT_MAX = 420.0f;
-constexpr float RESIZE_GRIP = 16.0f;
-constexpr int MAX_CACHED_MAPS = 4;
-constexpr int64_t MAX_MAP_BYTES = 64ll * 1024 * 1024;
-constexpr int64_t MAX_MAPINFO_BYTES = 8ll * 1024 * 1024;
-constexpr int MAX_MAPINFO_ENTRIES = 50000;
-const char *const MAPINFO_URL = "https://ddnet.org/releases/maps.json";
+	constexpr float ZOOM_MIN = 0.08f;
+	constexpr float ZOOM_MAX = 2.0f;
+	constexpr float ZOOM_STEP = 1.15f;
+	constexpr float CORNER_RADIUS = 12.0f;
+	constexpr float EXPAND_SECONDS = 0.35f;
+	constexpr float HEIGHT_MIN = 72.0f;
+	constexpr float HEIGHT_MAX = 420.0f;
+	constexpr float RESIZE_GRIP = 16.0f;
+	constexpr int MAX_CACHED_MAPS = 4;
+	constexpr int64_t MAX_MAP_BYTES = 64ll * 1024 * 1024;
+	constexpr int64_t MAX_MAPINFO_BYTES = 8ll * 1024 * 1024;
+	constexpr int MAX_MAPINFO_ENTRIES = 50000;
+	const char *const MAPINFO_URL = "https://ddnet.org/releases/maps.json";
 
-class CPreviewViewport
-{
-	IGraphics *m_pGraphics;
-	bool m_Pushed = false;
-
-public:
-	explicit CPreviewViewport(IGraphics *pGraphics) :
-		m_pGraphics(pGraphics) {}
-
-	~CPreviewViewport()
+	class CPreviewViewport
 	{
-		if(m_Pushed)
-			m_pGraphics->PopPreviewViewport();
-	}
+		IGraphics *m_pGraphics;
+		bool m_Pushed = false;
 
-	void Push(int X, int Y, int W, int H)
-	{
-		m_pGraphics->PushPreviewViewport(X, Y, W, H);
-		m_Pushed = true;
-	}
-};
+	public:
+		explicit CPreviewViewport(IGraphics *pGraphics) :
+			m_pGraphics(pGraphics) {}
 
-void DrawOutsideRoundedCorners(IGraphics *pGraphics, float x, float y, float w, float h, float r, ColorRGBA Color)
-{
-	if(r <= 0.0f || w < r * 2.0f || h < r * 2.0f)
-		return;
-
-	const int NumSegments = 8;
-	IGraphics::CFreeformItem aItems[NumSegments * 4];
-	int Num = 0;
-	const float Step = pi / 2.0f / NumSegments;
-	for(int i = 0; i < NumSegments; i++)
-	{
-		const float A0 = i * Step;
-		const float A1 = (i + 1) * Step;
-		const float C0 = std::cos(A0);
-		const float S0 = std::sin(A0);
-		const float C1 = std::cos(A1);
-		const float S1 = std::sin(A1);
-		const float Ax0 = x + (1.0f - C0) * r;
-		const float Ay0 = y + (1.0f - S0) * r;
-		const float Ax1 = x + (1.0f - C1) * r;
-		const float Ay1 = y + (1.0f - S1) * r;
-		aItems[Num++] = IGraphics::CFreeformItem(x, y, Ax0, Ay0, Ax1, Ay1, Ax1, Ay1);
-		aItems[Num++] = IGraphics::CFreeformItem(x + w, y, x + w - (Ax0 - x), Ay0, x + w - (Ax1 - x), Ay1, x + w - (Ax1 - x), Ay1);
-		aItems[Num++] = IGraphics::CFreeformItem(x, y + h, Ax0, y + h - (Ay0 - y), Ax1, y + h - (Ay1 - y), Ax1, y + h - (Ay1 - y));
-		aItems[Num++] = IGraphics::CFreeformItem(x + w, y + h, x + w - (Ax0 - x), y + h - (Ay0 - y), x + w - (Ax1 - x), y + h - (Ay1 - y), x + w - (Ax1 - x), y + h - (Ay1 - y));
-	}
-
-	pGraphics->TextureClear();
-	pGraphics->QuadsBegin();
-	pGraphics->SetColor(Color);
-	pGraphics->QuadsDrawFreeform(aItems, Num);
-	pGraphics->QuadsEnd();
-}
-
-float ZoomForView(float Aspect, float WorldH)
-{
-	const float Amount = 1150.0f * 1000.0f;
-	const float WMax = 1500.0f;
-	const float HMax = 1050.0f;
-	const float SafeAspect = std::max(Aspect, 0.001f);
-	const float Div = std::sqrt(Amount) / std::sqrt(SafeAspect);
-	float PreW = Div * SafeAspect;
-	float PreH = Div;
-	if(PreW > WMax)
-	{
-		PreW = WMax;
-		PreH = PreW / SafeAspect;
-	}
-	if(PreH > HMax)
-	{
-		PreH = HMax;
-		PreW = PreH * SafeAspect;
-	}
-	if(PreH <= 0.0f)
-		return 1.0f;
-	return std::max(WorldH / PreH, 0.05f);
-}
-
-void DrawGripStroke(IGraphics::CFreeformItem *pItem, float X0, float Y0, float X1, float Y1, float Thick)
-{
-	const float Dx = X1 - X0;
-	const float Dy = Y1 - Y0;
-	const float Len = std::sqrt(Dx * Dx + Dy * Dy);
-	const float Nx = -Dy / Len * Thick * 0.5f;
-	const float Ny = Dx / Len * Thick * 0.5f;
-	*pItem = IGraphics::CFreeformItem(X0 + Nx, Y0 + Ny, X1 + Nx, Y1 + Ny, X0 - Nx, Y0 - Ny, X1 - Nx, Y1 - Ny);
-}
-
-void DrawResizeGrip(IGraphics *pGraphics, float Right, float Bottom)
-{
-	IGraphics::CFreeformItem aItems[3];
-	const float Pad = 2.5f;
-	const float Step = 3.8f;
-	for(int i = 0; i < 3; i++)
-	{
-		const float Dist = Pad + (i + 1) * Step;
-		DrawGripStroke(&aItems[i], Right - Dist, Bottom - Pad, Right - Pad, Bottom - Dist, 1.45f);
-	}
-	pGraphics->TextureClear();
-	pGraphics->QuadsBegin();
-	pGraphics->SetColor(0.22f, 0.22f, 0.24f, 0.95f);
-	pGraphics->QuadsDrawFreeform(aItems, 3);
-	pGraphics->QuadsEnd();
-}
-
-ColorRGBA CategoryColor(const char *pCategory)
-{
-	if(str_comp_nocase(pCategory, "Novice") == 0)
-		return ColorRGBA(0.35f, 0.95f, 0.45f, 1.0f);
-	if(str_comp_nocase(pCategory, "Moderate") == 0)
-		return ColorRGBA(0.95f, 0.85f, 0.25f, 1.0f);
-	if(str_comp_nocase(pCategory, "Brutal") == 0)
-		return ColorRGBA(1.0f, 0.55f, 0.15f, 1.0f);
-	if(str_comp_nocase(pCategory, "Insane") == 0)
-		return ColorRGBA(1.0f, 0.25f, 0.35f, 1.0f);
-	if(str_comp_nocase(pCategory, "Dummy") == 0)
-		return ColorRGBA(0.35f, 0.75f, 1.0f, 1.0f);
-	if(str_comp_nocase(pCategory, "Solo") == 0)
-		return ColorRGBA(0.85f, 0.45f, 1.0f, 1.0f);
-	if(str_comp_nocase(pCategory, "DDmax") == 0)
-		return ColorRGBA(0.25f, 0.9f, 0.85f, 1.0f);
-	if(str_comp_nocase(pCategory, "Oldschool") == 0)
-		return ColorRGBA(0.75f, 0.75f, 0.75f, 1.0f);
-	if(str_comp_nocase(pCategory, "Race") == 0)
-		return ColorRGBA(0.45f, 0.9f, 0.55f, 1.0f);
-	if(str_comp_nocase(pCategory, "Block") == 0)
-		return ColorRGBA(1.0f, 0.4f, 0.4f, 1.0f);
-	if(str_comp_nocase(pCategory, "Fun") == 0)
-		return ColorRGBA(0.95f, 0.55f, 0.95f, 1.0f);
-	return ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
-}
-
-float DoZoomHandle(CUi *pUi, const void *pId, const CUIRect &Hit, float Current, CUIRect *pHandle)
-{
-	Current = std::clamp(Current, 0.0f, 1.0f);
-	const float HandleH = std::min(26.0f, std::max(12.0f, Hit.h * 0.28f));
-	const float HandleW = std::min(6.0f, Hit.w);
-	CUIRect Handle;
-	Handle.w = HandleW;
-	Handle.h = HandleH;
-	Handle.x = Hit.x + (Hit.w - Handle.w) * 0.5f;
-	const float Travel = std::max(1.0f, Hit.h - Handle.h);
-	Handle.y = Hit.y + Travel * Current;
-
-	static float s_GrabOffset = 0.0f;
-	bool Grabbed = false;
-	if(pUi->CheckActiveItem(pId))
-	{
-		if(pUi->MouseButton(0))
-			Grabbed = true;
-		else
-			pUi->SetActiveItem(nullptr);
-	}
-	else if(pUi->HotItem() == pId)
-	{
-		if(pUi->MouseHovered(&Handle) && pUi->MouseButton(0))
+		~CPreviewViewport()
 		{
-			pUi->SetActiveItem(pId);
-			s_GrabOffset = pUi->MouseY() - Handle.y;
-			Grabbed = true;
+			if(m_Pushed)
+				m_pGraphics->PopPreviewViewport();
 		}
-		else if(pUi->MouseButtonClicked(0))
-		{
-			pUi->SetActiveItem(pId);
-			s_GrabOffset = Handle.h * 0.5f;
-			Grabbed = true;
-		}
-	}
-	if(pUi->MouseHovered(&Hit) && !pUi->MouseButton(0))
-		pUi->SetHotItem(pId);
 
-	if(Grabbed)
+		void Push(int X, int Y, int W, int H)
+		{
+			m_pGraphics->PushPreviewViewport(X, Y, W, H);
+			m_Pushed = true;
+		}
+	};
+
+	void DrawOutsideRoundedCorners(IGraphics *pGraphics, float x, float y, float w, float h, float r, ColorRGBA Color)
 	{
-		const float Cur = pUi->MouseY() - s_GrabOffset;
-		Current = std::clamp((Cur - Hit.y) / Travel, 0.0f, 1.0f);
+		if(r <= 0.0f || w < r * 2.0f || h < r * 2.0f)
+			return;
+
+		const int NumSegments = 8;
+		IGraphics::CFreeformItem aItems[NumSegments * 4];
+		int Num = 0;
+		const float Step = pi / 2.0f / NumSegments;
+		for(int i = 0; i < NumSegments; i++)
+		{
+			const float A0 = i * Step;
+			const float A1 = (i + 1) * Step;
+			const float C0 = std::cos(A0);
+			const float S0 = std::sin(A0);
+			const float C1 = std::cos(A1);
+			const float S1 = std::sin(A1);
+			const float Ax0 = x + (1.0f - C0) * r;
+			const float Ay0 = y + (1.0f - S0) * r;
+			const float Ax1 = x + (1.0f - C1) * r;
+			const float Ay1 = y + (1.0f - S1) * r;
+			aItems[Num++] = IGraphics::CFreeformItem(x, y, Ax0, Ay0, Ax1, Ay1, Ax1, Ay1);
+			aItems[Num++] = IGraphics::CFreeformItem(x + w, y, x + w - (Ax0 - x), Ay0, x + w - (Ax1 - x), Ay1, x + w - (Ax1 - x), Ay1);
+			aItems[Num++] = IGraphics::CFreeformItem(x, y + h, Ax0, y + h - (Ay0 - y), Ax1, y + h - (Ay1 - y), Ax1, y + h - (Ay1 - y));
+			aItems[Num++] = IGraphics::CFreeformItem(x + w, y + h, x + w - (Ax0 - x), y + h - (Ay0 - y), x + w - (Ax1 - x), y + h - (Ay1 - y), x + w - (Ax1 - x), y + h - (Ay1 - y));
+		}
+
+		pGraphics->TextureClear();
+		pGraphics->QuadsBegin();
+		pGraphics->SetColor(Color);
+		pGraphics->QuadsDrawFreeform(aItems, Num);
+		pGraphics->QuadsEnd();
+	}
+
+	float ZoomForView(float Aspect, float WorldH)
+	{
+		const float Amount = 1150.0f * 1000.0f;
+		const float WMax = 1500.0f;
+		const float HMax = 1050.0f;
+		const float SafeAspect = std::max(Aspect, 0.001f);
+		const float Div = std::sqrt(Amount) / std::sqrt(SafeAspect);
+		float PreW = Div * SafeAspect;
+		float PreH = Div;
+		if(PreW > WMax)
+		{
+			PreW = WMax;
+			PreH = PreW / SafeAspect;
+		}
+		if(PreH > HMax)
+		{
+			PreH = HMax;
+			PreW = PreH * SafeAspect;
+		}
+		if(PreH <= 0.0f)
+			return 1.0f;
+		return std::max(WorldH / PreH, 0.05f);
+	}
+
+	void DrawGripStroke(IGraphics::CFreeformItem *pItem, float X0, float Y0, float X1, float Y1, float Thick)
+	{
+		const float Dx = X1 - X0;
+		const float Dy = Y1 - Y0;
+		const float Len = std::sqrt(Dx * Dx + Dy * Dy);
+		const float Nx = -Dy / Len * Thick * 0.5f;
+		const float Ny = Dx / Len * Thick * 0.5f;
+		*pItem = IGraphics::CFreeformItem(X0 + Nx, Y0 + Ny, X1 + Nx, Y1 + Ny, X0 - Nx, Y0 - Ny, X1 - Nx, Y1 - Ny);
+	}
+
+	void DrawResizeGrip(IGraphics *pGraphics, float Right, float Bottom)
+	{
+		IGraphics::CFreeformItem aItems[3];
+		const float Pad = 2.5f;
+		const float Step = 3.8f;
+		for(int i = 0; i < 3; i++)
+		{
+			const float Dist = Pad + (i + 1) * Step;
+			DrawGripStroke(&aItems[i], Right - Dist, Bottom - Pad, Right - Pad, Bottom - Dist, 1.45f);
+		}
+		pGraphics->TextureClear();
+		pGraphics->QuadsBegin();
+		pGraphics->SetColor(0.22f, 0.22f, 0.24f, 0.95f);
+		pGraphics->QuadsDrawFreeform(aItems, 3);
+		pGraphics->QuadsEnd();
+	}
+
+	ColorRGBA CategoryColor(const char *pCategory)
+	{
+		if(str_comp_nocase(pCategory, "Novice") == 0)
+			return ColorRGBA(0.35f, 0.95f, 0.45f, 1.0f);
+		if(str_comp_nocase(pCategory, "Moderate") == 0)
+			return ColorRGBA(0.95f, 0.85f, 0.25f, 1.0f);
+		if(str_comp_nocase(pCategory, "Brutal") == 0)
+			return ColorRGBA(1.0f, 0.55f, 0.15f, 1.0f);
+		if(str_comp_nocase(pCategory, "Insane") == 0)
+			return ColorRGBA(1.0f, 0.25f, 0.35f, 1.0f);
+		if(str_comp_nocase(pCategory, "Dummy") == 0)
+			return ColorRGBA(0.35f, 0.75f, 1.0f, 1.0f);
+		if(str_comp_nocase(pCategory, "Solo") == 0)
+			return ColorRGBA(0.85f, 0.45f, 1.0f, 1.0f);
+		if(str_comp_nocase(pCategory, "DDmax") == 0)
+			return ColorRGBA(0.25f, 0.9f, 0.85f, 1.0f);
+		if(str_comp_nocase(pCategory, "Oldschool") == 0)
+			return ColorRGBA(0.75f, 0.75f, 0.75f, 1.0f);
+		if(str_comp_nocase(pCategory, "Race") == 0)
+			return ColorRGBA(0.45f, 0.9f, 0.55f, 1.0f);
+		if(str_comp_nocase(pCategory, "Block") == 0)
+			return ColorRGBA(1.0f, 0.4f, 0.4f, 1.0f);
+		if(str_comp_nocase(pCategory, "Fun") == 0)
+			return ColorRGBA(0.95f, 0.55f, 0.95f, 1.0f);
+		return ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
+	}
+
+	float DoZoomHandle(CUi *pUi, const void *pId, const CUIRect &Hit, float Current, CUIRect *pHandle)
+	{
+		Current = std::clamp(Current, 0.0f, 1.0f);
+		const float HandleH = std::min(26.0f, std::max(12.0f, Hit.h * 0.28f));
+		const float HandleW = std::min(6.0f, Hit.w);
+		CUIRect Handle;
+		Handle.w = HandleW;
+		Handle.h = HandleH;
+		Handle.x = Hit.x + (Hit.w - Handle.w) * 0.5f;
+		const float Travel = std::max(1.0f, Hit.h - Handle.h);
 		Handle.y = Hit.y + Travel * Current;
-	}
 
-	if(pHandle != nullptr)
-		*pHandle = Handle;
-	return Current;
-}
+		static float s_GrabOffset = 0.0f;
+		bool Grabbed = false;
+		if(pUi->CheckActiveItem(pId))
+		{
+			if(pUi->MouseButton(0))
+				Grabbed = true;
+			else
+				pUi->SetActiveItem(nullptr);
+		}
+		else if(pUi->HotItem() == pId)
+		{
+			if(pUi->MouseHovered(&Handle) && pUi->MouseButton(0))
+			{
+				pUi->SetActiveItem(pId);
+				s_GrabOffset = pUi->MouseY() - Handle.y;
+				Grabbed = true;
+			}
+			else if(pUi->MouseButtonClicked(0))
+			{
+				pUi->SetActiveItem(pId);
+				s_GrabOffset = Handle.h * 0.5f;
+				Grabbed = true;
+			}
+		}
+		if(pUi->MouseHovered(&Hit) && !pUi->MouseButton(0))
+			pUi->SetHotItem(pId);
+
+		if(Grabbed)
+		{
+			const float Cur = pUi->MouseY() - s_GrabOffset;
+			Current = std::clamp((Cur - Hit.y) / Travel, 0.0f, 1.0f);
+			Handle.y = Hit.y + Travel * Current;
+		}
+
+		if(pHandle != nullptr)
+			*pHandle = Handle;
+		return Current;
+	}
 }
 
 struct SPreviewSlot

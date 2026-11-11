@@ -1,19 +1,19 @@
 /* Copyright © 2026 BestProject Team */
 #include "hookrope.h"
 
+#include "hookfire.h"
+#include "hookgrip.h"
+#include "hooklightning.h"
+#include "hookmagic.h"
+#include "hooktentacle.h"
+#include "hooktroll.h"
+#include "own_tee.h"
+
 #include <base/math.h>
 
 #include <engine/shared/config.h>
 
-#include "hookfire.h"
-#include "hooklightning.h"
-#include "hookgrip.h"
-#include "hookmagic.h"
-#include "hooktentacle.h"
-#include "hooktroll.h"
 #include <game/client/gameclient.h>
-
-#include "own_tee.h"
 #include <game/gamecore.h>
 
 #include <algorithm>

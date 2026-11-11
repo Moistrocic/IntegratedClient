@@ -15,18 +15,18 @@
 #include <engine/storage.h>
 #include <engine/textrender.h>
 
-#include <atomic>
-#include <condition_variable>
-#include <memory>
-#include <mutex>
-#include <vector>
-
 #include <generated/client_data.h>
 
 #include <game/client/gameclient.h>
 #include <game/layers.h>
 #include <game/localization.h>
 #include <game/mapitems.h>
+
+#include <atomic>
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <vector>
 
 CMapImages::CMapImages()
 {
@@ -64,46 +64,47 @@ void CMapImages::Unload()
 	}
 }
 
-namespace {
-
-struct SExternalImageTask
+namespace
 {
-	int m_Index = -1;
-	int m_LoadFlag = 0;
-	char m_aPath[IO_MAX_PATH_LENGTH]{};
-	CImageInfo m_ImageInfo{};
-	bool m_Success = false;
-};
 
-struct SJobSync
-{
-	std::atomic<int> m_Remaining{0};
-	std::mutex m_Mutex;
-	std::condition_variable m_Cv;
-};
-
-class CMapImageLoadJob : public IJob
-{
-	IGraphics *m_pGraphics;
-	SExternalImageTask *m_pTask;
-	std::shared_ptr<SJobSync> m_pSync;
-
-public:
-	CMapImageLoadJob(IGraphics *pGraphics, SExternalImageTask *pTask, std::shared_ptr<SJobSync> pSync) :
-		m_pGraphics(pGraphics), m_pTask(pTask), m_pSync(std::move(pSync))
+	struct SExternalImageTask
 	{
-	}
+		int m_Index = -1;
+		int m_LoadFlag = 0;
+		char m_aPath[IO_MAX_PATH_LENGTH]{};
+		CImageInfo m_ImageInfo{};
+		bool m_Success = false;
+	};
 
-	void Run() override
+	struct SJobSync
 	{
-		m_pTask->m_Success = m_pGraphics->LoadPng(m_pTask->m_ImageInfo, m_pTask->m_aPath, IStorage::TYPE_ALL);
-		if(m_pSync->m_Remaining.fetch_sub(1, std::memory_order_acq_rel) == 1)
+		std::atomic<int> m_Remaining{0};
+		std::mutex m_Mutex;
+		std::condition_variable m_Cv;
+	};
+
+	class CMapImageLoadJob : public IJob
+	{
+		IGraphics *m_pGraphics;
+		SExternalImageTask *m_pTask;
+		std::shared_ptr<SJobSync> m_pSync;
+
+	public:
+		CMapImageLoadJob(IGraphics *pGraphics, SExternalImageTask *pTask, std::shared_ptr<SJobSync> pSync) :
+			m_pGraphics(pGraphics), m_pTask(pTask), m_pSync(std::move(pSync))
 		{
-			std::lock_guard<std::mutex> Lock(m_pSync->m_Mutex);
-			m_pSync->m_Cv.notify_one();
 		}
-	}
-};
+
+		void Run() override
+		{
+			m_pTask->m_Success = m_pGraphics->LoadPng(m_pTask->m_ImageInfo, m_pTask->m_aPath, IStorage::TYPE_ALL);
+			if(m_pSync->m_Remaining.fetch_sub(1, std::memory_order_acq_rel) == 1)
+			{
+				std::lock_guard<std::mutex> Lock(m_pSync->m_Mutex);
+				m_pSync->m_Cv.notify_one();
+			}
+		}
+	};
 
 } // namespace
 

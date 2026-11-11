@@ -1,6 +1,5 @@
 /* Copyright © 2026 BestProject Team */
 #include "keybind_map_ui.h"
-
 #include "ui_theme/style.h"
 
 #include <base/color.h>

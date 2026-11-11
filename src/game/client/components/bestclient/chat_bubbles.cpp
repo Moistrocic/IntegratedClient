@@ -12,10 +12,11 @@
 #include <engine/shared/protocol.h>
 #include <engine/textrender.h>
 
+#include <generated/protocol.h>
+
 #include <game/client/components/bestclient/chat_media.h>
 #include <game/client/components/chat.h>
 #include <game/client/gameclient.h>
-#include <generated/protocol.h>
 
 #include <algorithm>
 #include <string>

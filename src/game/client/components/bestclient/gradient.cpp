@@ -17,71 +17,71 @@ void (*BCGradient_ApplyEverythingHook)(CTextCursor *pCursor, const char *pText, 
 
 namespace
 {
-static CBcGradient *s_pActiveGradient = nullptr;
-static CGameClient *s_pGameClient = nullptr;
+	static CBcGradient *s_pActiveGradient = nullptr;
+	static CGameClient *s_pGameClient = nullptr;
 
-static ColorRGBA ConfigColor(unsigned ConfigValue)
-{
-	return color_cast<ColorRGBA>(ColorHSLA(ConfigValue, true));
-}
-
-static void CollectCustomColors(std::vector<ColorRGBA> &vColors)
-{
-	vColors.clear();
-	const int Count = std::clamp(g_Config.m_BcNameplateGradientColorCount, 2, 4);
-	vColors.push_back(ConfigColor(g_Config.m_BcNameplateGradientColor1));
-	vColors.push_back(ConfigColor(g_Config.m_BcNameplateGradientColor2));
-	if(Count >= 3)
-		vColors.push_back(ConfigColor(g_Config.m_BcNameplateGradientColor3));
-	if(Count >= 4)
-		vColors.push_back(ConfigColor(g_Config.m_BcNameplateGradientColor4));
-}
-
-static ColorRGBA SampleColorStops(const std::vector<ColorRGBA> &vColors, float Position)
-{
-	if(vColors.empty())
-		return ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
-	if(vColors.size() == 1)
-		return vColors[0];
-
-	float Wrapped = std::fmod(Position, 1.0f);
-	if(Wrapped < 0.0f)
-		Wrapped += 1.0f;
-
-	const int Count = (int)vColors.size();
-	const float Scaled = Wrapped * Count;
-	const int Index = (int)Scaled % Count;
-	const float LocalT = Scaled - std::floor(Scaled);
-	const ColorRGBA &A = vColors[Index];
-	const ColorRGBA &B = vColors[(Index + 1) % Count];
-	return ColorRGBA(
-		A.r + LocalT * (B.r - A.r),
-		A.g + LocalT * (B.g - A.g),
-		A.b + LocalT * (B.b - A.b),
-		1.0f);
-}
-
-static std::vector<STextColorSplit> BuildMultiColorSplits(const char *pText, const std::function<ColorRGBA(float)> &SampleColor)
-{
-	std::vector<STextColorSplit> vSplits;
-	size_t Size, Count;
-	str_utf8_stats(pText, str_length(pText) + 1, SIZE_MAX, &Size, &Count);
-	if(Count == 0)
-		return vSplits;
-
-	vSplits.reserve(Count);
-	const char *pStr = pText;
-	for(size_t i = 0; i < Count; i++)
+	static ColorRGBA ConfigColor(unsigned ConfigValue)
 	{
-		int ByteOffset = (int)(pStr - pText);
-		const char *pPrev = pStr;
-		str_utf8_decode(&pStr);
-		int ByteLen = (int)(pStr - pPrev);
-		const float t = Count == 1 ? 0.5f : (float)i / (float)(Count - 1);
-		vSplits.emplace_back(ByteOffset, ByteLen, SampleColor(t));
+		return color_cast<ColorRGBA>(ColorHSLA(ConfigValue, true));
 	}
-	return vSplits;
-}
+
+	static void CollectCustomColors(std::vector<ColorRGBA> &vColors)
+	{
+		vColors.clear();
+		const int Count = std::clamp(g_Config.m_BcNameplateGradientColorCount, 2, 4);
+		vColors.push_back(ConfigColor(g_Config.m_BcNameplateGradientColor1));
+		vColors.push_back(ConfigColor(g_Config.m_BcNameplateGradientColor2));
+		if(Count >= 3)
+			vColors.push_back(ConfigColor(g_Config.m_BcNameplateGradientColor3));
+		if(Count >= 4)
+			vColors.push_back(ConfigColor(g_Config.m_BcNameplateGradientColor4));
+	}
+
+	static ColorRGBA SampleColorStops(const std::vector<ColorRGBA> &vColors, float Position)
+	{
+		if(vColors.empty())
+			return ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
+		if(vColors.size() == 1)
+			return vColors[0];
+
+		float Wrapped = std::fmod(Position, 1.0f);
+		if(Wrapped < 0.0f)
+			Wrapped += 1.0f;
+
+		const int Count = (int)vColors.size();
+		const float Scaled = Wrapped * Count;
+		const int Index = (int)Scaled % Count;
+		const float LocalT = Scaled - std::floor(Scaled);
+		const ColorRGBA &A = vColors[Index];
+		const ColorRGBA &B = vColors[(Index + 1) % Count];
+		return ColorRGBA(
+			A.r + LocalT * (B.r - A.r),
+			A.g + LocalT * (B.g - A.g),
+			A.b + LocalT * (B.b - A.b),
+			1.0f);
+	}
+
+	static std::vector<STextColorSplit> BuildMultiColorSplits(const char *pText, const std::function<ColorRGBA(float)> &SampleColor)
+	{
+		std::vector<STextColorSplit> vSplits;
+		size_t Size, Count;
+		str_utf8_stats(pText, str_length(pText) + 1, SIZE_MAX, &Size, &Count);
+		if(Count == 0)
+			return vSplits;
+
+		vSplits.reserve(Count);
+		const char *pStr = pText;
+		for(size_t i = 0; i < Count; i++)
+		{
+			int ByteOffset = (int)(pStr - pText);
+			const char *pPrev = pStr;
+			str_utf8_decode(&pStr);
+			int ByteLen = (int)(pStr - pPrev);
+			const float t = Count == 1 ? 0.5f : (float)i / (float)(Count - 1);
+			vSplits.emplace_back(ByteOffset, ByteLen, SampleColor(t));
+		}
+		return vSplits;
+	}
 } // namespace
 
 bool CBcGradient::AppliesTo(int ClientId, const CGameClient *pGameClient)

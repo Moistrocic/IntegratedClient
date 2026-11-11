@@ -256,7 +256,6 @@ bool CFastPractice::CanEnable() const
 	return true;
 }
 
-
 int CFastPractice::CurrentLocalPracticeId() const
 {
 	if(!m_Enabled)
@@ -302,7 +301,6 @@ bool CFastPractice::ResolvePracticeRoles(int &LocalClientId, int &DummyClientId)
 
 	return true;
 }
-
 
 int CFastPractice::ControlledPracticeId() const
 {
@@ -1208,7 +1206,6 @@ void CFastPractice::MaybePlayHammerHitEffect(CCharacter *pChar)
 	}
 }
 
-
 void CFastPractice::CaptureFrozenTargets()
 {
 	m_aFrozenTargetValid.fill(false);
@@ -1973,8 +1970,6 @@ void CFastPractice::SyncFromPrediction()
 	UpdateFreezeSkinDebounce();
 	UpdateGhostData();
 }
-
-
 
 void CFastPractice::UpdateGhostForClientId(int ClientId, SGhostData &Ghost)
 {

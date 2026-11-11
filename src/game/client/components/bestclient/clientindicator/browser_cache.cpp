@@ -1,5 +1,6 @@
 /* Copyright © 2026 BestProject Team */
 #include "browser_cache.h"
+
 #include "version_label.h"
 
 #include <base/net.h>
@@ -8,140 +9,139 @@
 #include <engine/external/json-parser/json.h>
 
 #include <cstring>
-
 #include <string>
 #include <unordered_map>
 
 namespace
 {
-struct CParsedPlayerInfo
-{
-	bool m_Developer = false;
-	bool m_Fake = false;
-	bool m_Light = false;
-	std::string m_Version;
-};
-
-using TParsedPlayers = std::unordered_map<std::string, std::unordered_map<std::string, CParsedPlayerInfo>>;
-
-static const char *GetStringField(const json_value &Json, const char *pField)
-{
-	const json_value &Field = Json[pField];
-	return Field.type == json_string ? Field.u.string.ptr : nullptr;
-}
-
-static bool GetBoolField(const json_value &Json, const char *pField)
-{
-	const json_value &Field = Json[pField];
-	return Field.type == json_boolean && Field.u.boolean != 0;
-}
-
-static bool NormalizeServerAddress(const char *pAddress, char *pBuffer, int BufferSize)
-{
-	if(!pAddress || pAddress[0] == '\0')
-		return false;
-
-	while(*pAddress != '\0' && str_isspace(*pAddress))
-		++pAddress;
-
-	char aToken[MAX_SERVER_ADDRESSES * NETADDR_MAXSTRSIZE];
-	int Length = 0;
-	while(pAddress[Length] != '\0' && pAddress[Length] != ',')
-		++Length;
-	while(Length > 0 && str_isspace(pAddress[Length - 1]))
-		--Length;
-	str_truncate(aToken, sizeof(aToken), pAddress, Length);
-	if(aToken[0] == '\0')
-		return false;
-
-	NETADDR Addr;
-	if(net_addr_from_url(&Addr, aToken, nullptr, 0) == 0 || net_addr_from_str(&Addr, aToken) == 0)
+	struct CParsedPlayerInfo
 	{
-		net_addr_str(&Addr, pBuffer, BufferSize, true);
+		bool m_Developer = false;
+		bool m_Fake = false;
+		bool m_Light = false;
+		std::string m_Version;
+	};
+
+	using TParsedPlayers = std::unordered_map<std::string, std::unordered_map<std::string, CParsedPlayerInfo>>;
+
+	static const char *GetStringField(const json_value &Json, const char *pField)
+	{
+		const json_value &Field = Json[pField];
+		return Field.type == json_string ? Field.u.string.ptr : nullptr;
+	}
+
+	static bool GetBoolField(const json_value &Json, const char *pField)
+	{
+		const json_value &Field = Json[pField];
+		return Field.type == json_boolean && Field.u.boolean != 0;
+	}
+
+	static bool NormalizeServerAddress(const char *pAddress, char *pBuffer, int BufferSize)
+	{
+		if(!pAddress || pAddress[0] == '\0')
+			return false;
+
+		while(*pAddress != '\0' && str_isspace(*pAddress))
+			++pAddress;
+
+		char aToken[MAX_SERVER_ADDRESSES * NETADDR_MAXSTRSIZE];
+		int Length = 0;
+		while(pAddress[Length] != '\0' && pAddress[Length] != ',')
+			++Length;
+		while(Length > 0 && str_isspace(pAddress[Length - 1]))
+			--Length;
+		str_truncate(aToken, sizeof(aToken), pAddress, Length);
+		if(aToken[0] == '\0')
+			return false;
+
+		NETADDR Addr;
+		if(net_addr_from_url(&Addr, aToken, nullptr, 0) == 0 || net_addr_from_str(&Addr, aToken) == 0)
+		{
+			net_addr_str(&Addr, pBuffer, BufferSize, true);
+			return true;
+		}
+
+		str_copy(pBuffer, aToken, BufferSize);
 		return true;
 	}
 
-	str_copy(pBuffer, aToken, BufferSize);
-	return true;
-}
-
-static void AddPlayer(TParsedPlayers &Map, const char *pServerAddress, const char *pName, bool Developer = false, bool Fake = false, const char *pVersion = nullptr, bool Light = false)
-{
-	if(!pServerAddress || !pName || pServerAddress[0] == '\0' || pName[0] == '\0')
-		return;
-
-	char aNormalizedAddress[MAX_SERVER_ADDRESSES * NETADDR_MAXSTRSIZE];
-	if(!NormalizeServerAddress(pServerAddress, aNormalizedAddress, sizeof(aNormalizedAddress)))
-		return;
-
-	CParsedPlayerInfo &Info = Map[aNormalizedAddress][pName];
-	Info.m_Developer = Info.m_Developer || Developer;
-	Info.m_Fake = Info.m_Fake || Fake;
-	Info.m_Light = Info.m_Light || Light;
-	if(pVersion && pVersion[0] != '\0' && Info.m_Version.empty())
-		Info.m_Version = pVersion;
-}
-
-static void ParsePlayerObject(TParsedPlayers &Map, const char *pServerAddress, const json_value &Player)
-{
-	if(Player.type != json_object)
-		return;
-	const bool Developer = GetBoolField(Player, "developer");
-	const bool Fake = GetBoolField(Player, "fake");
-	const bool Light = GetBoolField(Player, "light");
-	const char *pVersion = GetStringField(Player, "version");
-
-	if(const char *pName = GetStringField(Player, "name"))
+	static void AddPlayer(TParsedPlayers &Map, const char *pServerAddress, const char *pName, bool Developer = false, bool Fake = false, const char *pVersion = nullptr, bool Light = false)
 	{
-		AddPlayer(Map, pServerAddress, pName, Developer, Fake, pVersion, Light);
-		return;
-	}
-	if(const char *pName = GetStringField(Player, "player_name"))
-	{
-		AddPlayer(Map, pServerAddress, pName, Developer, Fake, pVersion, Light);
-		return;
+		if(!pServerAddress || !pName || pServerAddress[0] == '\0' || pName[0] == '\0')
+			return;
+
+		char aNormalizedAddress[MAX_SERVER_ADDRESSES * NETADDR_MAXSTRSIZE];
+		if(!NormalizeServerAddress(pServerAddress, aNormalizedAddress, sizeof(aNormalizedAddress)))
+			return;
+
+		CParsedPlayerInfo &Info = Map[aNormalizedAddress][pName];
+		Info.m_Developer = Info.m_Developer || Developer;
+		Info.m_Fake = Info.m_Fake || Fake;
+		Info.m_Light = Info.m_Light || Light;
+		if(pVersion && pVersion[0] != '\0' && Info.m_Version.empty())
+			Info.m_Version = pVersion;
 	}
 
-	for(unsigned int i = 0; i < Player.u.object.length; ++i)
+	static void ParsePlayerObject(TParsedPlayers &Map, const char *pServerAddress, const json_value &Player)
 	{
-		const auto &Entry = Player.u.object.values[i];
-		if(Entry.value->type == json_object)
+		if(Player.type != json_object)
+			return;
+		const bool Developer = GetBoolField(Player, "developer");
+		const bool Fake = GetBoolField(Player, "fake");
+		const bool Light = GetBoolField(Player, "light");
+		const char *pVersion = GetStringField(Player, "version");
+
+		if(const char *pName = GetStringField(Player, "name"))
 		{
-			if(const char *pName = GetStringField(*Entry.value, "name"))
-				AddPlayer(Map, pServerAddress, pName, GetBoolField(*Entry.value, "developer"), GetBoolField(*Entry.value, "fake"), GetStringField(*Entry.value, "version"), GetBoolField(*Entry.value, "light"));
+			AddPlayer(Map, pServerAddress, pName, Developer, Fake, pVersion, Light);
+			return;
 		}
-		else if(Entry.value->type == json_string)
+		if(const char *pName = GetStringField(Player, "player_name"))
 		{
-			AddPlayer(Map, pServerAddress, Entry.value->u.string.ptr);
+			AddPlayer(Map, pServerAddress, pName, Developer, Fake, pVersion, Light);
+			return;
 		}
-		else
+
+		for(unsigned int i = 0; i < Player.u.object.length; ++i)
 		{
-			AddPlayer(Map, pServerAddress, Entry.name);
+			const auto &Entry = Player.u.object.values[i];
+			if(Entry.value->type == json_object)
+			{
+				if(const char *pName = GetStringField(*Entry.value, "name"))
+					AddPlayer(Map, pServerAddress, pName, GetBoolField(*Entry.value, "developer"), GetBoolField(*Entry.value, "fake"), GetStringField(*Entry.value, "version"), GetBoolField(*Entry.value, "light"));
+			}
+			else if(Entry.value->type == json_string)
+			{
+				AddPlayer(Map, pServerAddress, Entry.value->u.string.ptr);
+			}
+			else
+			{
+				AddPlayer(Map, pServerAddress, Entry.name);
+			}
 		}
 	}
-}
 
-static void ParsePlayersValue(TParsedPlayers &Map, const char *pServerAddress, const json_value &Players)
-{
-	if(!pServerAddress || pServerAddress[0] == '\0')
-		return;
-
-	if(Players.type == json_array)
+	static void ParsePlayersValue(TParsedPlayers &Map, const char *pServerAddress, const json_value &Players)
 	{
-		for(unsigned int i = 0; i < Players.u.array.length; ++i)
+		if(!pServerAddress || pServerAddress[0] == '\0')
+			return;
+
+		if(Players.type == json_array)
 		{
-			const json_value &Player = *Players.u.array.values[i];
-			if(Player.type == json_string)
-				AddPlayer(Map, pServerAddress, Player.u.string.ptr);
-			else if(Player.type == json_object)
-				ParsePlayerObject(Map, pServerAddress, Player);
+			for(unsigned int i = 0; i < Players.u.array.length; ++i)
+			{
+				const json_value &Player = *Players.u.array.values[i];
+				if(Player.type == json_string)
+					AddPlayer(Map, pServerAddress, Player.u.string.ptr);
+				else if(Player.type == json_object)
+					ParsePlayerObject(Map, pServerAddress, Player);
+			}
+		}
+		else if(Players.type == json_object)
+		{
+			ParsePlayerObject(Map, pServerAddress, Players);
 		}
 	}
-	else if(Players.type == json_object)
-	{
-		ParsePlayerObject(Map, pServerAddress, Players);
-	}
-}
 }
 
 bool CBrowserCache::Load(const json_value &Json)

@@ -4,14 +4,14 @@
 
 #include "protocol.h"
 
-#include <game/client/component.h>
-#include <game/client/ui.h>
-
 #include <base/net.h>
 #include <base/vmath.h>
 
 #include <engine/console.h>
 #include <engine/shared/host_lookup.h>
+
+#include <game/client/component.h>
+#include <game/client/ui.h>
 
 #include <SDL_audio.h>
 
@@ -19,8 +19,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <limits>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>

@@ -4,10 +4,10 @@
 
 #include <engine/graphics.h>
 
+#include <generated/protocol.h>
+
 #include <game/client/component.h>
 #include <game/client/ui_rect.h>
-
-#include <generated/protocol.h>
 
 float GetKeystrokesKeyboardPresetWidthHudPx(int Preset);
 

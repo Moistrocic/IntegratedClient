@@ -1,18 +1,17 @@
 /* Copyright © 2026 BestProject Team */
 #include "hookgrip.h"
 
-#include <base/time.h>
+#include "own_tee.h"
 
-#include <cmath>
+#include <base/time.h>
 
 #include <engine/shared/config.h>
 
 #include <game/client/gameclient.h>
-
-#include "own_tee.h"
 #include <game/gamecore.h>
 
 #include <algorithm>
+#include <cmath>
 
 ColorRGBA FgfRainbow(float Hue, float Lightness)
 {

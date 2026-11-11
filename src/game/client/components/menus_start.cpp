@@ -2,8 +2,6 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "menus_start.h"
 
-#include <algorithm>
-
 #include <engine/client/updater.h>
 #include <engine/font_icons.h>
 #include <engine/graphics.h>
@@ -13,6 +11,8 @@
 #include <engine/textrender.h>
 
 #include <generated/client_data.h>
+
+#include <algorithm>
 
 // bestclient
 #include <game/client/bc_menu_badges.h>

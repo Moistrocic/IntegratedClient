@@ -9,6 +9,7 @@
 #include <engine/shared/config.h>
 #include <engine/storage.h>
 #include <engine/textrender.h>
+
 #include <generated/protocol.h>
 
 #include <game/client/components/chat.h>

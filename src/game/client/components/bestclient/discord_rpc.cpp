@@ -58,7 +58,7 @@ class CDiscord : public IDiscord
 		constexpr char SKIN_URL_PREFIX[] = "https://best-client-api.vercel.app/api/assemble-foot/";
 		constexpr char SKIN_URL_SUFFIX[] = ".png";
 		const int MaxEscapedSkinNameLength = (int)sizeof(m_Activity.assets.small_image) -
-			(int)sizeof(SKIN_URL_PREFIX) - (int)sizeof(SKIN_URL_SUFFIX) + 1;
+						     (int)sizeof(SKIN_URL_PREFIX) - (int)sizeof(SKIN_URL_SUFFIX) + 1;
 		char aEscapedSkinName[128];
 		EscapeUrl(aEscapedSkinName, sizeof(aEscapedSkinName), pSkinName);
 		if(aEscapedSkinName[0] == '\0' || str_length(aEscapedSkinName) > MaxEscapedSkinNameLength)

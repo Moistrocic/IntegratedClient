@@ -81,7 +81,8 @@ void CCameraDemos::UpdateEffects(CGameClient *pGameClient, float DeltaTime, floa
 		const float PreviousVelocity = pPrevTrackedCharacter->m_VelX / 256.0f;
 		const float HorizontalVelocity = mix(PreviousVelocity, CurrentVelocity, IntraTick);
 		const float VelocityFactor = absolute(HorizontalVelocity);
-		float DriftDirection = HorizontalVelocity < 0.0f ? -1.0f : HorizontalVelocity > 0.0f ? 1.0f : 0.0f;
+		float DriftDirection = HorizontalVelocity < 0.0f ? -1.0f : HorizontalVelocity > 0.0f ? 1.0f :
+												       0.0f;
 		if(g_Config.m_BcCameraDriftReverse)
 			DriftDirection *= -1.0f;
 

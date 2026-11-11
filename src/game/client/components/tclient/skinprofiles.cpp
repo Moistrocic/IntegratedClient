@@ -146,10 +146,15 @@ void CSkinProfiles::ConfigSaveCallback(IConfigManager *pConfigManager, void *pUs
 
 		// bestclient
 		const char *apAssets[] = {
-			Profile.m_AssetEntities, Profile.m_AssetGame,
-			Profile.m_AssetParticles, Profile.m_AssetHud,
-			Profile.m_AssetExtras, Profile.m_AssetCursor, Profile.m_AssetArrow,
-			Profile.m_AssetEmoticons, Profile.m_AssetAudio,
+			Profile.m_AssetEntities,
+			Profile.m_AssetGame,
+			Profile.m_AssetParticles,
+			Profile.m_AssetHud,
+			Profile.m_AssetExtras,
+			Profile.m_AssetCursor,
+			Profile.m_AssetArrow,
+			Profile.m_AssetEmoticons,
+			Profile.m_AssetAudio,
 		};
 		for(const char *pAsset : apAssets)
 		{

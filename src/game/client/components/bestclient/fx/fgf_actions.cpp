@@ -1,15 +1,15 @@
 /* Copyright © 2026 BestProject Team */
 #include "fgf_actions.h"
 
+#include "hookgrip.h"
+#include "own_tee.h"
+
 #include <base/math.h>
 
 #include <engine/shared/config.h>
 
-#include "hookgrip.h"
 #include <game/client/gameclient.h>
 #include <game/client/prediction/entities/character.h>
-
-#include "own_tee.h"
 #include <game/gamecore.h>
 
 #include <algorithm>

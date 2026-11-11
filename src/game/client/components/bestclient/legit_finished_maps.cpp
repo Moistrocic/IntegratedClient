@@ -11,46 +11,46 @@
 
 namespace
 {
-enum class ELegitMode
-{
-	NONE,
-	GORES,
-	DDRACE,
-};
-
-ELegitMode LegitMode(const CServerInfo *pServer)
-{
-	if(!pServer || (str_comp_nocase(pServer->m_aCommunityId, "legit") != 0 && str_find_nocase(pServer->m_aName, "Legit Network") == nullptr))
-		return ELegitMode::NONE;
-
-	if(str_find_nocase(pServer->m_aGameType, "Gores") != nullptr || str_find_nocase(pServer->m_aName, "Gores") != nullptr)
-		return ELegitMode::GORES;
-	if(str_find_nocase(pServer->m_aGameType, "DDraceNetwork") != nullptr)
-		return ELegitMode::DDRACE;
-	return ELegitMode::NONE;
-}
-
-bool ParseMapArray(const json_value *pRoot, const char *pKey, std::unordered_set<std::string> *pMaps)
-{
-	const json_value *pArray = json_object_get(pRoot, pKey);
-	if(pArray == &json_value_none || pArray->type != json_array)
-		return false;
-
-	for(unsigned i = 0; i < pArray->u.array.length; ++i)
+	enum class ELegitMode
 	{
-		const json_value *pMap = pArray->u.array.values[i];
-		if(pMap && pMap->type == json_string && pMap->u.string.ptr[0] != '\0')
-			pMaps->emplace(pMap->u.string.ptr);
-	}
-	return true;
-}
+		NONE,
+		GORES,
+		DDRACE,
+	};
 
-bool ParseFinishedMaps(const json_value *pRoot, std::unordered_set<std::string> *pGoresMaps, std::unordered_set<std::string> *pDDraceMaps)
-{
-	if(!pRoot || pRoot == &json_value_none || pRoot->type != json_object)
-		return false;
-	return ParseMapArray(pRoot, "gores", pGoresMaps) && ParseMapArray(pRoot, "ddrace", pDDraceMaps);
-}
+	ELegitMode LegitMode(const CServerInfo *pServer)
+	{
+		if(!pServer || (str_comp_nocase(pServer->m_aCommunityId, "legit") != 0 && str_find_nocase(pServer->m_aName, "Legit Network") == nullptr))
+			return ELegitMode::NONE;
+
+		if(str_find_nocase(pServer->m_aGameType, "Gores") != nullptr || str_find_nocase(pServer->m_aName, "Gores") != nullptr)
+			return ELegitMode::GORES;
+		if(str_find_nocase(pServer->m_aGameType, "DDraceNetwork") != nullptr)
+			return ELegitMode::DDRACE;
+		return ELegitMode::NONE;
+	}
+
+	bool ParseMapArray(const json_value *pRoot, const char *pKey, std::unordered_set<std::string> *pMaps)
+	{
+		const json_value *pArray = json_object_get(pRoot, pKey);
+		if(pArray == &json_value_none || pArray->type != json_array)
+			return false;
+
+		for(unsigned i = 0; i < pArray->u.array.length; ++i)
+		{
+			const json_value *pMap = pArray->u.array.values[i];
+			if(pMap && pMap->type == json_string && pMap->u.string.ptr[0] != '\0')
+				pMaps->emplace(pMap->u.string.ptr);
+		}
+		return true;
+	}
+
+	bool ParseFinishedMaps(const json_value *pRoot, std::unordered_set<std::string> *pGoresMaps, std::unordered_set<std::string> *pDDraceMaps)
+	{
+		if(!pRoot || pRoot == &json_value_none || pRoot->type != json_object)
+			return false;
+		return ParseMapArray(pRoot, "gores", pGoresMaps) && ParseMapArray(pRoot, "ddrace", pDDraceMaps);
+	}
 }
 
 bool CLegitFinishedMaps::Enabled() const
