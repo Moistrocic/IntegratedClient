@@ -2652,6 +2652,39 @@ Credits
 Join
 == 加入
 
+Ranbi
+== Ranbi
+
+Based on
+== 基于
+
+Source clients
+== 来源客户端
+
+RanbiClient (GUI integration in progress)
+== RanbiClient（GUI 整合中）
+
+Links
+== 链接
+
+Integration registry
+== 整合台账
+
+BestClient information is on the second page.
+== BestClient 信息位于第 2 页。
+
+Nameplates
+== 名称标签
+
+Chat & Scoreboard
+== 聊天与计分板
+
+Notify
+== HUD 提示
+
+Ranbi features are not integrated yet. This page is a placeholder.
+== Ranbi 功能尚未整合，此页为占位页。
+
 BETA
 == 
 
@@ -2773,9 +2806,6 @@ Profiles
 == 
 
 Configs
-== 
-
-Ranbi
 == 
 
 Show dummy position
@@ -4474,24 +4504,6 @@ Action
 slot %d
 == 
 
-Based on
-== 
-
-Source clients
-== 
-
-RanbiClient (GUI integration in progress)
-== 
-
-Links
-== 
-
-Integration registry
-== 
-
-BestClient information is on the second page.
-== 
-
 Mini games
 == 
 
@@ -4984,15 +4996,6 @@ Translation timed out
 Translation failed: %s
 == 
 
-Nameplates
-== 
-
-Chat & Scoreboard
-== 
-
-Notify
-== 
-
 System default
 == 
 
@@ -5129,9 +5132,6 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
-== 
-
-Ranbi features are not integrated yet. This page is a placeholder.
 == 
 
 [bgdraw]

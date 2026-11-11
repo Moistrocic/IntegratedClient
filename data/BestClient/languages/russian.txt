@@ -1519,14 +1519,6 @@ Telegram
 == Телеграм
 
 [BestClient]
-Check update
-== Чек апдейт
-
-[BestClient]
-Try Light
-== Попробовать Лайт
-
-[BestClient]
 Config Files
 == Файлы конфигов
 
