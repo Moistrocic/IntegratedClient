@@ -35,7 +35,7 @@
 - **DeepSeek 翻译后端**：翻译设置新增 DeepSeek（OpenAI 兼容 API），支持 Endpoint / API Key / Model 配置
 - **复读上一个玩家**：Ranbi → Chat & Scoreboard 绑定快捷键，按下后复读其他玩家最近一条消息（无消息时不动作，团队消息按团队频道复读）
 - **武器辅助线**：Ranbi → Weapons 开关；手持激光枪 / 霰弹枪 / 榴弹炮时预测显示射线、扩散线与抛物线终点
-- **锁定地图完成名称**：Ranbi → General 设置；官方服务器列表的地图完成查询固定使用指定玩家 ID，不受当前游戏内名称影响
+- **锁定地图完成名称**：Ranbi → General 设置；官方服务器列表的地图完成查询固定使用指定玩家名称，不受当前游戏内名称影响
 - **分数并发上限**：BestClient → Visuals → QoL 新增 `Max concurrent point requests`（1–5，默认 5），加速 DDNet 分数获取
 
 ## 构建与运行
