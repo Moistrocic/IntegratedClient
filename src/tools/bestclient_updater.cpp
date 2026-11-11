@@ -14,7 +14,9 @@
 #include <string>
 #include <vector>
 
+#if defined(_MSC_VER)
 #pragma comment(lib, "shell32.lib")
+#endif
 
 static const int WND_W = 480;
 static const int WND_H = 215;
@@ -785,7 +787,6 @@ static void Paint(HWND hWnd)
 	const int BarR = Rc.right - 80;
 	const int BarT = 110;
 	const int BarB = 134;
-	const int BarH = BarB - BarT;
 
 	{
 		RECT R = {BarL, BarT, BarR, BarB};
