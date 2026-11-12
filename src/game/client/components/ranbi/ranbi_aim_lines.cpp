@@ -33,7 +33,8 @@ namespace
 	constexpr int MAX_AIM_SEGMENTS = 512;
 	constexpr int MAX_LASER_SEGMENTS = 64; // defensive cap; CLaser uses m_LaserBounceNum
 	constexpr int MAX_PROJECTILE_TICKS = 200; // defensive cap; grenade default = 2s * 50 = 100
-	constexpr int PROJECTILE_SAMPLE_STEP = 4; // trail sample rate (render frames still every frame)
+	constexpr int PROJECTILE_SAMPLE_STEP = 8; // trail sample rate (render frames still every frame)
+	constexpr int MAX_PROJECTILE_TRAIL_SAMPLES = 16; // cap per projectile path (perf)
 	// character.cpp:310: ProjStartPos = m_Pos + Direction * m_ProximityRadius * 0.75f
 	constexpr float PROJECTILE_START_OFFSET = 0.75f;
 
@@ -391,7 +392,9 @@ void CRanbiAimLines::OnRender()
 		{
 			if(Buf.m_pSegments[i].m_To == Buf.m_pSegments[i].m_From)
 				continue;
-			GameClient()->m_Items.RenderLaser(Buf.m_pSegments[i].m_From, Buf.m_pSegments[i].m_To, OuterColor, InnerColor, PreviewTicksBody, TicksHead, LaserType);
+			// task-58: body-only preview (no BestClient laser glow/head VFX per segment);
+			// the vanilla outline/inner colors and geometric beam are unchanged.
+			GameClient()->m_Items.RenderLaserPreview(Buf.m_pSegments[i].m_From, Buf.m_pSegments[i].m_To, OuterColor, InnerColor, PreviewTicksBody, LaserType);
 		}
 	}
 	else
@@ -407,14 +410,16 @@ void CRanbiAimLines::OnRender()
 			while(End + 1 < Buf.m_Num && Buf.m_pSegments[End + 1].m_Path == Path)
 				End++;
 			const int NumSegments = End - Index + 1;
+			int TrailSamples = 0;
 			for(int i = 0; i < NumSegments; i++)
 			{
 				const bool Last = i == NumSegments - 1;
-				if(!Last && i % PROJECTILE_SAMPLE_STEP != 0)
+				if(!Last && (i % PROJECTILE_SAMPLE_STEP != 0 || TrailSamples >= MAX_PROJECTILE_TRAIL_SAMPLES))
 					continue;
+				TrailSamples++;
 				const SAimSegment &Seg = Buf.m_pSegments[Index + i];
 				const vec2 Vel = Seg.m_To - Seg.m_From;
-				GameClient()->m_Items.RenderProjectileTrailPreview(Seg.m_To, Vel, Weapon, 1.0f, Last);
+				GameClient()->m_Items.RenderProjectileTrailPreview(Seg.m_To, Vel, Weapon, 1.0f, Last, Weapon == WEAPON_GRENADE);
 			}
 			Index = End + 1;
 		}

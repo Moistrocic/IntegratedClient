@@ -133,12 +133,14 @@ void CItems::RenderProjectile(const CProjectileData *pCurrent, int ItemId, const
 	}
 }
 
-void CItems::RenderProjectileTrailPreview(vec2 Pos, vec2 Vel, int Weapon, float Alpha, bool DrawSprite)
+void CItems::RenderProjectileTrailPreview(vec2 Pos, vec2 Vel, int Weapon, float Alpha, bool DrawSprite, bool UseBulletStyle)
 {
-	// ranbi: reuse the original projectile visual path (same grenade rotation / sprite
-	// and the same SmokeTrail / BulletTrail effect) at a simulated trajectory point.
+	// ranbi: reuse the original projectile visual path (same sprite/trail effect) at a
+	// simulated trajectory point. UseBulletStyle forces the shotgun-style BulletTrail
+	// + velocity rotation (used by the grenade aim-line preview; actual fired grenades
+	// keep their SmokeTrail rendering).
 	const int CurWeapon = std::clamp(Weapon, 0, NUM_WEAPONS - 1);
-	if(CurWeapon == WEAPON_GRENADE)
+	if(CurWeapon == WEAPON_GRENADE && !UseBulletStyle)
 	{
 		GameClient()->m_Effects.SmokeTrail(Pos, Vel * -1.0f, Alpha, 0.0f);
 		static float s_Time = 0.0f;
@@ -504,6 +506,36 @@ void CItems::RenderLaser(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA In
 		Graphics()->SetColor(InnerColor);
 		Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, m_aParticleSplatOffset[CurParticle], Pos.x, Pos.y, 20.f / 24.f, 20.f / 24.f);
 	}
+}
+
+void CItems::RenderLaserPreview(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA InnerColor, float TicksBody, int Type) const
+{
+	// ranbi: preview body only (no m_WeaponVfx glow/rings, no head splat particles).
+	const float Len = distance(Pos, From);
+	if(Len <= 0.0f)
+		return;
+	vec2 Dir = normalize_pre_length(Pos - From, Len);
+	const float Ms = TicksBody * 1000.0f / Client()->GameTickSpeed();
+	const int TuneZone = (Client()->State() == IClient::STATE_ONLINE && GameClient()->m_GameWorld.m_WorldConfig.m_UseTuneZones) ? Collision()->IsTune(Collision()->GetMapIndex(From)) : 0;
+	const float a = std::clamp(Ms / GameClient()->GetTuning(TuneZone)->m_LaserBounceDelay, 0.0f, 1.0f);
+	const float Ia = 1.0f - a;
+
+	Graphics()->TextureClear();
+	Graphics()->QuadsBegin();
+	Graphics()->SetColor(OuterColor);
+	vec2 Out = vec2(Dir.y, -Dir.x) * (7.0f * Ia);
+	IGraphics::CFreeformItem Freeform(From - Out, From + Out, Pos - Out, Pos + Out);
+	Graphics()->QuadsDrawFreeform(&Freeform, 1);
+
+	Out = vec2(Dir.y, -Dir.x) * (5.0f * Ia);
+	const vec2 ExtraOutlinePos = Dir;
+	const vec2 ExtraOutlineFrom = Type == LASERTYPE_DOOR ? vec2(0, 0) : Dir;
+	Graphics()->SetColor(InnerColor);
+	Freeform = IGraphics::CFreeformItem(
+		From - Out + ExtraOutlineFrom, From + Out + ExtraOutlineFrom,
+		Pos - Out - ExtraOutlinePos, Pos + Out - ExtraOutlinePos);
+	Graphics()->QuadsDrawFreeform(&Freeform, 1);
+	Graphics()->QuadsEnd();
 }
 
 void CItems::OnRender()

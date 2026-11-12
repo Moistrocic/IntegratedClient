@@ -1128,6 +1128,9 @@ public:
 	vec2 GetSmoothPos(int ClientId);
 	vec2 GetFreezePos(int ClientId);
 	vec2 GetFastInputPos(int ClientId);
+	// ranbi: rc_show_all_players optimization - far off-screen players only need
+	// snapshot positions, not full prediction/anti-ping extrapolation.
+	bool IsShowAllPlayersOffscreen(int ClientId) const;
 
 	int m_MultiViewTeam;
 	float m_MultiViewPersonalZoom;

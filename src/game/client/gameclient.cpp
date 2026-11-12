@@ -3141,6 +3141,10 @@ void CGameClient::OnPredict()
 	{
 		if(!m_Snap.m_aCharacters[i].m_Active || i == m_Snap.m_LocalClientId || !m_aLastActive[i])
 			continue;
+		// ranbi: rc_show_all_players - off-screen players are not rendered; skip their
+		// anti-ping smoothing prep work.
+		if(IsShowAllPlayersOffscreen(i))
+			continue;
 		if(CloudInputMode)
 			aBeforeRender[i] = mix(m_aClients[i].m_PrevPredicted.m_Pos, m_aClients[i].m_Predicted.m_Pos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
 		else
@@ -3459,6 +3463,10 @@ void CGameClient::OnPredict()
 		for(int i = 0; i < MAX_CLIENTS; i++)
 		{
 			if(!m_Snap.m_aCharacters[i].m_Active || i == m_Snap.m_LocalClientId || !m_aLastActive[i])
+				continue;
+			// ranbi: rc_show_all_players - off-screen players are not rendered; skip the
+			// per-client correction math entirely.
+			if(IsShowAllPlayersOffscreen(i))
 				continue;
 			vec2 NewPos = m_aClients[i].m_Predicted.m_Pos; // TClient
 			vec2 PredErr = (m_aLastPos[i] - NewPos) / (float)std::min(Client()->GetPredictionTime(), 200);
@@ -4565,6 +4573,27 @@ void CGameClient::UpdateLocalTuning()
 	}
 }
 
+bool CGameClient::IsShowAllPlayersOffscreen(int ClientId) const
+{
+	// rc_show_all_players requests the whole map via ShowDistance. Far off-screen
+	// players are not rendered (players/nameplates cull them), so their predicted
+	// world entity/anti-ping smoothing is wasted work. Keep a generous margin so
+	// anything that could interact with the local player this tick is still predicted.
+	if(!g_Config.m_RcShowAllPlayers || ClientId < 0 || ClientId >= MAX_CLIENTS)
+		return false;
+	if(ClientId == m_Snap.m_LocalClientId || ClientId == m_aLocalIds[0] || ClientId == m_aLocalIds[1])
+		return false;
+	if(!m_Snap.m_aCharacters[ClientId].m_Active)
+		return false;
+	const CScreenRect Screen = Graphics()->GetScreen();
+	if(Screen.m_BottomRight.x <= Screen.m_TopLeft.x || Screen.m_BottomRight.y <= Screen.m_TopLeft.y)
+		return false;
+	CScreenRect Expanded = Screen;
+	Expanded.Expand(2000.0f);
+	const CNetObj_Character &Cur = m_Snap.m_aCharacters[ClientId].m_Cur;
+	return !Expanded.Inside(vec2((float)Cur.m_X, (float)Cur.m_Y));
+}
+
 void CGameClient::UpdatePrediction()
 {
 	m_GameWorld.m_WorldConfig.m_IsVanilla = m_GameInfo.m_PredictVanilla;
@@ -4729,6 +4758,11 @@ void CGameClient::UpdatePrediction()
 		if(m_Snap.m_aCharacters[i].m_Active)
 		{
 			bool IsLocal = (i == m_Snap.m_LocalClientId || (PredictDummy() && i == m_aLocalIds[!g_Config.m_ClDummy]));
+			// ranbi: rc_show_all_players - far off-screen players keep their snapshot
+			// position (m_RenderPos falls back to snapshot interpolation) but do not
+			// enter the predicted world, avoiding per-tick prediction/copy work.
+			if(!IsLocal && IsShowAllPlayersOffscreen(i))
+				continue;
 			int GameTeam = IsTeamPlay() ? m_aClients[i].m_Team : i;
 			m_GameWorld.NetCharAdd(i, &m_Snap.m_aCharacters[i].m_Cur,
 				m_Snap.m_aCharacters[i].m_HasExtendedData ? &m_Snap.m_aCharacters[i].m_ExtendedData : nullptr,
