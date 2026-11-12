@@ -699,6 +699,14 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 			return 0;
 		}
 
+		// task-69: dummy connection diagnostics. The dummy input is sent from
+		// m_DummyInput/m_HammerInput, which the task-46 SnapInput fire guard did not cover.
+		if(g_Config.m_Debug)
+			log_info("fast_practice", "[fp-send] dummy OnSnapInput fire=%d(%s) hammer_fire=%d force=%d",
+				m_DummyInput.m_Fire & INPUT_STATE_MASK,
+				(m_DummyInput.m_Fire & 1) ? "pressed/odd" : "released/even",
+				m_HammerInput.m_Fire & INPUT_STATE_MASK, Force ? 1 : 0);
+
 		mem_copy(pData, &m_DummyInput, sizeof(m_DummyInput));
 		return sizeof(m_DummyInput);
 	}
@@ -725,6 +733,12 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 		m_HammerInput.m_TargetX = (int)Dir.x;
 		m_HammerInput.m_TargetY = (int)Dir.y;
 
+		// task-69: dummy auto-hammer diagnostics (see CGameClient::OnSnapInput dummy path).
+		if(g_Config.m_Debug)
+			log_info("fast_practice", "[fp-send] dummy hammer OnSnapInput fire=%d(%s) dummy_fire=%u",
+				m_HammerInput.m_Fire & INPUT_STATE_MASK,
+				(m_HammerInput.m_Fire & 1) ? "pressed/odd" : "released/even", m_DummyFire);
+
 		mem_copy(pData, &m_HammerInput, sizeof(m_HammerInput));
 		return sizeof(m_HammerInput);
 	}
@@ -734,6 +748,12 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 void CGameClient::PrepareInputForSend(int *pData, int Size, bool Dummy)
 {
 	m_FastPractice.PrepareInputForSend(pData, Size, Dummy);
+	// task-69: remember the fire value that is actually sent for each connection. This is the
+	// only reliable base for the Fast Practice toggle fire guard: the practice overlay rewrites
+	// the outgoing fire (m_aServerLockedFire) while CControls::m_aLastData keeps the physical
+	// ring, so deriving the guard release from m_aLastData could produce a real 0 <-> 2 press.
+	if(pData && Size >= (int)sizeof(CNetObj_PlayerInput))
+		m_Controls.m_aLastSentFire[g_Config.m_ClDummy ^ (int)Dummy] = ((const CNetObj_PlayerInput *)pData)->m_Fire & INPUT_STATE_MASK;
 }
 // bestclient
 

@@ -28,24 +28,14 @@
 
 namespace
 {
-	void RanbiClearResidualFire(CControls *pControls)
+	// task-69: keep a fire ring on its own even (released) state, so CountInput can never see
+	// a 0 <-> 2 "press" when the ring is forced to a released state.
+	int RanbiReleasedFire(int Fire)
 	{
-		for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
-		{
-			int Released = pControls->m_aLastData[Conn].m_Fire & INPUT_STATE_MASK;
-			if((Released & 1) != 0)
-				Released = (Released + 1) & INPUT_STATE_MASK;
-			pControls->m_aInputData[Conn].m_Fire = Released;
-			pControls->m_aLastData[Conn].m_Fire = Released;
-			if(g_Config.m_Debug)
-				log_info("fast_practice", "[fp-send] clear residual fire conn=%d fire=%d", Conn, Released);
-		}
-	}
-
-	void ConRanbiFpClearFire(IConsole::IResult *pResult, void *pUserData)
-	{
-		(void)pResult;
-		RanbiClearResidualFire(static_cast<CControls *>(pUserData));
+		Fire &= INPUT_STATE_MASK;
+		if((Fire & 1) != 0)
+			Fire = (Fire + 1) & INPUT_STATE_MASK;
+		return Fire;
 	}
 
 	// task-46: send-layer fire guard for the Fast Practice toggle boundary. Forces the
@@ -54,29 +44,65 @@ namespace
 	bool s_aRanbiFpFireGuardActive[NUM_DUMMIES] = {};
 	int64_t s_aRanbiFpFireGuardUntil[NUM_DUMMIES] = {};
 
-	void RanbiFpArmFireGuard(CControls *pControls)
+	void ConRanbiFpClearFire(IConsole::IResult *pResult, void *pUserData)
 	{
-		const int64_t Until = time_get() + time_freq() * 2;
-		for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
-		{
-			s_aRanbiFpFireGuardActive[Conn] = true;
-			s_aRanbiFpFireGuardUntil[Conn] = Until;
-			int Released = pControls->m_aLastData[Conn].m_Fire & INPUT_STATE_MASK;
-			if((Released & 1) != 0)
-				Released = (Released + 1) & INPUT_STATE_MASK;
-			pControls->m_aInputData[Conn].m_Fire = Released;
-			pControls->m_aLastData[Conn].m_Fire = Released;
-		}
-		if(g_Config.m_Debug)
-			log_info("fast_practice", "[fp-send] fire guard armed");
+		(void)pResult;
+		static_cast<CControls *>(pUserData)->RanbiClearBufferedFire("fp-clear", true, true);
 	}
 
 	void ConRanbiFpFireGuard(IConsole::IResult *pResult, void *pUserData)
 	{
 		(void)pResult;
-		RanbiFpArmFireGuard(static_cast<CControls *>(pUserData));
+		static_cast<CControls *>(pUserData)->RanbiArmFireGuard();
 	}
 } // namespace
+
+// task-69: task-46 only cleared m_aInputData/m_aLastData. The dummy connection is sent from
+// CGameClient::m_DummyInput / m_HammerInput (see CGameClient::OnSnapInput) and fast input from
+// m_aFastInput, so the UI-freeze and the toggle boundary must keep those rings released too.
+// The forced state is based on m_aLastSentFire (what was *actually sent*), because FastPractice
+// overrides the outgoing fire while m_aLastData keeps the physical ring: deriving the release
+// from m_aLastData could change the 2-bit ring by 2 and CountInput would count a 0 <-> 2 press
+// (= a real hammer sent to the server).
+// task-70: ResetDummyHammerCounter is only set at the Fast Practice toggle boundary. The UI
+// freeze path calls this every tick and must not reset m_DummyFire: CGameClient::OnSnapInput
+// derives the cl_dummy_hammer cadence from m_DummyFire % 25, so resetting it every tick would
+// make every sent input trigger a real hammer attack.
+void CControls::RanbiClearBufferedFire(const char *pTag, bool Log, bool ResetDummyHammerCounter)
+{
+	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
+	{
+		const int Released = RanbiReleasedFire(m_aLastSentFire[Conn]);
+		m_aInputData[Conn].m_Fire = Released;
+		m_aLastData[Conn].m_Fire = Released;
+		m_aFastInput[Conn].m_Fire = Released;
+		if(Log && g_Config.m_Debug)
+			log_info("fast_practice", "[%s] conn=%d fire=%d fast_input_fire=%d last_sent_fire=%d", pTag, Conn, Released, m_aFastInput[Conn].m_Fire & INPUT_STATE_MASK, m_aLastSentFire[Conn]);
+	}
+	if(CGameClient *pGameClient = GameClient())
+	{
+		const int Released = RanbiReleasedFire(m_aLastSentFire[g_Config.m_ClDummy ^ 1]);
+		pGameClient->m_DummyInput.m_Fire = Released;
+		pGameClient->m_HammerInput.m_Fire = Released;
+		if(ResetDummyHammerCounter)
+			pGameClient->m_DummyFire = 0;
+		if(Log && g_Config.m_Debug)
+			log_info("fast_practice", "[%s] dummy_input_fire=%d hammer_input_fire=%d reset_dummy_hammer=%d", pTag, Released, pGameClient->m_HammerInput.m_Fire & INPUT_STATE_MASK, ResetDummyHammerCounter ? 1 : 0);
+	}
+}
+
+void CControls::RanbiArmFireGuard()
+{
+	const int64_t Until = time_get() + time_freq() * 2;
+	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
+	{
+		s_aRanbiFpFireGuardActive[Conn] = true;
+		s_aRanbiFpFireGuardUntil[Conn] = Until;
+	}
+	RanbiClearBufferedFire("fp-arm", true, true);
+	if(g_Config.m_Debug)
+		log_info("fast_practice", "[fp-arm] fire guard armed");
+}
 
 CControls::CControls()
 {
@@ -93,6 +119,8 @@ void CControls::OnReset()
 	ResetInput(1);
 
 	std::fill(std::begin(m_aAmmoCount), std::end(m_aAmmoCount), 0);
+	// bestclient task-69: forget the last sent fire ring on map/server reset
+	std::fill(std::begin(m_aLastSentFire), std::end(m_aLastSentFire), 0);
 
 	m_LastSendTime = 0;
 }
@@ -248,18 +276,22 @@ void CControls::ConKeyInputCounter(IConsole::IResult *pResult, void *pUserData)
 		if(g_Config.m_Debug)
 			log_info("fast_practice", "[fp-send] fire guard released by physical fire event pressed=%d", Pressed ? 1 : 0);
 	}
-	if(IsFire && pState->m_pControls->GameClient()->m_Menus.IsActive())
+	// task-69: mouse1 is also +fire. While any modal UI (menu, chat, console) is open the
+	// press must never be latched into the fire ring, otherwise it can leak into the dummy
+	// connection / prediction input history after the UI closes and show a hammer swing that
+	// was never sent to the server.
+	const bool UiActive = pState->m_pControls->GameClient()->m_Menus.IsActive() ||
+			      pState->m_pControls->GameClient()->m_Chat.IsActive() ||
+			      pState->m_pControls->GameClient()->m_GameConsole.IsActive();
+	if(IsFire && UiActive)
 	{
-		// task-46 supplement: the in-game menu button is mouse1 (also the +fire bind);
-		// never latch a menu click into the fire ring. The user must press fire again
-		// after the menu closes, so normal shooting/practice attacks stay unchanged.
 		int Released = (*pVariable) & INPUT_STATE_MASK;
 		if((Released & 1) != 0)
 			Released = (Released + 1) & INPUT_STATE_MASK;
 		*pVariable = Released;
 		pState->m_pControls->GameClient()->m_BestClient.OnGoresFireInput(0);
 		if(g_Config.m_Debug)
-			log_info("fast_practice", "[fp-send] menu +fire swallowed pressed=%d fire=%d", Pressed ? 1 : 0, Released);
+			log_info("fast_practice", "[fp-ui] +fire swallowed in ui pressed=%d fire=%d", Pressed ? 1 : 0, Released);
 		return;
 	}
 	if(((*pVariable) & 1) != Pressed)
@@ -442,17 +474,19 @@ int CControls::SnapInput(int *pData)
 		if(!GameClient()->m_GameInfo.m_BugDDRaceInput)
 			ResetInput(g_Config.m_ClDummy);
 
-		// task-46: mouse1 menu clicks are also +fire; with m_BugDDRaceInput the
-		// ResetInput above is skipped, which would send the pressed mouse state.
-		{
-			int Released = m_aLastData[g_Config.m_ClDummy].m_Fire & INPUT_STATE_MASK;
-			if((Released & 1) != 0)
-				Released = (Released + 1) & INPUT_STATE_MASK;
-			m_aInputData[g_Config.m_ClDummy].m_Fire = Released;
-			m_aLastData[g_Config.m_ClDummy].m_Fire = Released;
-			if(int *pInputData = Client()->GetInput(Client()->PredGameTick(g_Config.m_ClDummy), g_Config.m_ClDummy))
-				((CNetObj_PlayerInput *)pInputData)->m_Fire = Released;
-		}
+		// task-46/task-69: mouse1 menu clicks are also +fire; with m_BugDDRaceInput the
+		// ResetInput above is skipped, which would send the pressed mouse state. Freeze the
+		// fire ring of BOTH connections and of the dummy/fast input sources so a latched
+		// +fire cannot leak into the dummy connection or the prediction input history while a
+		// menu/chat/console is open. This also fixes the dummy "predicted hammer" artifact
+		// after ESC/chat (task-69 A).
+		RanbiClearBufferedFire("fp-ui", false, false);
+		// task-70: Client()->GetInput()'s second argument is *relative* (0 = active connection,
+		// 1 = other connection, internally XORed with g_Config.m_ClDummy), while the arrays above
+		// use the physical connection index. Convert here so cl_dummy 0/1 both map correctly.
+		for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
+			if(int *pInputData = Client()->GetInput(Client()->PredGameTick(g_Config.m_ClDummy), Conn ^ g_Config.m_ClDummy))
+				((CNetObj_PlayerInput *)pInputData)->m_Fire = m_aInputData[Conn].m_Fire;
 		mem_copy(pData, &m_aInputData[g_Config.m_ClDummy], sizeof(m_aInputData[0]));
 		// set the target anyway though so that we can keep seeing our surroundings,
 		// even if chat or menu are activated
@@ -605,12 +639,14 @@ int CControls::SnapInput(int *pData)
 			s_aRanbiFpFireGuardActive[Conn] = false;
 			continue;
 		}
-		int Released = m_aLastData[Conn].m_Fire & INPUT_STATE_MASK;
-		if((Released & 1) != 0)
-			Released = (Released + 1) & INPUT_STATE_MASK;
+		// task-69: mirror what was actually sent for this connection, not the physical ring, so
+		// forcing the release can never change the 2-bit ring by 2 (0 <-> 2 = CountInput press).
+		int Released = RanbiReleasedFire(m_aLastSentFire[Conn]);
 		m_aInputData[Conn].m_Fire = Released;
 		m_aLastData[Conn].m_Fire = Released;
-		if(int *pInputData = Client()->GetInput(Client()->PredGameTick(g_Config.m_ClDummy), Conn))
+		// task-70: second GetInput argument is relative to the active connection (0 = active,
+		// 1 = other); the ring arrays above stay indexed by the physical connection.
+		if(int *pInputData = Client()->GetInput(Client()->PredGameTick(g_Config.m_ClDummy), Conn ^ g_Config.m_ClDummy))
 			((CNetObj_PlayerInput *)pInputData)->m_Fire = Released;
 		GuardForcedSend = true;
 	}
@@ -636,6 +672,11 @@ int CControls::SnapInput(int *pData)
 			pQueueA != nullptr ? (((const CNetObj_PlayerInput *)pQueueA)->m_Fire & INPUT_STATE_MASK) : -1,
 			pQueueB != nullptr ? (((const CNetObj_PlayerInput *)pQueueB)->m_Fire & INPUT_STATE_MASK) : -1,
 			Client()->GameTick(g_Config.m_ClDummy), Client()->PredGameTick(g_Config.m_ClDummy));
+		// task-69: explicit marker for a *real* outgoing press, so user logs can distinguish
+		// prediction-only hammer artifacts from an actual attack sent to the server.
+		if(Send && SentFire >= 0 && (SentFire & 1) != 0)
+			log_info("fast_practice", "[attack] outgoing fire press conn=%d fire=%d game_tick=%d pred_tick=%d",
+				g_Config.m_ClDummy, SentFire, Client()->GameTick(g_Config.m_ClDummy), Client()->PredGameTick(g_Config.m_ClDummy));
 	}
 
 	// bestclient

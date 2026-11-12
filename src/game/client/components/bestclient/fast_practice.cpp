@@ -962,7 +962,9 @@ void CFastPractice::SyncToggleFireState()
 		const int Fire = m_aServerLockedFire[Conn] & INPUT_STATE_MASK;
 		GameClient()->m_Controls.m_aInputData[Conn].m_Fire = Fire;
 		GameClient()->m_Controls.m_aLastData[Conn].m_Fire = Fire;
-		if(int *pInputData = Client()->GetInput(Client()->PredGameTick(g_Config.m_ClDummy), Conn))
+		// task-70: GetInput's second argument is relative (0 = active connection, 1 = other,
+		// internally XORed with g_Config.m_ClDummy); the controls arrays are physical indexed.
+		if(int *pInputData = Client()->GetInput(Client()->PredGameTick(g_Config.m_ClDummy), Conn ^ g_Config.m_ClDummy))
 			((CNetObj_PlayerInput *)pInputData)->m_Fire = Fire;
 
 		const int ClientId = GameClient()->m_aLocalIds[Conn];
@@ -977,6 +979,14 @@ void CFastPractice::SyncToggleFireState()
 	GameClient()->m_DummyInput.m_Fire = 0;
 	GameClient()->m_HammerInput.m_Fire = 0;
 	GameClient()->m_DummyFire = 0;
+
+	// task-69: the dummy connection is sent from m_DummyInput/m_HammerInput (see
+	// CGameClient::OnSnapInput) and fast input from m_aFastInput; task-46 only synchronized
+	// m_aInputData/m_aLastData, so release those extra rings at the toggle boundary as well.
+	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
+		GameClient()->m_Controls.m_aFastInput[Conn].m_Fire = ReleasedFireState(GameClient()->m_Controls.m_aFastInput[Conn].m_Fire);
+	GameClient()->m_DummyInput.m_Fire = ReleasedFireState(GameClient()->m_DummyInput.m_Fire);
+	GameClient()->m_HammerInput.m_Fire = ReleasedFireState(GameClient()->m_HammerInput.m_Fire);
 }
 
 void CFastPractice::ReleaseBufferedInputState()
@@ -988,8 +998,13 @@ void CFastPractice::ReleaseBufferedInputState()
 		GameClient()->m_Controls.m_aInputData[Conn].m_Fire = ReleasedFireState(GameClient()->m_Controls.m_aInputData[Conn].m_Fire);
 		GameClient()->m_Controls.m_aLastData[Conn].m_Fire = ReleasedFireState(GameClient()->m_Controls.m_aLastData[Conn].m_Fire);
 	}
-	NeutralizeInput(GameClient()->m_Controls.m_aFastInput[g_Config.m_ClDummy]);
-	GameClient()->m_Controls.m_aFastInput[g_Config.m_ClDummy].m_Fire = ReleasedFireState(GameClient()->m_Controls.m_aFastInput[g_Config.m_ClDummy].m_Fire);
+	// task-69: release the fast input ring of both connections, not only the currently active
+	// one (the inactive connection can be the dummy fast input source).
+	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
+	{
+		NeutralizeInput(GameClient()->m_Controls.m_aFastInput[Conn]);
+		GameClient()->m_Controls.m_aFastInput[Conn].m_Fire = ReleasedFireState(GameClient()->m_Controls.m_aFastInput[Conn].m_Fire);
+	}
 
 	NeutralizeInput(GameClient()->m_DummyInput);
 	GameClient()->m_DummyInput.m_Fire = ReleasedFireState(GameClient()->m_DummyInput.m_Fire);
@@ -1020,9 +1035,11 @@ void CFastPractice::CaptureServerLockedTargets()
 			TargetY = 0;
 		}
 		m_aServerLockedTargets[Slot] = ivec2(TargetX, TargetY);
-		// task-46: keep the previous sent even ring state (0 vs 2 matters for CountInput)
-		const int LastSentFire = GameClient()->m_Controls.m_aLastData[Slot].m_Fire & INPUT_STATE_MASK;
-		m_aServerLockedFire[Slot] = (LastSentFire & 1) != 0 ? ((LastSentFire + 1) & INPUT_STATE_MASK) : LastSentFire;
+		// task-46/task-69: keep the previous even ring state (0 vs 2 matters for CountInput).
+		// Base it on the fire value that was actually sent, because the practice overlay
+		// rewrites the outgoing fire while m_aLastData keeps the physical ring (task-69 B).
+		const int LastSentFire = GameClient()->m_Controls.m_aLastSentFire[Slot];
+		m_aServerLockedFire[Slot] = ReleasedFireState(LastSentFire);
 		m_aServerLockedNextWeapon[Slot] = Input.m_NextWeapon & INPUT_STATE_MASK;
 		m_aServerLockedPrevWeapon[Slot] = Input.m_PrevWeapon & INPUT_STATE_MASK;
 		m_aHasServerLockedTargets[Slot] = true;
