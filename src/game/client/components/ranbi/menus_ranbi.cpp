@@ -157,6 +157,13 @@ void CMenus::RenderSettingsRanbiGeneral(CUIRect MainView)
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcEmotionDeferredRender, Localize("Deferred emoticon rendering"), &g_Config.m_RcEmotionDeferredRender, &Column, s_LineSize);
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcHookCollDeferredRender, Localize("Deferred hook collision line"), &g_Config.m_RcHookCollDeferredRender, &Column, s_LineSize);
 	RenderRanbiHint(Ui(), &Column, Localize("Renders above water and transparent tiles."));
+	Column.HSplitTop(s_MarginSmall, nullptr, &Column);
+	{
+		CUIRect Slider;
+		Column.HSplitTop(s_LineSize, &Slider, &Column);
+		Ui()->DoScrollbarOption(&g_Config.m_RcFrozenTeeGray, &g_Config.m_RcFrozenTeeGray, &Slider, Localize("Frozen tee gray filter"), 0, 100, &CUi::ms_LinearScrollbarScale, 0, "%");
+	}
+	RenderRanbiHint(Ui(), &Column, Localize("0 = original colors, 100 = fully gray frozen tee icons."));
 
 	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
 	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Official server list"));

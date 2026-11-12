@@ -55,15 +55,21 @@ namespace
 		return std::clamp(Layout.m_Scale / 100.0f, 0.25f, 3.0f);
 	}
 
-	// integratedclient (task-57): frozen tee icons are rendered with a gray filter (alpha preserved);
-	// the gray tint wins over custom skin colors. The lightness is capped so near-white tints
-	// (default tee colors) also visibly turn gray.
+	// integratedclient (task-63): frozen tee icons use a configurable gray filter strength
+	// (rc_frozen_tee_gray: 0 = original colors, 100 = full gray). The gray tint wins over custom
+	// skin colors and keeps the alpha; the lightness is capped so near-white tints visibly turn gray.
 	ColorRGBA FrozenGrayTint(const ColorRGBA &Color)
 	{
 		ColorHSLA Hsla = color_cast<ColorHSLA>(Color);
 		Hsla.s = 0.0f;
 		Hsla.l = std::min(Hsla.l, 0.7f);
-		return color_cast<ColorRGBA>(Hsla);
+		const ColorRGBA Gray = color_cast<ColorRGBA>(Hsla);
+		const float Strength = std::clamp(g_Config.m_RcFrozenTeeGray / 100.0f, 0.0f, 1.0f);
+		return ColorRGBA(
+			Color.r + (Gray.r - Color.r) * Strength,
+			Color.g + (Gray.g - Color.g) * Strength,
+			Color.b + (Gray.b - Color.b) * Strength,
+			Color.a);
 	}
 
 	enum

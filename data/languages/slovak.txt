@@ -5200,6 +5200,12 @@ Deferred hook collision line
 Renders above water and transparent tiles.
 == 
 
+Frozen tee gray filter
+== 
+
+0 = original colors, 100 = fully gray frozen tee icons.
+== 
+
 Official server list
 == 
 

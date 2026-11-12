@@ -3138,6 +3138,12 @@ Unlimited
 Max range (blocks)
 == 最大范围（格）
 
+Frozen tee gray filter
+== 冻结 Tee 灰色滤镜
+
+0 = original colors, 100 = fully gray frozen tee icons.
+== 0 = 原色，100 = 冻结 Tee 图标完全灰色。
+
 BETA
 == 
 
