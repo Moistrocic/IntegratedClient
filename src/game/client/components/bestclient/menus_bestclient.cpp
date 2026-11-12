@@ -1148,21 +1148,23 @@ void CMenus::RenderSettingsBestClientVisuals(CUIRect MainView)
 		CornerIndicatorView.HSplitTop(LineSize, &Content, &CornerIndicatorView);
 		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcCornerIndicatorProximity, BcLocalize("Scale by distance"), &g_Config.m_BcCornerIndicatorProximity, &Content, LineSize);
 
-		// integratedclient (task-57): maximum range filter (0 = unlimited)
+		// integratedclient (task-61): maximum range filter in blocks (1 block = 32 world units; 0 = unlimited)
 		CornerIndicatorView.HSplitTop(MarginSmall, nullptr, &CornerIndicatorView);
 		CornerIndicatorView.HSplitTop(LineSize, &Content, &CornerIndicatorView);
 		{
-			constexpr int MaxRangeLimit = 8000;
+			constexpr int MaxRangeLimit = 250; // blocks
 			BestClientSettingsSearch::DrawItemHighlight(&g_Config.m_BcCornerIndicatorMaxRange, &Content);
 			CUIRect MaxRangeLabel, MaxRangeBar;
-			Content.VSplitMid(&MaxRangeLabel, &MaxRangeBar, std::min(10.0f, Content.w * 0.05f));
+			// slightly wider label than the default scrollbar split because the label includes "blocks"
+			Content.VSplitLeft(Content.w * 0.6f, &MaxRangeLabel, &MaxRangeBar);
+			MaxRangeBar.VSplitLeft(std::min(10.0f, Content.w * 0.05f), nullptr, &MaxRangeBar);
 			char aValue[64];
 			if(g_Config.m_BcCornerIndicatorMaxRange <= 0)
 				str_copy(aValue, BcLocalize("Unlimited"));
 			else
-				str_format(aValue, sizeof(aValue), "%d", g_Config.m_BcCornerIndicatorMaxRange);
+				str_format(aValue, sizeof(aValue), BcLocalize("%d blocks"), g_Config.m_BcCornerIndicatorMaxRange);
 			char aLabel[128];
-			str_format(aLabel, sizeof(aLabel), "%s: %s", BcLocalize("Max range"), aValue);
+			str_format(aLabel, sizeof(aLabel), "%s: %s", BcLocalize("Max range (blocks)"), aValue);
 			Ui()->DoLabel(&MaxRangeLabel, aLabel, MaxRangeLabel.h * CUi::ms_FontmodHeight * 0.8f, TEXTALIGN_ML);
 			const float Relative = g_Config.m_BcCornerIndicatorMaxRange / (float)MaxRangeLimit;
 			const float NewRelative = Ui()->DoScrollbarH(&g_Config.m_BcCornerIndicatorMaxRange, &MaxRangeBar, Relative, nullptr, aValue);

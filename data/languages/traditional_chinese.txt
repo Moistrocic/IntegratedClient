@@ -2634,8 +2634,11 @@ RanbiClient
 Unlimited
 == 不受限制
 
-Max range
-== 最大範圍
+%d blocks
+== %d 格
+
+Max range (blocks)
+== 最大範圍（格）
 
 BETA
 == 

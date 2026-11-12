@@ -70,8 +70,8 @@ void CornerIndicator::Render(CGameClient *pGameClient)
 
 	const int CurTick = pGameClient->Client()->GameTick(g_Config.m_ClDummy);
 	const bool LocalAlive = !IsFrozen(pGameClient->m_aClients[LocalId], CurTick);
-	// integratedclient (task-57): optional maximum range filter; 0 keeps the old unlimited behavior.
-	const float MaxRange = (float)g_Config.m_BcCornerIndicatorMaxRange;
+	// integratedclient (task-61): the configured maximum range is in blocks (1 block = 32 world units).
+	const float MaxRange = (float)g_Config.m_BcCornerIndicatorMaxRange * 32.0f;
 	const vec2 LocalPos = pGameClient->m_aClients[LocalId].m_RenderPos;
 
 	struct SIndicatorEntry

@@ -3621,7 +3621,10 @@ Scale by distance
 Unlimited
 == 
 
-Max range
+%d blocks
+== 
+
+Max range (blocks)
 == 
 
 Ninja skin when frozen
