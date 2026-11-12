@@ -50,10 +50,12 @@
 
 ```powershell
 git submodule update --init ddnet-libs
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DDEV=ON -DDOWNLOAD_GTEST=ON
-cmake --build build --target game-client -j 8
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DDEV=ON -DDOWNLOAD_GTEST=ON -DVULKAN=ON
+cmake --build build --target everything -j 8
 .\build\DDNet.exe
 ```
+
+> 默认构建目录为 `build`，使用 **Vulkan** 后端，并同时构建客户端（`DDNet.exe`）与服务器（`DDNet-Server.exe`）。
 
 > 本地并行度请保持在 8 核以内（详见 `AGENTS.md`）。
 

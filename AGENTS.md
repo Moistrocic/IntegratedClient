@@ -107,9 +107,11 @@ git submodule update --init clientsSource/BestClient clientsSource/RanbiClient
 构建（根目录，构建选项以导入后的 `README.md` / `docs/BUILDING.md` 为准）：
 
 ```powershell
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DDEV=ON -DDOWNLOAD_GTEST=ON
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DDEV=ON -DDOWNLOAD_GTEST=ON -DVULKAN=ON
 cmake --build build --target everything -j 8
 ```
+
+- **默认本地构建**：目录固定为 `build`，必须启用 **Vulkan**（`-DVULKAN=ON`），并同时构建客户端与服务器（`--target everything` 会生成 `DDNet.exe` 与 `DDNet-Server.exe`）。不要默认使用 `build-features` 等临时目录。
 
 - **本机并行度上限 8**：本地构建、格式化、脚本等 CPU 密集型任务必须显式限制并行数——`cmake --build ... -j 8`（Ninja 默认吃满全部核心，禁止不带 `-j` 裸跑）、`python scripts/fix_style.py -j 8`；Docker/其他批量任务同理。不得占满用户机器的 CPU 与磁盘。
 - **一个 build 目录只对应一套工具链**：MSVC 与 GCC/MinGW 各用独立目录（如 `build-msvc`、`build-gcc`、`build-vscode`），不要在同一 build 目录切换编译器/generator。GCC/MinGW 构建必须使用 GNU 版 Rust（`RUSTUP_TOOLCHAIN=stable-x86_64-pc-windows-gnu`），否则 cargo 产出 MSVC 的 `.lib`，链接时会找不到 `libddnet_engine_shared.a`。
