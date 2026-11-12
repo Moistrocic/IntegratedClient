@@ -1137,6 +1137,9 @@ public:
 	bool IsShowAllPlayersOffscreen(int ClientId) const;
 	bool IsShowAllPlayersPosOffscreen(vec2 Pos) const;
 	bool IsShowAllPlayersEntityOffscreen(int ObjType, const void *pData) const;
+	// ranbi: rc_show_all_players - world-space view rectangle taken from the camera (never from
+	// Graphics()->GetScreen(), which in the Update phase is still the previous frame's/UI mapping).
+	bool GetShowAllPlayersViewRect(CScreenRect *pRect) const;
 
 	int m_MultiViewTeam;
 	float m_MultiViewPersonalZoom;

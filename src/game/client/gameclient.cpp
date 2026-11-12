@@ -4604,16 +4604,38 @@ namespace
 	constexpr float s_RcShowAllPlayersMargin = 2000.0f;
 }
 
+bool CGameClient::GetShowAllPlayersViewRect(CScreenRect *pRect) const
+{
+	// The visible world rectangle must be derived from the camera, not from
+	// Graphics()->GetScreen(): Update (snapshot/prediction) runs before Render and GetScreen()
+	// then still holds the previous frame's mapping (possibly a menu/UI mapping), which would
+	// wrongly cull objects that are actually visible. Same computation as
+	// components/bestclient/corner_indicator.cpp uses for the corner indicator.
+	if(!g_Config.m_RcShowAllPlayers || m_MultiViewActivated)
+		return false;
+	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
+		return false;
+	const float Aspect = Graphics()->ScreenAspect();
+	const float CamZoom = m_Camera.m_Zoom;
+	const vec2 Center = m_Camera.m_Center;
+	// Conservative: do not cull anything while the camera/aspect is not usable yet
+	// (map loading, minimized window, invalid zoom, ...).
+	if(!(Aspect > 0.0f) || !(CamZoom > 0.0f))
+		return false;
+	const CScreenRect World = Graphics()->MapScreenToWorld(Center.x, Center.y, 100.0f, 100.0f, 100.0f, 0, 0, Aspect, CamZoom);
+	if(!(World.m_BottomRight.x > World.m_TopLeft.x) || !(World.m_BottomRight.y > World.m_TopLeft.y))
+		return false;
+	*pRect = World;
+	return true;
+}
+
 bool CGameClient::IsShowAllPlayersPosOffscreen(vec2 Pos) const
 {
-	if(!g_Config.m_RcShowAllPlayers)
+	CScreenRect World = CScreenRect(0.0f, 0.0f, 0.0f, 0.0f);
+	if(!GetShowAllPlayersViewRect(&World))
 		return false;
-	const CScreenRect Screen = Graphics()->GetScreen();
-	if(Screen.m_BottomRight.x <= Screen.m_TopLeft.x || Screen.m_BottomRight.y <= Screen.m_TopLeft.y)
-		return false;
-	CScreenRect Expanded = Screen;
-	Expanded.Expand(s_RcShowAllPlayersMargin);
-	return !Expanded.Inside(Pos);
+	World.Expand(s_RcShowAllPlayersMargin);
+	return !World.Inside(Pos);
 }
 
 bool CGameClient::IsShowAllPlayersOffscreen(int ClientId) const
@@ -4644,63 +4666,42 @@ bool CGameClient::IsShowAllPlayersOffscreen(int ClientId) const
 
 bool CGameClient::IsShowAllPlayersEntityOffscreen(int ObjType, const void *pData) const
 {
+	// Only snapshot entities whose snapshot position is also their rendered position may be
+	// filtered: pickups and lasers (doors/guns/draggers included) are static in the snapshot.
+	// Projectiles are deliberately NOT filtered: their snapshot m_X/m_Y is the spawn position
+	// while rendering extrapolates the trajectory from m_StartTick, so a projectile fired
+	// off-screen can fly into the view and must not be dropped (task-68 B2, conservative).
+	if(ObjType != NETOBJTYPE_PICKUP && ObjType != NETOBJTYPE_DDNETPICKUP &&
+		ObjType != NETOBJTYPE_LASER && ObjType != NETOBJTYPE_DDNETLASER)
+		return false;
 	if(!g_Config.m_RcShowAllPlayers || pData == nullptr)
 		return false;
-	vec2 Pos;
-	vec2 From;
-	switch(ObjType)
-	{
-	case NETOBJTYPE_PROJECTILE:
-	{
-		const auto *pProjectile = (const CNetObj_Projectile *)pData;
-		Pos = vec2(pProjectile->m_X, pProjectile->m_Y);
-		break;
-	}
-	case NETOBJTYPE_DDRACEPROJECTILE:
-	{
-		const auto *pProjectile = (const CNetObj_DDRaceProjectile *)pData;
-		Pos = vec2(pProjectile->m_X, pProjectile->m_Y);
-		break;
-	}
-	case NETOBJTYPE_DDNETPROJECTILE:
-	{
-		const auto *pProjectile = (const CNetObj_DDNetProjectile *)pData;
-		Pos = vec2(pProjectile->m_X, pProjectile->m_Y);
-		break;
-	}
-	case NETOBJTYPE_PICKUP:
+	if(ObjType == NETOBJTYPE_PICKUP)
 	{
 		const auto *pPickup = (const CNetObj_Pickup *)pData;
-		Pos = vec2(pPickup->m_X, pPickup->m_Y);
-		break;
+		return IsShowAllPlayersPosOffscreen(vec2(pPickup->m_X, pPickup->m_Y));
 	}
-	case NETOBJTYPE_DDNETPICKUP:
+	if(ObjType == NETOBJTYPE_DDNETPICKUP)
 	{
 		const auto *pPickup = (const CNetObj_DDNetPickup *)pData;
-		Pos = vec2(pPickup->m_X, pPickup->m_Y);
-		break;
+		return IsShowAllPlayersPosOffscreen(vec2(pPickup->m_X, pPickup->m_Y));
 	}
-	case NETOBJTYPE_LASER:
+	vec2 Pos;
+	vec2 From;
+	if(ObjType == NETOBJTYPE_LASER)
 	{
 		const auto *pLaser = (const CNetObj_Laser *)pData;
 		Pos = vec2(pLaser->m_X, pLaser->m_Y);
 		From = vec2(pLaser->m_FromX, pLaser->m_FromY);
-		break;
 	}
-	case NETOBJTYPE_DDNETLASER:
+	else
 	{
 		const auto *pLaser = (const CNetObj_DDNetLaser *)pData;
 		Pos = vec2(pLaser->m_ToX, pLaser->m_ToY);
 		From = vec2(pLaser->m_FromX, pLaser->m_FromY);
-		break;
-	}
-	default:
-		return false;
 	}
 	// Lasers (doors/guns/draggers included) can be long: keep them while either end is near.
-	if(ObjType == NETOBJTYPE_LASER || ObjType == NETOBJTYPE_DDNETLASER)
-		return IsShowAllPlayersPosOffscreen(Pos) && IsShowAllPlayersPosOffscreen(From);
-	return IsShowAllPlayersPosOffscreen(Pos);
+	return IsShowAllPlayersPosOffscreen(Pos) && IsShowAllPlayersPosOffscreen(From);
 }
 
 void CGameClient::UpdatePrediction()
@@ -6132,10 +6133,11 @@ void CGameClient::SnapCollectEntities()
 		else if(Item.m_Type == NETOBJTYPE_PICKUP || Item.m_Type == NETOBJTYPE_DDNETPICKUP || Item.m_Type == NETOBJTYPE_LASER || Item.m_Type == NETOBJTYPE_DDNETLASER || Item.m_Type == NETOBJTYPE_PROJECTILE || Item.m_Type == NETOBJTYPE_DDRACEPROJECTILE || Item.m_Type == NETOBJTYPE_DDNETPROJECTILE)
 		{
 			// ranbi: rc_show_all_players - because the whole map is requested via ShowDistance,
-			// the server also sends every projectile/laser(door/gun/dragger)/pickup of the map.
-			// They are only rendered/needed for prediction near the view (rendering already
-			// culls them), so drop the far ones here. This does not affect the snapshot itself
-			// (demo recording, other players' positions and all events stay intact).
+			// the server also sends every laser(door/gun/dragger)/pickup of the map. They are
+			// only rendered/needed for prediction near the view (rendering already culls them),
+			// so drop the far ones here. Projectiles are intentionally not filtered (their
+			// snapshot position is the spawn point, not the rendered position). This does not
+			// affect the snapshot itself (demo recording, players and all events stay intact).
 			if(IsShowAllPlayersEntityOffscreen(Item.m_Type, Item.m_pData))
 				continue;
 			vItemData.push_back({Item, nullptr});
