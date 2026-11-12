@@ -55,6 +55,17 @@ namespace
 		return std::clamp(Layout.m_Scale / 100.0f, 0.25f, 3.0f);
 	}
 
+	// integratedclient (task-57): frozen tee icons are rendered with a gray filter (alpha preserved);
+	// the gray tint wins over custom skin colors. The lightness is capped so near-white tints
+	// (default tee colors) also visibly turn gray.
+	ColorRGBA FrozenGrayTint(const ColorRGBA &Color)
+	{
+		ColorHSLA Hsla = color_cast<ColorHSLA>(Color);
+		Hsla.s = 0.0f;
+		Hsla.l = std::min(Hsla.l, 0.7f);
+		return color_cast<ColorRGBA>(Hsla);
+	}
+
 	enum
 	{
 		FROZEN_HUD_EXPAND_RIGHT = 0,
@@ -2441,6 +2452,13 @@ void CHud::RenderFrozenHud(bool ForcePreview)
 			if(Overflow && !Frozen && OverflowIndex == 1)
 				continue;
 
+			if(Frozen)
+			{
+				// integratedclient (task-57): gray filter for frozen tee icons; applied after the
+				// frozen-skin/ninja skin choice so the gray always wins.
+				TeeInfo.m_ColorBody = FrozenGrayTint(TeeInfo.m_ColorBody);
+				TeeInfo.m_ColorFeet = FrozenGrayTint(TeeInfo.m_ColorFeet);
+			}
 			TeeInfo.m_Size = TeeSize;
 			const CAnimState *pIdleState = CAnimState::GetIdle();
 			vec2 OffsetToMid;

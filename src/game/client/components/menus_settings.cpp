@@ -153,7 +153,7 @@ void CMenus::RenderSettings(CUIRect MainView)
 			Localize("Profiles"), // TClient
 			Localize("Configs"), // TClient
 			Localize("Credits"),
-			Localize("Ranbi"), // integratedclient
+			Localize("RanbiClient"), // integratedclient
 			Localize("IntegratedClient")}; // integratedclient
 		static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 		const int TabCorners = NavOnLeft ? IGraphics::CORNER_L : IGraphics::CORNER_R;

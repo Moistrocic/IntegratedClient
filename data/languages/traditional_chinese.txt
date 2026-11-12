@@ -2628,6 +2628,15 @@ BestClient server features are unavailable.
 You will be marked as a fake BC client.
 == 你會被標記為偽 BC 端。
 
+RanbiClient
+== RanbiClient
+
+Unlimited
+== 不受限制
+
+Max range
+== 最大範圍
+
 BETA
 == 
 
@@ -2776,9 +2785,6 @@ Configs
 == 
 
 Credits
-== 
-
-Ranbi
 == 
 
 IntegratedClient

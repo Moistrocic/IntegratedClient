@@ -2781,7 +2781,7 @@ Profiles
 Configs
 == 
 
-Ranbi
+RanbiClient
 == 
 
 IntegratedClient
@@ -3616,6 +3616,12 @@ Indicate last teammate
 == 
 
 Scale by distance
+== 
+
+Unlimited
+== 
+
+Max range
 == 
 
 Ninja skin when frozen

@@ -24,6 +24,17 @@ namespace
 		return Client.m_DeepFrozen || Client.m_LiveFrozen || (Client.m_FreezeEnd != 0 && Client.m_FreezeEnd > CurTick);
 	}
 
+	// integratedclient (task-57): frozen tee icons are rendered with a gray filter (alpha preserved);
+	// the gray tint wins over ninja/custom color tints. The lightness is capped so near-white tints
+	// (default tee colors) also visibly turn gray.
+	ColorRGBA FrozenGrayTint(const ColorRGBA &Color)
+	{
+		ColorHSLA Hsla = color_cast<ColorHSLA>(Color);
+		Hsla.s = 0.0f;
+		Hsla.l = std::min(Hsla.l, 0.7f);
+		return color_cast<ColorRGBA>(Hsla);
+	}
+
 	bool RenderLivePlayerIcon(CGameClient *pGameClient, int ClientId, vec2 Pos, float Size, float Alpha, const CTeeRenderInfo *pRenderInfoOverride)
 	{
 		if(!in_range(ClientId, MAX_CLIENTS - 1) || !pGameClient->m_Snap.m_apPlayerInfos[ClientId] || !pGameClient->m_Snap.m_aCharacters[ClientId].m_Active)
@@ -59,6 +70,9 @@ void CornerIndicator::Render(CGameClient *pGameClient)
 
 	const int CurTick = pGameClient->Client()->GameTick(g_Config.m_ClDummy);
 	const bool LocalAlive = !IsFrozen(pGameClient->m_aClients[LocalId], CurTick);
+	// integratedclient (task-57): optional maximum range filter; 0 keeps the old unlimited behavior.
+	const float MaxRange = (float)g_Config.m_BcCornerIndicatorMaxRange;
+	const vec2 LocalPos = pGameClient->m_aClients[LocalId].m_RenderPos;
 
 	struct SIndicatorEntry
 	{
@@ -79,6 +93,9 @@ void CornerIndicator::Render(CGameClient *pGameClient)
 		SIndicatorEntry Entry;
 		Entry.m_ClientId = i;
 		Entry.m_Pos = pGameClient->m_aClients[i].m_RenderPos;
+		// integratedclient (task-57): out-of-range teammates are not collected/rendered at all.
+		if(MaxRange > 0.0f && distance(LocalPos, Entry.m_Pos) > MaxRange)
+			continue;
 		Entry.m_Frozen = IsFrozen(pGameClient->m_aClients[i], CurTick);
 		if(!Entry.m_Frozen)
 			AnyOtherAlive = true;
@@ -183,7 +200,13 @@ void CornerIndicator::Render(CGameClient *pGameClient)
 			TeeInfo.m_ColorFeet = Tint;
 		}
 		if(aIndicators[i].m_Frozen)
+		{
 			TeeInfo.m_TeeRenderFlags |= TEE_NO_WEAPON;
+			// integratedclient (task-57): gray filter for frozen icons; applied after the
+			// ninja/custom-color tints so the gray always wins.
+			TeeInfo.m_ColorBody = FrozenGrayTint(TeeInfo.m_ColorBody);
+			TeeInfo.m_ColorFeet = FrozenGrayTint(TeeInfo.m_ColorFeet);
+		}
 
 		const CAnimState *pIdleState = CAnimState::GetIdle();
 		vec2 OffsetToMid;

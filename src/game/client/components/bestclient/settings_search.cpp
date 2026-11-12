@@ -93,7 +93,7 @@ namespace BestClientSettingsSearch
 		if(GroupForLeaf(Leaf) == SETTINGS_NAV_GROUP_TCLIENT)
 			return TCLocalize("TClient");
 		if(GroupForLeaf(Leaf) == SETTINGS_NAV_GROUP_RANBI) // integratedclient
-			return Localize("Ranbi");
+			return Localize("RanbiClient");
 		return Localize("BestClient");
 	}
 

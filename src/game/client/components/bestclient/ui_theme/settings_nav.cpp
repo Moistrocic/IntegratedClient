@@ -445,7 +445,7 @@ void CMenus::RenderSettingsNavNewStyle(CUIRect &TabBar)
 		Localize("DDNet"),
 		TCLocalize("TClient"),
 		Localize("BestClient"),
-		Localize("Ranbi"), // integratedclient
+		Localize("RanbiClient"), // integratedclient
 		Localize("IntegratedClient"), // integratedclient
 	};
 

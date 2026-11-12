@@ -1066,7 +1066,7 @@ void CMenus::RenderSettingsBestClientVisuals(CUIRect MainView)
 	const float CornerIndicatorColorPickerLineSize = 25.0f;
 	const float CornerIndicatorColorPickerSpacing = 5.0f;
 	const float CornerIndicatorExpandedTargetHeight =
-		7.0f * (MarginSmall + LineSize) +
+		8.0f * (MarginSmall + LineSize) +
 		(CornerIndicatorShowSizes ? 3.0f * (MarginSmall + LineSize) : 0.0f) +
 		(CornerIndicatorShowCustomColors ? 3.0f * (CornerIndicatorColorPickerSpacing + CornerIndicatorColorPickerLineSize) : 0.0f);
 	const float CornerIndicatorExpandedHeight = BC_MODULE_REVEAL(CornerIndicatorEnabled, CornerIndicatorExpandedTargetHeight, Client()->RenderFrameTime());
@@ -1098,6 +1098,7 @@ void CMenus::RenderSettingsBestClientVisuals(CUIRect MainView)
 		g_Config.m_BcCornerIndicatorIndicateLastTeammate = DefaultConfig::BcCornerIndicatorIndicateLastTeammate;
 		g_Config.m_BcCornerIndicatorProximity = DefaultConfig::BcCornerIndicatorProximity;
 		g_Config.m_BcCornerIndicatorProximityRange = DefaultConfig::BcCornerIndicatorProximityRange;
+		g_Config.m_BcCornerIndicatorMaxRange = DefaultConfig::BcCornerIndicatorMaxRange;
 		g_Config.m_BcCornerIndicatorProximityMinSize = DefaultConfig::BcCornerIndicatorProximityMinSize;
 		g_Config.m_BcCornerIndicatorNinjaFrozen = DefaultConfig::BcCornerIndicatorNinjaFrozen;
 		g_Config.m_BcCornerIndicatorSizeAlive = DefaultConfig::BcCornerIndicatorSizeAlive;
@@ -1146,6 +1147,27 @@ void CMenus::RenderSettingsBestClientVisuals(CUIRect MainView)
 		CornerIndicatorView.HSplitTop(MarginSmall, nullptr, &CornerIndicatorView);
 		CornerIndicatorView.HSplitTop(LineSize, &Content, &CornerIndicatorView);
 		DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_BcCornerIndicatorProximity, BcLocalize("Scale by distance"), &g_Config.m_BcCornerIndicatorProximity, &Content, LineSize);
+
+		// integratedclient (task-57): maximum range filter (0 = unlimited)
+		CornerIndicatorView.HSplitTop(MarginSmall, nullptr, &CornerIndicatorView);
+		CornerIndicatorView.HSplitTop(LineSize, &Content, &CornerIndicatorView);
+		{
+			constexpr int MaxRangeLimit = 8000;
+			BestClientSettingsSearch::DrawItemHighlight(&g_Config.m_BcCornerIndicatorMaxRange, &Content);
+			CUIRect MaxRangeLabel, MaxRangeBar;
+			Content.VSplitMid(&MaxRangeLabel, &MaxRangeBar, std::min(10.0f, Content.w * 0.05f));
+			char aValue[64];
+			if(g_Config.m_BcCornerIndicatorMaxRange <= 0)
+				str_copy(aValue, BcLocalize("Unlimited"));
+			else
+				str_format(aValue, sizeof(aValue), "%d", g_Config.m_BcCornerIndicatorMaxRange);
+			char aLabel[128];
+			str_format(aLabel, sizeof(aLabel), "%s: %s", BcLocalize("Max range"), aValue);
+			Ui()->DoLabel(&MaxRangeLabel, aLabel, MaxRangeLabel.h * CUi::ms_FontmodHeight * 0.8f, TEXTALIGN_ML);
+			const float Relative = g_Config.m_BcCornerIndicatorMaxRange / (float)MaxRangeLimit;
+			const float NewRelative = Ui()->DoScrollbarH(&g_Config.m_BcCornerIndicatorMaxRange, &MaxRangeBar, Relative, nullptr, aValue);
+			g_Config.m_BcCornerIndicatorMaxRange = std::clamp(round_to_int(NewRelative * MaxRangeLimit), 0, MaxRangeLimit);
+		}
 
 		CornerIndicatorView.HSplitTop(MarginSmall, nullptr, &CornerIndicatorView);
 		CornerIndicatorView.HSplitTop(LineSize, &Content, &CornerIndicatorView);

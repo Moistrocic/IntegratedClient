@@ -9,6 +9,7 @@
 	{"Show frozen teammates", SETTINGS_NAV_LEAF_BC_VISUALS, "Corner indicator", &g_Config.m_BcCornerIndicatorShowFrozen, &g_Config.m_BcCornerIndicator},
 	{"Indicate last teammate", SETTINGS_NAV_LEAF_BC_VISUALS, "Corner indicator", &g_Config.m_BcCornerIndicatorIndicateLastTeammate, &g_Config.m_BcCornerIndicator},
 	{"Scale by distance", SETTINGS_NAV_LEAF_BC_VISUALS, "Corner indicator", &g_Config.m_BcCornerIndicatorProximity, &g_Config.m_BcCornerIndicator},
+	{"Max range", SETTINGS_NAV_LEAF_BC_VISUALS, "Corner indicator", &g_Config.m_BcCornerIndicatorMaxRange, &g_Config.m_BcCornerIndicator},
 	{"Ninja skin when frozen", SETTINGS_NAV_LEAF_BC_VISUALS, "Corner indicator", &g_Config.m_BcCornerIndicatorNinjaFrozen, &g_Config.m_BcCornerIndicator},
 	{"Alive size", SETTINGS_NAV_LEAF_BC_VISUALS, "Corner indicator", &g_Config.m_BcCornerIndicatorSizeAlive, &g_Config.m_BcCornerIndicator},
 	{"Frozen size", SETTINGS_NAV_LEAF_BC_VISUALS, "Corner indicator", &g_Config.m_BcCornerIndicatorSizeFrozen, &g_Config.m_BcCornerIndicator},

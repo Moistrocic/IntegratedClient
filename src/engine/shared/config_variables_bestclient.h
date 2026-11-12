@@ -518,6 +518,7 @@ MACRO_CONFIG_INT(BcCornerIndicatorShowFrozen, bc_corner_indicator_show_frozen, 1
 MACRO_CONFIG_INT(BcCornerIndicatorIndicateLastTeammate, bc_corner_indicator_indicate_last_teammate, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Indicate frozen teammates in the corner indicator when the local player is the last alive")
 MACRO_CONFIG_INT(BcCornerIndicatorProximity, bc_corner_indicator_proximity, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Scale the corner indicator by distance")
 MACRO_CONFIG_INT(BcCornerIndicatorProximityRange, bc_corner_indicator_proximity_range, 2000, 200, 8000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Corner indicator proximity range")
+MACRO_CONFIG_INT(BcCornerIndicatorMaxRange, bc_corner_indicator_max_range, 0, 0, 8000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Hide corner indicators for teammates farther away than this (0 = no limit)")
 MACRO_CONFIG_INT(BcCornerIndicatorProximityMinSize, bc_corner_indicator_proximity_min_size, 16, 4, 64, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Minimum corner indicator size when scaled by distance")
 MACRO_CONFIG_INT(BcCornerIndicatorNinjaFrozen, bc_corner_indicator_ninja_frozen, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Use the ninja skin for frozen corner indicators")
 MACRO_CONFIG_INT(BcCornerIndicatorSizeAlive, bc_corner_indicator_size_alive, 48, 12, 128, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Alive corner indicator size")
