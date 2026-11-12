@@ -33,10 +33,8 @@ public:
 	// bestclient
 	void ReconstructSmokeTrail(const CProjectileData *pCurrent, int DestroyTick);
 	void RenderLaser(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA InnerColor, float TicksBody, float TicksHead, int Type) const;
-	// ranbi: lightweight preview beam (body only, no glow/head/particle VFX)
-	void RenderLaserPreview(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA InnerColor, float TicksBody, int Type) const;
 	// ranbi: original projectile sprite/trail visuals at an arbitrary simulation point
-	void RenderProjectileTrailPreview(vec2 Pos, vec2 Vel, int Weapon, float Alpha = 1.0f, bool DrawSprite = true, bool UseBulletStyle = false);
+	void RenderProjectileTrailPreview(vec2 Pos, vec2 Vel, int Weapon, float Alpha = 1.0f, bool DrawSprite = true);
 
 private:
 	int m_BlueFlagOffset;
