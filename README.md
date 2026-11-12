@@ -1,6 +1,6 @@
 # IntegratedClient
 
-以 **BestClient** 为底座的整合客户端项目，在 DDNet / TClient 生态基础上整合 **RanbiClient** 的功能，并新增本项目特性。当前版本：**1.0.0**。
+以 **BestClient** 为底座的整合客户端项目，在 DDNet / TClient 生态基础上整合 **RanbiClient** 的功能，并新增本项目特性。当前版本：**1.0.1**。
 
 ## 来源仓库
 
@@ -25,7 +25,11 @@
 
 - 添加了是否向 BC 服务器发送身份的开关，关闭后你将无法使用和 BC 服务器相关功能。开启则会被 BC 服务器标记为 Fake 玩家（非官方构建 BC 端）。
 - **角落指示最大范围**：BestClient → Visuals → Corner indicator 可设置 `Max range (blocks)`（0 = 不限制，单位格）；超出范围的队友不显示角落图标
-- 修复 Fast Practice 开关瞬间误攻击（底座 BestClient 本身问题）：开启/关闭练习不再向服务器发送一次残留 fire，正常开火与练习内攻击不受影响。
+- 修复 Fast Practice / dummy 输入 fire 回归：
+  - 开启/关闭练习不再触发一次真实出锤，关闭后不再出现高频预测出锤；
+  - ESC / 聊天 / 控制台打开后 dummy 不再异常预测出锤；
+  - 练习中刚出锤后**第一次**打开 ESC/聊天/控制台，不再在练习世界额外触发一次攻击；
+  - 保留正常开火、练习内攻击与 `cl_dummy_hammer` 自动锤频率。
 - Fast Practice 虚影坐标：HUD 与 TClient statusbar 的 Position / Speed / Angle 可在练习时显示当前操控虚影的数据，而不是固定的实体值。
 
 ### RanbiClient 功能整合（默认关闭，关闭时与底座行为一致）
