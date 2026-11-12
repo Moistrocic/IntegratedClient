@@ -1953,6 +1953,11 @@ void CNamePlates::OnRender()
 		// Only render name plates for active characters
 		if(GameClient()->m_Snap.m_aCharacters[i].m_Active)
 		{
+			// ranbi: rc_show_all_players - name plates of far off-screen players are not
+			// visible; skip the per-client name plate work (kept for status bar/corner
+			// indicator which only read positions).
+			if(GameClient()->IsShowAllPlayersOffscreen(i))
+				continue;
 			// TClient
 			if(GameClient()->m_aClients[i].m_IsVolleyBall)
 				continue;

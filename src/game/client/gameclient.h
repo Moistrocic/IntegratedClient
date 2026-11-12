@@ -1129,6 +1129,15 @@ public:
 	vec2 GetFreezePos(int ClientId);
 	vec2 GetFastInputPos(int ClientId);
 
+	// ranbi: rc_show_all_players - the setting only exists to receive the positions of all
+	// players (TClient tee status bar, BestClient corner indicator, demo playback). Everything
+	// else (prediction, anti-ping smoothing, rendering, map-wide entity prediction) is only
+	// needed for what can actually be seen/interacted with, so players/entities far outside
+	// the view are skipped there while their snapshot data is kept.
+	bool IsShowAllPlayersOffscreen(int ClientId) const;
+	bool IsShowAllPlayersPosOffscreen(vec2 Pos) const;
+	bool IsShowAllPlayersEntityOffscreen(int ObjType, const void *pData) const;
+
 	int m_MultiViewTeam;
 	float m_MultiViewPersonalZoom;
 	bool m_MultiViewShowHud;

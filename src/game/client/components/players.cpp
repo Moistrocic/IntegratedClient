@@ -1306,6 +1306,10 @@ void CPlayers::OnRender()
 	{
 		if(!IsPlayerInfoAvailable(i))
 			continue;
+		// ranbi: rc_show_all_players - far off-screen players are not rendered at all; do not
+		// build their tee render info / frozen/ninja animation state either.
+		if(GameClient()->IsShowAllPlayersOffscreen(i))
+			continue;
 
 		aRenderInfo[i] = GameClient()->m_aClients[i].m_RenderInfo;
 		aRenderInfo[i].m_TeeRenderFlags = 0;
@@ -1408,6 +1412,9 @@ void CPlayers::OnRender()
 		{
 			continue;
 		}
+		// ranbi: rc_show_all_players - hooks of far off-screen players cannot be seen.
+		if(GameClient()->IsShowAllPlayersOffscreen(ClientId))
+			continue;
 		RenderHook(ScreenRect, &GameClient()->m_aClients[ClientId].m_RenderPrev, &GameClient()->m_aClients[ClientId].m_RenderCur, &aRenderInfo[ClientId], ClientId);
 	}
 	if(LocalClientId != -1 && IsPlayerInfoAvailable(LocalClientId))
@@ -1448,6 +1455,10 @@ void CPlayers::OnRender()
 		{
 			continue;
 		}
+		// ranbi: rc_show_all_players - far off-screen players only keep their snapshot position
+		// (status bar/corner indicator read m_RenderPos); skip their tee/hook-coll render work.
+		if(GameClient()->IsShowAllPlayersOffscreen(ClientId))
+			continue;
 
 		auto Proxy = [this, ClientId, ScreenRect]() {
 			RenderHookCollLine(ScreenRect, &GameClient()->m_aClients[ClientId].m_RenderPrev, &GameClient()->m_aClients[ClientId].m_RenderCur, ClientId);

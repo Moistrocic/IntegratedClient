@@ -1817,6 +1817,10 @@ void CGameClient::ProcessEvents()
 			const CNetEvent_DamageInd *pEvent = (const CNetEvent_DamageInd *)Item.m_pData;
 
 			vec2 DamageIndPos = vec2(pEvent->m_X, pEvent->m_Y);
+			// ranbi: rc_show_all_players - damage indicators of far off-screen players can
+			// never be seen; skip their sprite creation.
+			if(IsShowAllPlayersPosOffscreen(DamageIndPos))
+				continue;
 			if(!m_PredictedWorld.CheckPredictedEventHandled(CGameWorld::CPredictedEvent(Item.m_Type, DamageIndPos, -1, Client()->GameTick(g_Config.m_ClDummy), pEvent->m_Angle)))
 			{
 				m_Effects.DamageIndicator(vec2(pEvent->m_X, pEvent->m_Y), direction(pEvent->m_Angle / 256.0f), Alpha);
@@ -1827,6 +1831,10 @@ void CGameClient::ProcessEvents()
 			const CNetEvent_Explosion *pEvent = (const CNetEvent_Explosion *)Item.m_pData;
 
 			vec2 ExplosionPos = vec2(pEvent->m_X, pEvent->m_Y);
+			// ranbi: rc_show_all_players - explosions far outside the view cannot be seen;
+			// skip their particle/flow effects (explosion sounds are separate sound events).
+			if(IsShowAllPlayersPosOffscreen(ExplosionPos))
+				continue;
 			if(!m_PredictedWorld.CheckPredictedEventHandled(CGameWorld::CPredictedEvent(Item.m_Type, ExplosionPos, -1, Client()->GameTick(g_Config.m_ClDummy))))
 			{
 				m_Effects.Explosion(ExplosionPos, Alpha);
@@ -1847,11 +1855,17 @@ void CGameClient::ProcessEvents()
 		else if(Item.m_Type == NETEVENTTYPE_BIRTHDAY)
 		{
 			const CNetEvent_Birthday *pEvent = (const CNetEvent_Birthday *)Item.m_pData;
+			// ranbi: rc_show_all_players - confetti far outside the view cannot be seen.
+			if(IsShowAllPlayersPosOffscreen(vec2(pEvent->m_X, pEvent->m_Y)))
+				continue;
 			m_Effects.Confetti(vec2(pEvent->m_X, pEvent->m_Y), Alpha);
 		}
 		else if(Item.m_Type == NETEVENTTYPE_FINISH)
 		{
 			const CNetEvent_Finish *pEvent = (const CNetEvent_Finish *)Item.m_pData;
+			// ranbi: rc_show_all_players - confetti far outside the view cannot be seen.
+			if(IsShowAllPlayersPosOffscreen(vec2(pEvent->m_X, pEvent->m_Y)))
+				continue;
 			m_Effects.Confetti(vec2(pEvent->m_X, pEvent->m_Y), Alpha);
 		}
 		else if(Item.m_Type == NETEVENTTYPE_SPAWN)
@@ -3141,6 +3155,10 @@ void CGameClient::OnPredict()
 	{
 		if(!m_Snap.m_aCharacters[i].m_Active || i == m_Snap.m_LocalClientId || !m_aLastActive[i])
 			continue;
+		// ranbi: rc_show_all_players - off-screen players are not rendered, so their anti-ping
+		// smoothing render position does not need to be prepared.
+		if(IsShowAllPlayersOffscreen(i))
+			continue;
 		if(CloudInputMode)
 			aBeforeRender[i] = mix(m_aClients[i].m_PrevPredicted.m_Pos, m_aClients[i].m_Predicted.m_Pos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
 		else
@@ -3460,6 +3478,10 @@ void CGameClient::OnPredict()
 		{
 			if(!m_Snap.m_aCharacters[i].m_Active || i == m_Snap.m_LocalClientId || !m_aLastActive[i])
 				continue;
+			// ranbi: rc_show_all_players - off-screen players are not rendered; skip the
+			// per-client smoothing correction math entirely.
+			if(IsShowAllPlayersOffscreen(i))
+				continue;
 			vec2 NewPos = m_aClients[i].m_Predicted.m_Pos; // TClient
 			vec2 PredErr = (m_aLastPos[i] - NewPos) / (float)std::min(Client()->GetPredictionTime(), 200);
 			if(in_range(length(PredErr), 0.05f, 5.f))
@@ -3566,6 +3588,14 @@ void CGameClient::OnPredict()
 		for(int i = 0; i < MAX_CLIENTS; i++)
 		{
 			if(!m_Snap.m_aCharacters[i].m_Active || !m_aLastActive[i])
+			{
+				m_aClients[i].m_ValidAntipingSmooth = false;
+				continue;
+			}
+
+			// ranbi: rc_show_all_players - off-screen players are not rendered; skip the
+			// per-client bounding-box/history/variance anti-ping smoothing math.
+			if(IsShowAllPlayersOffscreen(i))
 			{
 				m_aClients[i].m_ValidAntipingSmooth = false;
 				continue;
@@ -4565,6 +4595,114 @@ void CGameClient::UpdateLocalTuning()
 	}
 }
 
+namespace
+{
+	// ranbi: rc_show_all_players - margin around the view that still counts as "relevant" for
+	// prediction/anti-ping smoothing/rendering. Must be larger than the maximum visual or
+	// interaction reach (hook and laser ~800 world units, nameplates ~800, tee render buffer
+	// 200) so nothing visible can ever be skipped.
+	constexpr float s_RcShowAllPlayersMargin = 2000.0f;
+}
+
+bool CGameClient::IsShowAllPlayersPosOffscreen(vec2 Pos) const
+{
+	if(!g_Config.m_RcShowAllPlayers)
+		return false;
+	const CScreenRect Screen = Graphics()->GetScreen();
+	if(Screen.m_BottomRight.x <= Screen.m_TopLeft.x || Screen.m_BottomRight.y <= Screen.m_TopLeft.y)
+		return false;
+	CScreenRect Expanded = Screen;
+	Expanded.Expand(s_RcShowAllPlayersMargin);
+	return !Expanded.Inside(Pos);
+}
+
+bool CGameClient::IsShowAllPlayersOffscreen(int ClientId) const
+{
+	if(!g_Config.m_RcShowAllPlayers || ClientId < 0 || ClientId >= MAX_CLIENTS)
+		return false;
+	if(!m_Snap.m_aCharacters[ClientId].m_Active)
+		return false;
+	// The local tee/dummy and the player we are following are always fully predicted/rendered.
+	if(ClientId == m_Snap.m_LocalClientId || ClientId == m_aLocalIds[0] || ClientId == m_aLocalIds[1])
+		return false;
+	if(m_Snap.m_SpecInfo.m_Active && ClientId == m_Snap.m_SpecInfo.m_SpectatorId)
+		return false;
+	// A player the local tee/dummy is currently hooked onto must stay predicted even when far
+	// away, otherwise the hook pull physics would be predicted wrongly (custom tune maps can
+	// have hooks that reach further than the safety margin).
+	for(int Dummy = 0; Dummy < NUM_DUMMIES; Dummy++)
+	{
+		const int LocalId = m_aLocalIds[Dummy];
+		if(LocalId < 0 || LocalId >= MAX_CLIENTS || !m_Snap.m_aCharacters[LocalId].m_Active)
+			continue;
+		if(m_Snap.m_aCharacters[LocalId].m_Cur.m_HookedPlayer == ClientId)
+			return false;
+	}
+	const CNetObj_Character &Cur = m_Snap.m_aCharacters[ClientId].m_Cur;
+	return IsShowAllPlayersPosOffscreen(vec2((float)Cur.m_X, (float)Cur.m_Y));
+}
+
+bool CGameClient::IsShowAllPlayersEntityOffscreen(int ObjType, const void *pData) const
+{
+	if(!g_Config.m_RcShowAllPlayers || pData == nullptr)
+		return false;
+	vec2 Pos;
+	vec2 From;
+	switch(ObjType)
+	{
+	case NETOBJTYPE_PROJECTILE:
+	{
+		const auto *pProjectile = (const CNetObj_Projectile *)pData;
+		Pos = vec2(pProjectile->m_X, pProjectile->m_Y);
+		break;
+	}
+	case NETOBJTYPE_DDRACEPROJECTILE:
+	{
+		const auto *pProjectile = (const CNetObj_DDRaceProjectile *)pData;
+		Pos = vec2(pProjectile->m_X, pProjectile->m_Y);
+		break;
+	}
+	case NETOBJTYPE_DDNETPROJECTILE:
+	{
+		const auto *pProjectile = (const CNetObj_DDNetProjectile *)pData;
+		Pos = vec2(pProjectile->m_X, pProjectile->m_Y);
+		break;
+	}
+	case NETOBJTYPE_PICKUP:
+	{
+		const auto *pPickup = (const CNetObj_Pickup *)pData;
+		Pos = vec2(pPickup->m_X, pPickup->m_Y);
+		break;
+	}
+	case NETOBJTYPE_DDNETPICKUP:
+	{
+		const auto *pPickup = (const CNetObj_DDNetPickup *)pData;
+		Pos = vec2(pPickup->m_X, pPickup->m_Y);
+		break;
+	}
+	case NETOBJTYPE_LASER:
+	{
+		const auto *pLaser = (const CNetObj_Laser *)pData;
+		Pos = vec2(pLaser->m_X, pLaser->m_Y);
+		From = vec2(pLaser->m_FromX, pLaser->m_FromY);
+		break;
+	}
+	case NETOBJTYPE_DDNETLASER:
+	{
+		const auto *pLaser = (const CNetObj_DDNetLaser *)pData;
+		Pos = vec2(pLaser->m_ToX, pLaser->m_ToY);
+		From = vec2(pLaser->m_FromX, pLaser->m_FromY);
+		break;
+	}
+	default:
+		return false;
+	}
+	// Lasers (doors/guns/draggers included) can be long: keep them while either end is near.
+	if(ObjType == NETOBJTYPE_LASER || ObjType == NETOBJTYPE_DDNETLASER)
+		return IsShowAllPlayersPosOffscreen(Pos) && IsShowAllPlayersPosOffscreen(From);
+	return IsShowAllPlayersPosOffscreen(Pos);
+}
+
 void CGameClient::UpdatePrediction()
 {
 	m_GameWorld.m_WorldConfig.m_IsVanilla = m_GameInfo.m_PredictVanilla;
@@ -4729,6 +4867,11 @@ void CGameClient::UpdatePrediction()
 		if(m_Snap.m_aCharacters[i].m_Active)
 		{
 			bool IsLocal = (i == m_Snap.m_LocalClientId || (PredictDummy() && i == m_aLocalIds[!g_Config.m_ClDummy]));
+			// ranbi: rc_show_all_players - far off-screen players keep their snapshot position
+			// (m_RenderPos falls back to the snapshot interpolation) but do not enter the
+			// predicted world, avoiding per-tick character prediction/world-copy work.
+			if(!IsLocal && IsShowAllPlayersOffscreen(i))
+				continue;
 			int GameTeam = IsTeamPlay() ? m_aClients[i].m_Team : i;
 			m_GameWorld.NetCharAdd(i, &m_Snap.m_aCharacters[i].m_Cur,
 				m_Snap.m_aCharacters[i].m_HasExtendedData ? &m_Snap.m_aCharacters[i].m_ExtendedData : nullptr,
@@ -5987,7 +6130,16 @@ void CGameClient::SnapCollectEntities()
 		if(Item.m_Type == NETOBJTYPE_ENTITYEX)
 			vItemEx.push_back({Item, nullptr});
 		else if(Item.m_Type == NETOBJTYPE_PICKUP || Item.m_Type == NETOBJTYPE_DDNETPICKUP || Item.m_Type == NETOBJTYPE_LASER || Item.m_Type == NETOBJTYPE_DDNETLASER || Item.m_Type == NETOBJTYPE_PROJECTILE || Item.m_Type == NETOBJTYPE_DDRACEPROJECTILE || Item.m_Type == NETOBJTYPE_DDNETPROJECTILE)
+		{
+			// ranbi: rc_show_all_players - because the whole map is requested via ShowDistance,
+			// the server also sends every projectile/laser(door/gun/dragger)/pickup of the map.
+			// They are only rendered/needed for prediction near the view (rendering already
+			// culls them), so drop the far ones here. This does not affect the snapshot itself
+			// (demo recording, other players' positions and all events stay intact).
+			if(IsShowAllPlayersEntityOffscreen(Item.m_Type, Item.m_pData))
+				continue;
 			vItemData.push_back({Item, nullptr});
+		}
 	}
 
 	// sort by id
