@@ -43,6 +43,11 @@ public:
 	void ResetPracticeToAnchor();
 
 	void PrepareInputForSend(int *pData, int Size, bool Dummy);
+	// task-71: fire ring state for the UI freeze (menu/chat/console). Returns the even release
+	// state adjacent to the practice participant's current LatestInput fire, so forcing it while
+	// a UI is open cannot create a CountInput press in the practice world. Falls back to
+	// CControls::m_aLastSentFire when practice is disabled or the participant is missing.
+	int UiFreezeFireState(int Conn);
 	void BuildNeutralInput(CNetObj_PlayerInput &OutInput, bool Dummy, bool UseFrozenTarget = true) const;
 	void SyncFromPrediction();
 	bool ForcePredictWeapons() const;

@@ -989,6 +989,31 @@ void CFastPractice::SyncToggleFireState()
 	GameClient()->m_HammerInput.m_Fire = ReleasedFireState(GameClient()->m_HammerInput.m_Fire);
 }
 
+int CFastPractice::UiFreezeFireState(int Conn)
+{
+	// task-71: while a menu/chat/console is open the controls fire ring is forced to a released
+	// state. In Fast Practice the practice world characters keep their own fire ring (the raw
+	// physical input stored via PrepareInputForSend), which is usually odd right after an
+	// attack. Forcing the controls ring to CControls::m_aLastSentFire (the neutral locked server
+	// value, e.g. 12; INPUT_STATE_MASK is 6-bit so many even states exist and any different even
+	// value may cross several odd states) would make the next stored input jump by more than one
+	// step, and CountInput counts every odd state crossed as a press -> a fake practice attack.
+	// Use the even state adjacent to the participant's current ring instead: odd -> next even is
+	// a pure release, even -> same even is a no-op.
+	if(Conn < 0 || Conn >= NUM_DUMMIES)
+		return 0;
+	if(m_Enabled)
+	{
+		const int ClientId = GameClient()->m_aLocalIds[Conn];
+		if(ClientId >= 0 && ClientId < MAX_CLIENTS)
+		{
+			if(CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId))
+				return ReleasedFireState(pChar->LatestInput()->m_Fire);
+		}
+	}
+	return ReleasedFireState(GameClient()->m_Controls.m_aLastSentFire[Conn]);
+}
+
 void CFastPractice::ReleaseBufferedInputState()
 {
 	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)

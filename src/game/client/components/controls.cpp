@@ -47,7 +47,7 @@ namespace
 	void ConRanbiFpClearFire(IConsole::IResult *pResult, void *pUserData)
 	{
 		(void)pResult;
-		static_cast<CControls *>(pUserData)->RanbiClearBufferedFire("fp-clear", true, true);
+		static_cast<CControls *>(pUserData)->RanbiClearBufferedFire("fp-clear", true, true, false);
 	}
 
 	void ConRanbiFpFireGuard(IConsole::IResult *pResult, void *pUserData)
@@ -68,20 +68,32 @@ namespace
 // freeze path calls this every tick and must not reset m_DummyFire: CGameClient::OnSnapInput
 // derives the cl_dummy_hammer cadence from m_DummyFire % 25, so resetting it every tick would
 // make every sent input trigger a real hammer attack.
-void CControls::RanbiClearBufferedFire(const char *pTag, bool Log, bool ResetDummyHammerCounter)
+// task-71: UsePracticeFireRing must be true only for the UI freeze while Fast Practice is
+// active. Then the forced ring comes from CFastPractice::UiFreezeFireState (the even state
+// adjacent to the practice participant's own LatestInput fire) instead of m_aLastSentFire
+// (which is the practice-overridden neutral value): forcing an odd practice ring to a distant
+// even value would otherwise be counted as one or more presses by CountInput and trigger a
+// fake practice attack the first time a menu/chat is opened after an attack.
+void CControls::RanbiClearBufferedFire(const char *pTag, bool Log, bool ResetDummyHammerCounter, bool UsePracticeFireRing)
 {
+	CGameClient *pGameClient = GameClient();
 	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
 	{
-		const int Released = RanbiReleasedFire(m_aLastSentFire[Conn]);
+		const int PreviousFire = m_aInputData[Conn].m_Fire & INPUT_STATE_MASK;
+		const int Released = UsePracticeFireRing && pGameClient != nullptr ? RanbiReleasedFire(pGameClient->m_FastPractice.UiFreezeFireState(Conn)) : RanbiReleasedFire(m_aLastSentFire[Conn]);
 		m_aInputData[Conn].m_Fire = Released;
 		m_aLastData[Conn].m_Fire = Released;
 		m_aFastInput[Conn].m_Fire = Released;
+		// task-71: one-shot diagnostic for the real case (first UI open after a practice attack):
+		// the practice-adjacent even release differs from the ring that was there before.
+		if(!Log && UsePracticeFireRing && g_Config.m_Debug && PreviousFire != Released)
+			log_info("fast_practice", "[fp-ui] practice ring release conn=%d fire=%d previous_fire=%d last_sent_fire=%d", Conn, Released, PreviousFire, m_aLastSentFire[Conn]);
 		if(Log && g_Config.m_Debug)
-			log_info("fast_practice", "[%s] conn=%d fire=%d fast_input_fire=%d last_sent_fire=%d", pTag, Conn, Released, m_aFastInput[Conn].m_Fire & INPUT_STATE_MASK, m_aLastSentFire[Conn]);
+			log_info("fast_practice", "[%s] conn=%d fire=%d fast_input_fire=%d last_sent_fire=%d practice_ring=%d", pTag, Conn, Released, m_aFastInput[Conn].m_Fire & INPUT_STATE_MASK, m_aLastSentFire[Conn], UsePracticeFireRing ? 1 : 0);
 	}
-	if(CGameClient *pGameClient = GameClient())
+	if(pGameClient != nullptr)
 	{
-		const int Released = RanbiReleasedFire(m_aLastSentFire[g_Config.m_ClDummy ^ 1]);
+		const int Released = UsePracticeFireRing ? RanbiReleasedFire(pGameClient->m_FastPractice.UiFreezeFireState(g_Config.m_ClDummy ^ 1)) : RanbiReleasedFire(m_aLastSentFire[g_Config.m_ClDummy ^ 1]);
 		pGameClient->m_DummyInput.m_Fire = Released;
 		pGameClient->m_HammerInput.m_Fire = Released;
 		if(ResetDummyHammerCounter)
@@ -99,7 +111,7 @@ void CControls::RanbiArmFireGuard()
 		s_aRanbiFpFireGuardActive[Conn] = true;
 		s_aRanbiFpFireGuardUntil[Conn] = Until;
 	}
-	RanbiClearBufferedFire("fp-arm", true, true);
+	RanbiClearBufferedFire("fp-arm", true, true, false);
 	if(g_Config.m_Debug)
 		log_info("fast_practice", "[fp-arm] fire guard armed");
 }
@@ -480,7 +492,7 @@ int CControls::SnapInput(int *pData)
 		// +fire cannot leak into the dummy connection or the prediction input history while a
 		// menu/chat/console is open. This also fixes the dummy "predicted hammer" artifact
 		// after ESC/chat (task-69 A).
-		RanbiClearBufferedFire("fp-ui", false, false);
+		RanbiClearBufferedFire("fp-ui", false, false, true);
 		// task-70: Client()->GetInput()'s second argument is *relative* (0 = active connection,
 		// 1 = other connection, internally XORed with g_Config.m_ClDummy), while the arrays above
 		// use the physical connection index. Convert here so cl_dummy 0/1 both map correctly.

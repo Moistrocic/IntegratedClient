@@ -64,10 +64,12 @@ public:
 	void ResetInput(int Dummy);
 	bool CheckNewInput();
 
-	// bestclient task-69/task-70: fire guard helpers for the Fast Practice toggle / UI freeze.
-	// ResetDummyHammerCounter must only be true at the toggle boundary: the UI-freeze path runs
-	// every tick and resetting m_DummyFire there would make cl_dummy_hammer fire on every send.
-	void RanbiClearBufferedFire(const char *pTag, bool Log, bool ResetDummyHammerCounter);
+	// bestclient task-69/task-70/task-71: fire guard helpers for the Fast Practice toggle / UI
+	// freeze. ResetDummyHammerCounter must only be true at the toggle boundary: the UI-freeze
+	// path runs every tick and resetting m_DummyFire there would make cl_dummy_hammer fire on
+	// every send. UsePracticeFireRing must be true for the UI freeze while Fast Practice is
+	// active so the forced ring stays adjacent to the practice participant's own fire ring.
+	void RanbiClearBufferedFire(const char *pTag, bool Log, bool ResetDummyHammerCounter, bool UsePracticeFireRing);
 	void RanbiArmFireGuard();
 
 	// bestclient
