@@ -16,13 +16,15 @@
 - 移除 BestClient 自动更新（含主菜单“检查更新”按钮与整条 updater 链路）
 - 移除主菜单左侧 “Try Light / 使用Light” 按钮
 - 启动页右下角显示四行版本：`DDNet` / `TClient` / `BestClient` / `IntegratedClient`
-- 设置新增 **Ranbi** 顶级页签（General / Nameplates / Chat & Scoreboard / Notify / Weapons / AI）
+- 启动页 `IntegratedClient` 版本右侧的 **NEW 徽标**：检测到 GitHub 最新 Release 版本更高时提示（仅提示，不提供点击/下载/更新功能）
+- 设置新增 **RanbiClient** 顶级页签（General / Nameplates / Chat & Scoreboard / Notify / Weapons / AI）
 - 设置新增 **IntegratedClient** 顶级页签，展示项目信息、版本、来源客户端与仓库/整合台账链接
 - BestClient 仅移除自动更新相关按钮
 
 ## BestClient
 
 - 添加了是否向 BC 服务器发送身份的开关，关闭后你将无法使用和 BC 服务器相关功能。开启则会被 BC 服务器标记为 Fake 玩家（非官方构建 BC 端）。
+- **角落指示最大范围**：BestClient → Visuals → Corner indicator 可设置 `Max range (blocks)`（0 = 不限制，单位格）；超出范围的队友不显示角落图标
 - 修复 Fast Practice 开关瞬间误攻击（底座 BestClient 本身问题）：开启/关闭练习不再向服务器发送一次残留 fire，正常开火与练习内攻击不受影响。
 - Fast Practice 虚影坐标：HUD 与 TClient statusbar 的 Position / Speed / Angle 可在练习时显示当前操控虚影的数据，而不是固定的实体值。
 
@@ -34,15 +36,17 @@
 - Nameplates 扩展：DDNet 分数、完成标记、Dummy Copy / Hammer Fly / Dummy Reset 状态、范围隐藏、同 X 位置高亮
 - 聊天历史去重、聊天显示分数、旁观者皮肤名、跳过三格水提示
 - 信息获取功能（默认关闭 + UI 风险提示）：碰撞自动换肤、全图玩家信息、计分板“获取名称”
+- **`rc_show_all_players` 位置接收优化**：开启“接收视野外所有玩家”时仍保留所有玩家位置（TClient Tee 状态栏 / BC 角落指示 / demo 回放可用），但跳过视野外玩家/地图实体的无关预测、anti-ping 平滑、渲染与事件粒子，显著降低掉帧
 - AI 自动回复（默认关闭 + Token/隐私/规则警告；支持 0.6/0.7）
-- **分数获取替换**：Ranbi → Chat & Scoreboard 开关“替换bc的分数获取逻辑”（默认关闭）。开启后 BC 计分板 / nameplate / chat 的分数统一使用 Ranbi 的 ddnet.org 取数逻辑，**所有服务器**（含 EGO / Legit）显示 DDNet 分数；关闭则完全使用 BC 原 provider 逻辑。
+- **分数获取替换**：RanbiClient → Chat & Scoreboard 开关“替换bc的分数获取逻辑”（默认关闭）。开启后 BC 计分板 / nameplate / chat 的分数统一使用 Ranbi 的 ddnet.org 取数逻辑，**所有服务器**（含 EGO / Legit）显示 DDNet 分数；关闭则完全使用 BC 原 provider 逻辑。
 
 ### 本项目新增功能
 
+- **冻结 Tee 灰色滤镜**：TClient 冻结 Tee 状态栏图标与 BC 角落指示中的冻结图标可做灰度处理；RanbiClient → General → Render 的 `Frozen tee gray filter` 可调 0–100%（0 = 原色，100 = 完全灰）
 - **DeepSeek 翻译后端**：翻译设置新增 DeepSeek（OpenAI 兼容 API），支持 Endpoint / API Key / Model 配置
-- **复读上一个玩家**：Ranbi → Chat & Scoreboard 绑定快捷键，按下后复读其他玩家最近一条消息（无消息时不动作，团队消息按团队频道复读）
-- **武器辅助线**：Ranbi → Weapons 开关；激光枪 / 霰弹枪 / 榴弹炮使用真实 CLaser / CProjectile 物理模拟轨迹，并复用原版发射后的光束 / 投射物尾迹渲染；不发射也会显示，随渲染帧更新
-- **锁定地图完成名称**：Ranbi → General 设置；官方服务器列表的地图完成查询固定使用指定玩家名称，不受当前游戏内名称影响
+- **复读上一个玩家**：RanbiClient → Chat & Scoreboard 绑定快捷键，按下后复读其他玩家最近一条消息（无消息时不动作，团队消息按团队频道复读）
+- **武器辅助线**：RanbiClient → Weapons 开关；激光枪 / 霰弹枪 / 榴弹炮使用真实 CLaser / CProjectile 物理模拟轨迹，并复用原版发射后的光束 / 投射物尾迹渲染；不发射也会显示，随渲染帧更新
+- **锁定地图完成名称**：RanbiClient → General 设置；官方服务器列表的地图完成查询固定使用指定玩家名称，不受当前游戏内名称影响
 
 ## 构建与运行
 
