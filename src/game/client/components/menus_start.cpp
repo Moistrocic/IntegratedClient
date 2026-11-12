@@ -209,8 +209,10 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 
 	{
 		CUIRect CurVersion, ConsoleButton;
+		// integratedclient: the 40px strip on the right is reserved for the "NEW" release badge
+		CUIRect VersionBadge;
 		MainView.HSplitBottom(95.0f, nullptr, &CurVersion);
-		CurVersion.VSplitRight(40.0f, &CurVersion, nullptr);
+		CurVersion.VSplitRight(40.0f, &CurVersion, &VersionBadge);
 		CurVersion.HSplitTop(20.0f, &ConsoleButton, &CurVersion);
 		CurVersion.HSplitTop(5.0f, nullptr, &CurVersion);
 		ConsoleButton.VSplitRight(40.0f, nullptr, &ConsoleButton);
@@ -237,6 +239,22 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 		Ui()->DoLabel(&VersionLine2, aTClientBuf, 14.0f, TEXTALIGN_MR);
 		Ui()->DoLabel(&VersionLine3, aBestClientBuf, 14.0f, TEXTALIGN_MR);
 		Ui()->DoLabel(&VersionLine4, aIntegratedBuf, 14.0f, TEXTALIGN_MR);
+
+		// integratedclient: passive "new release available" hint. It is only a badge: no click,
+		// download or update action; the check itself lives in CMenus (async, silent on failure).
+		if(GameClient()->m_Menus.HasIntegratedClientVersionUpdate())
+		{
+			CUIRect Badge = VersionBadge;
+			Badge.h = 14.0f;
+			Badge.y = VersionLine4.y + (VersionLine4.h - Badge.h) / 2.0f;
+			Badge.x += 2.0f;
+			Badge.w -= 4.0f;
+			Graphics()->DrawRect(Badge.x, Badge.y, Badge.w, Badge.h, ColorRGBA(0.91f, 0.26f, 0.15f, 1.0f), IGraphics::CORNER_ALL, 3.5f);
+			const ColorRGBA PrevTextColor = TextRender()->GetTextColor();
+			TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
+			Ui()->DoLabel(&Badge, "NEW", 9.0f, TEXTALIGN_MC);
+			TextRender()->TextColor(PrevTextColor);
+		}
 
 		static CButtonContainer s_ConsoleButton;
 		SetIconMode();

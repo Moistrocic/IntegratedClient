@@ -25,9 +25,11 @@
 #include <engine/friends.h>
 #include <engine/gfx/image_manipulation.h>
 #include <engine/graphics.h>
+#include <engine/http.h>
 #include <engine/keys.h>
 #include <engine/serverbrowser.h>
 #include <engine/shared/config.h>
+#include <engine/shared/json.h>
 #include <engine/storage.h>
 #include <engine/textrender.h>
 
@@ -43,6 +45,7 @@
 #include <game/client/gameclient.h>
 #include <game/client/ui_listbox.h>
 #include <game/localization.h>
+#include <game/version.h>
 
 #include <algorithm>
 #include <chrono>
@@ -50,6 +53,85 @@
 #include <vector>
 
 using namespace std::chrono_literals;
+
+namespace
+{
+	// integratedclient: version compare helpers begin
+	struct SIntegratedClientVersion
+	{
+		int m_Major;
+		int m_Minor;
+		int m_Patch;
+	};
+
+	// Parses a release tag like "1.2.3" or "v1.2.3". Only plain numeric versions are accepted:
+	// prerelease/build suffixes ("1.2.3-rc1"), non-version tags ("nightly") and malformed input
+	// are rejected so that they can never trigger the update badge.
+	bool ParseIntegratedClientVersion(const char *pVersion, SIntegratedClientVersion *pOut)
+	{
+		if(pVersion == nullptr || pOut == nullptr)
+			return false;
+		while(*pVersion == ' ' || *pVersion == '\t')
+			++pVersion;
+		if(*pVersion == 'v' || *pVersion == 'V')
+			++pVersion;
+		int aParts[3] = {0, 0, 0};
+		int NumParts = 0;
+		while(NumParts < 3)
+		{
+			if(*pVersion < '0' || *pVersion > '9')
+				break;
+			int Value = 0;
+			while(*pVersion >= '0' && *pVersion <= '9')
+			{
+				Value = Value * 10 + (*pVersion - '0');
+				if(Value > 999999)
+					return false;
+				++pVersion;
+			}
+			aParts[NumParts++] = Value;
+			if(*pVersion != '.')
+				break;
+			++pVersion;
+		}
+		if(NumParts == 0)
+			return false;
+		while(*pVersion == ' ' || *pVersion == '\t')
+			++pVersion;
+		if(*pVersion != '\0')
+			return false;
+		pOut->m_Major = aParts[0];
+		pOut->m_Minor = aParts[1];
+		pOut->m_Patch = aParts[2];
+		return true;
+	}
+
+	bool IsIntegratedClientVersionNewer(const SIntegratedClientVersion &Latest, const SIntegratedClientVersion &Current)
+	{
+		if(Latest.m_Major != Current.m_Major)
+			return Latest.m_Major > Current.m_Major;
+		if(Latest.m_Minor != Current.m_Minor)
+			return Latest.m_Minor > Current.m_Minor;
+		return Latest.m_Patch > Current.m_Patch;
+	}
+	// integratedclient: version compare helpers end
+
+	constexpr const char *s_pIntegratedClientLatestReleaseUrl = "https://api.github.com/repos/Moistrocic/IntegratedClient/releases/latest";
+	// integratedclient: long recheck interval after a successful check (a session can stay open for days)
+	constexpr int64_t s_IntegratedClientVersionRecheckSeconds = 6 * 60 * 60;
+	// integratedclient: delay before retrying when no request was started (e.g. HTTP not ready yet)
+	// or when one was interrupted by a client reset
+	constexpr int64_t s_IntegratedClientVersionRetryDelaySeconds = 60;
+
+	// integratedclient: 30s, 1min, 2min, ... capped at 6h. Failed checks are silent for the user.
+	int64_t IntegratedClientVersionRetryDelaySeconds(int Failures)
+	{
+		int64_t Delay = 30;
+		for(int i = 1; i < Failures && Delay < s_IntegratedClientVersionRecheckSeconds; ++i)
+			Delay *= 2;
+		return std::min<int64_t>(Delay, s_IntegratedClientVersionRecheckSeconds);
+	}
+}
 
 ColorRGBA CMenus::ms_GuiColor;
 ColorRGBA CMenus::ms_ColorTabbarInactiveOutgame;
@@ -2560,6 +2642,126 @@ void CMenus::OnShutdown()
 	// bestclient
 	m_ServerMapPreview.Clear();
 	// bestclient
+	// integratedclient
+	ShutdownIntegratedClientVersionCheck();
+}
+
+// integratedclient: the start page shows a passive NEW badge if the latest GitHub release is newer
+// than INTEGRATEDCLIENT_VERSION. The check is asynchronous and never blocks the main thread; it
+// only compares version numbers and never downloads/installs anything.
+void CMenus::UpdateIntegratedClientVersionCheck()
+{
+	if(m_IntegratedClientVersionDisabled)
+		return;
+
+	if(m_pIntegratedClientVersionRequest)
+	{
+		if(!m_pIntegratedClientVersionRequest->Done())
+			return;
+
+		std::shared_ptr<IHttpRequest> pRequest = std::move(m_pIntegratedClientVersionRequest);
+		if(pRequest->State() == EHttpState::ABORTED)
+			return;
+
+		SIntegratedClientVersion Current;
+		if(!ParseIntegratedClientVersion(INTEGRATEDCLIENT_VERSION, &Current))
+		{
+			// In practice INTEGRATEDCLIENT_VERSION is always a numeric version. Without a
+			// parseable local version there is nothing meaningful to compare against, so disable
+			// the badge for this session instead of requesting forever.
+			m_IntegratedClientVersionDisabled = true;
+			m_IntegratedClientVersionUpdate = false;
+			return;
+		}
+
+		bool Parsed = false;
+		bool Newer = false;
+		if(pRequest->State() == EHttpState::DONE && pRequest->StatusCode() == 200)
+		{
+			json_value *pRoot = pRequest->ResultJson();
+			if(pRoot && pRoot->type == json_object)
+			{
+				const json_value *pDraft = json_object_get(pRoot, "draft");
+				const json_value *pPrerelease = json_object_get(pRoot, "prerelease");
+				const json_value *pTagName = json_object_get(pRoot, "tag_name");
+				const bool IsDraft = pDraft->type == json_boolean && json_boolean_get(pDraft) != 0;
+				const bool IsPrerelease = pPrerelease->type == json_boolean && json_boolean_get(pPrerelease) != 0;
+				if(!IsDraft && !IsPrerelease && pTagName->type == json_string)
+				{
+					SIntegratedClientVersion Latest;
+					if(ParseIntegratedClientVersion(json_string_get(pTagName), &Latest))
+					{
+						Newer = IsIntegratedClientVersionNewer(Latest, Current);
+						Parsed = true;
+					}
+				}
+			}
+			if(pRoot)
+				json_value_free(pRoot);
+		}
+
+		if(!Parsed)
+		{
+			// Failure or unparseable response: stay silent and retry with backoff, keep a
+			// previously detected badge state.
+			++m_IntegratedClientVersionFailures;
+			m_IntegratedClientVersionNextCheck = time_get() + IntegratedClientVersionRetryDelaySeconds(m_IntegratedClientVersionFailures) * time_freq();
+			return;
+		}
+
+		m_IntegratedClientVersionUpdate = Newer;
+		m_IntegratedClientVersionFailures = 0;
+		m_IntegratedClientVersionNextCheck = time_get() + s_IntegratedClientVersionRecheckSeconds * time_freq();
+	}
+
+	if(time_get() < m_IntegratedClientVersionNextCheck)
+		return;
+
+	IHttp *pHttp = Http();
+	if(pHttp == nullptr)
+	{
+		m_IntegratedClientVersionNextCheck = time_get() + s_IntegratedClientVersionRetryDelaySeconds * time_freq();
+		return;
+	}
+
+	m_pIntegratedClientVersionRequest = HttpGet(s_pIntegratedClientLatestReleaseUrl);
+	if(!m_pIntegratedClientVersionRequest)
+	{
+		m_IntegratedClientVersionNextCheck = time_get() + s_IntegratedClientVersionRetryDelaySeconds * time_freq();
+		return;
+	}
+	m_pIntegratedClientVersionRequest->HeaderString("Accept", "application/vnd.github+json");
+	m_pIntegratedClientVersionRequest->HeaderString("User-Agent", INTEGRATEDCLIENT_NAME " " INTEGRATEDCLIENT_VERSION);
+	m_pIntegratedClientVersionRequest->HeaderString("X-GitHub-Api-Version", "2022-11-28");
+	m_pIntegratedClientVersionRequest->Timeout(CTimeout{5000, 10000, 500, 5});
+	m_pIntegratedClientVersionRequest->IpResolve(IPRESOLVE::V4);
+	m_pIntegratedClientVersionRequest->FailOnErrorStatus(false);
+	m_pIntegratedClientVersionRequest->MaxResponseSize(64 * 1024);
+	m_pIntegratedClientVersionRequest->LogProgress(HTTPLOG::FAILURE);
+	// integratedclient: if the request is interrupted (reset/shutdown), wait a while before retrying
+	m_IntegratedClientVersionNextCheck = time_get() + s_IntegratedClientVersionRetryDelaySeconds * time_freq();
+	pHttp->Run(m_pIntegratedClientVersionRequest);
+}
+
+void CMenus::ShutdownIntegratedClientVersionCheck()
+{
+	if(!m_pIntegratedClientVersionRequest)
+		return;
+	m_pIntegratedClientVersionRequest->Abort();
+	m_pIntegratedClientVersionRequest = nullptr;
+}
+
+void CMenus::OnUpdate()
+{
+	// integratedclient
+	UpdateIntegratedClientVersionCheck();
+}
+
+void CMenus::OnReset()
+{
+	// integratedclient: the HTTP request cannot survive a client reset; the retry is scheduled
+	// in UpdateIntegratedClientVersionCheck, so no network request is started from here.
+	ShutdownIntegratedClientVersionCheck();
 }
 
 bool CMenus::OnCursorMove(float x, float y, IInput::ECursorType CursorType)

@@ -32,12 +32,14 @@
 
 #include <array>
 #include <chrono>
+#include <memory>
 #include <optional>
 #include <set>
 #include <string>
 #include <vector>
 
 class CDemoTeeEditor; // bestclient
+class IHttpRequest; // integratedclient
 
 class CMenus : public CComponent
 {
@@ -774,6 +776,8 @@ public:
 
 	void OnInterfacesInit(CGameClient *pClient) override;
 	void OnInit() override;
+	void OnReset() override; // integratedclient
+	void OnUpdate() override; // integratedclient
 
 	void OnStateChange(int NewState, int OldState) override;
 	void OnWindowResize() override;
@@ -819,6 +823,10 @@ public:
 		return Client()->State() == IClient::STATE_OFFLINE && m_ShowStart && m_Popup == POPUP_NONE && g_Config.m_ClEditor == 0;
 	}
 	// bestclient
+
+	// integratedclient: a newer GitHub release exists, show the passive NEW badge on the start page.
+	// This never downloads or installs anything.
+	bool HasIntegratedClientVersionUpdate() const { return m_IntegratedClientVersionUpdate; }
 
 	enum
 	{
@@ -999,6 +1007,17 @@ private:
 	CMenusSettingsControls m_MenusSettingsControls;
 	friend CMenusSettingsControls;
 	CMenusStart m_MenusStart;
+
+	// integratedclient: async check of the latest GitHub release for the start menu NEW badge.
+	// The request runs once after startup and is only re-run with a long backoff (or every few
+	// hours after a success); failures are silent.
+	void UpdateIntegratedClientVersionCheck();
+	void ShutdownIntegratedClientVersionCheck();
+	std::shared_ptr<IHttpRequest> m_pIntegratedClientVersionRequest;
+	int64_t m_IntegratedClientVersionNextCheck = 0;
+	int m_IntegratedClientVersionFailures = 0;
+	bool m_IntegratedClientVersionDisabled = false;
+	bool m_IntegratedClientVersionUpdate = false;
 
 	static int GhostlistFetchCallback(const CFsFileInfo *pInfo, int IsDir, int StorageType, void *pUser);
 
