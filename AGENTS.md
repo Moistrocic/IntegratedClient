@@ -146,6 +146,7 @@ python scripts/languages/validate.py
 - 禁止 `git tag`、改写历史、force-push（除非用户明确要求并确认）。
 - commit 使用 `port(<source>): ...`（功能移植）、`fix(...)`、`docs(...)`、`chore(...)` 前缀；正文写来源文件与版本、目标位置、验证结果、风险、用户实测步骤。
 - 一个 commit 对应一个功能闭环或一个可独立回滚的改动；不要把多个来源的无关移植混在一起。
+- **Bug 修复提交时机**：bug 修复必须等用户**明确实机确认该 bug 已修复**后再 commit；用户确认前的中间尝试/防御性改动不要提交。一个 bug 的修复合并为**单个 commit**，避免同一 bug 因多轮尝试产生多个 commit；未确认的修复在工作树/`_work` 中保留，确认后一次性提交。
 - commit 前确认 `git status` 干净、暂存内容不含构建产物或未预期的 submodule 指针变更。
 
 ## 7. Windows / 编码
