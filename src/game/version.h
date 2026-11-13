@@ -35,7 +35,7 @@ extern const char *GIT_SHORTREV_HASH;
 // IntegratedClient
 #define INTEGRATEDCLIENT_NAME "IntegratedClient"
 #ifndef INTEGRATEDCLIENT_VERSION
-#define INTEGRATEDCLIENT_VERSION "1.0.1"
+#define INTEGRATEDCLIENT_VERSION "1.0.2"
 #endif
 
 // custom

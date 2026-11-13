@@ -1,6 +1,6 @@
 # IntegratedClient
 
-以 **BestClient** 为底座的整合客户端项目，在 DDNet / TClient 生态基础上整合 **RanbiClient** 的功能，并新增本项目特性。当前版本：**1.0.1**。
+以 **BestClient** 为底座的整合客户端项目，在 DDNet / TClient 生态基础上整合 **RanbiClient** 的功能，并新增本项目特性。当前版本：**1.0.2**。
 
 ## 来源仓库
 
@@ -16,7 +16,7 @@
 - 移除 BestClient 自动更新（含主菜单“检查更新”按钮与整条 updater 链路）
 - 移除主菜单左侧 “Try Light / 使用Light” 按钮
 - 启动页右下角显示四行版本：`DDNet` / `TClient` / `BestClient` / `IntegratedClient`
-- 启动页 `IntegratedClient` 版本右侧的 **NEW 徽标**：检测到 GitHub 最新 Release 版本更高时提示（仅提示，不提供点击/下载/更新功能）
+- 启动页 `IntegratedClient` 版本右侧的 **NEW 徽标**：检测到 GitHub 最新 Release 版本更高时显示；点击打开 GitHub Release 页面（不提供下载/更新安装功能）
 - 设置新增 **RanbiClient** 顶级页签（General / Nameplates / Chat & Scoreboard / Notify / Weapons / AI）
 - 设置新增 **IntegratedClient** 顶级页签，展示项目信息、版本、来源客户端与仓库/整合台账链接
 - BestClient 仅移除自动更新相关按钮
@@ -25,6 +25,8 @@
 
 - 添加了是否向 BC 服务器发送身份的开关，关闭后你将无法使用和 BC 服务器相关功能。开启则会被 BC 服务器标记为 Fake 玩家（非官方构建 BC 端）。
 - **角落指示最大范围**：BestClient → Visuals → Corner indicator 可设置 `Max range (blocks)`（0 = 不限制，单位格）；超出范围的队友不显示角落图标
+- Fast Practice 状态切换修复：进入/离开 `/pause`、`/spec`、自由视角时不再让虚影或真实实体自发攻击；长暂停/长旁观（>3s）恢复后也不会再攻击。
+- Fast Practice 练习内 `/spec`：只影响练习虚影/相机，不发送给服务器；真实实体仍留在服务器 playing、可见且碰撞正常。进入时本地播放原生死亡音效/粒子并在虚影位置显示 x_spec 虚线圆；再按 `/spec` 播放原生重生音效/粒子并恢复到进入前位置。
 - 修复 Fast Practice / dummy 输入 fire 回归：
   - 开启/关闭练习不再触发一次真实出锤，关闭后不再出现高频预测出锤；
   - ESC / 聊天 / 控制台打开后 dummy 不再异常预测出锤；
