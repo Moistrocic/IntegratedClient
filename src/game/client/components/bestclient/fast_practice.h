@@ -156,6 +156,10 @@ private:
 	bool m_Ready = false;
 	bool m_NeedsRebuild = false;
 	bool m_RequireDummy = false;
+	// task-72: true while the practice simulation must be suspended (pause, /spec, free view,
+	// local spectator, game paused). On enter/leave the buffered fire rings are safely released
+	// and the practice input history is reset so no transition can count a fire press.
+	bool m_Blocked = false;
 	int m_EnableLocalClientId = -1;
 	int m_EnableDummyClientId = -1;
 	bool m_HasDummyAnchor = false;
@@ -231,6 +235,10 @@ private:
 	void RenderGhost(const SGhostData &Ghost, float Alpha) const;
 	void ReleaseBufferedInputState();
 	void SyncToggleFireState();
+	// task-72: paused / spectating / free view state handling (hold fire rings safely)
+	bool IsInteractionBlocked() const;
+	void UpdateInteractionBlockedState();
+	void HoldBlockedFireState();
 	void BeginDebugLog();
 	void LogAttackState(const char *pStage);
 	int64_t m_DebugLogUntil = 0;

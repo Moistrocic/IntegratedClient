@@ -163,6 +163,7 @@ void CFastPractice::ResetPracticeState()
 	m_Ready = false;
 	m_NeedsRebuild = false;
 	m_RequireDummy = false;
+	m_Blocked = false;
 	m_EnableLocalClientId = -1;
 	m_EnableDummyClientId = -1;
 	m_HasDummyAnchor = false;
@@ -1014,6 +1015,88 @@ int CFastPractice::UiFreezeFireState(int Conn)
 	return ReleasedFireState(GameClient()->m_Controls.m_aLastSentFire[Conn]);
 }
 
+bool CFastPractice::IsInteractionBlocked() const
+{
+	// task-72: in these states the practice simulation must not run and no buffered input may
+	// reach the practice world or the server: /pause (player paused), /spec/free view (local
+	// spec info active), local team spectators, game paused, and the DDNet spec flag.
+	if(!m_Enabled || Client()->State() != IClient::STATE_ONLINE)
+		return false;
+
+	const CGameClient::CSnapState &Snap = GameClient()->m_Snap;
+	if(Snap.m_SpecInfo.m_Active)
+		return true;
+	if(Snap.m_pLocalInfo && Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS)
+		return true;
+	if(Snap.m_pGameInfoObj && (Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED))
+		return true;
+	if(Snap.m_LocalClientId >= 0 && Snap.m_LocalClientId < MAX_CLIENTS)
+	{
+		const CGameClient::CClientData &Local = GameClient()->m_aClients[Snap.m_LocalClientId];
+		if(Local.m_Paused || Local.m_Spec)
+			return true;
+	}
+	return false;
+}
+
+void CFastPractice::HoldBlockedFireState()
+{
+	// task-72: keep both connection fire rings on the value that was actually sent last, so
+	// physical/menu events during pause/spectate cannot make the next sent input cross odd
+	// states (CountInput press) when practice resumes or when the entity is back in game.
+	// ResetDummyHammerCounter=false: the cl_dummy_hammer cadence must not be reset per tick.
+	GameClient()->m_Controls.RanbiClearBufferedFire("fp-blocked", false, false, false);
+}
+
+void CFastPractice::UpdateInteractionBlockedState()
+{
+	if(!m_Enabled)
+	{
+		m_Blocked = false;
+		return;
+	}
+
+	const bool Blocked = IsInteractionBlocked();
+	if(Blocked == m_Blocked)
+	{
+		if(m_Blocked)
+			HoldBlockedFireState();
+		return;
+	}
+	m_Blocked = Blocked;
+
+	// Both edges use the same safe reset (same order as Enable/Disable):
+	// 1. lock the server fire ring to the last actually sent value (never a press),
+	// 2. release every buffered fire ring without crossing odd states,
+	// 3. put controls / prediction history / practice+predicted characters on that locked even
+	//    ring (direct write, so CountInput sees equal rings on the next applied input),
+	// 4. drop the stored practice inputs and suppress the first predicted ticks.
+	CaptureServerLockedTargets();
+	ReleaseBufferedInputState();
+	SyncToggleFireState();
+	ResetStoredInputs();
+	m_SuppressFireOnNextPredictTick = true;
+	m_InputSuppressTicks = std::max(m_InputSuppressTicks, 2);
+	// No forced rebuild on leave: TickPracticeWorld's own staleness check rebuilds only when the
+	// pause/spectate gap exceeds its tolerance; short pause/spec resumes from the frozen state.
+	HoldBlockedFireState();
+
+	LogAttackState(m_Blocked ? "blocked-enter" : "blocked-leave");
+	if(DebugLogActive())
+	{
+		const int LocalId = GameClient()->m_Snap.m_LocalClientId;
+		log_info("fast_practice", "[fp-state] blocked=%d spec=%d team_spec=%d paused=%d game_paused=%d live0=%d live1=%d locked0=%d locked1=%d",
+			m_Blocked ? 1 : 0,
+			GameClient()->m_Snap.m_SpecInfo.m_Active ? 1 : 0,
+			(GameClient()->m_Snap.m_pLocalInfo && GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS) ? 1 : 0,
+			(LocalId >= 0 && LocalId < MAX_CLIENTS && GameClient()->m_aClients[LocalId].m_Paused) ? 1 : 0,
+			(GameClient()->m_Snap.m_pGameInfoObj && (GameClient()->m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED)) ? 1 : 0,
+			GameClient()->m_Controls.m_aInputData[0].m_Fire & INPUT_STATE_MASK,
+			GameClient()->m_Controls.m_aInputData[1].m_Fire & INPUT_STATE_MASK,
+			m_aServerLockedFire[0], m_aServerLockedFire[1]);
+	}
+}
+
 void CFastPractice::ReleaseBufferedInputState()
 {
 	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
@@ -1114,6 +1197,7 @@ void CFastPractice::Enable()
 	}
 
 	m_Enabled = true;
+	m_Blocked = false; // task-72: CanEnable rejects pause/spec, so practice starts unblocked
 	GameClient()->m_PredictedDummyId = CurrentPracticeDummyId();
 	GameClient()->m_PredictedWorld.m_PredictedEvents.clear();
 	GameClient()->m_GameWorld.m_PredictedEvents.clear();
@@ -1251,8 +1335,30 @@ void CFastPractice::PrepareInputForSend(int *pData, int Size, bool Dummy)
 	}
 	if(!m_Enabled || !pData)
 		return;
-	if(GameClient()->m_Snap.m_SpecInfo.m_Active || (GameClient()->m_Snap.m_pLocalInfo && GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS))
+
+	// task-72: the pause/spec edge may have happened in this frame's snapshot; make sure the
+	// blocked state (and its safe ring release) is applied before deciding how to neutralize.
+	UpdateInteractionBlockedState();
+
+	const bool Spectating = GameClient()->m_Snap.m_SpecInfo.m_Active ||
+				(GameClient()->m_Snap.m_pLocalInfo && GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS);
+	if(m_Blocked || Spectating)
+	{
+		// Do not leave the raw/odd physical fire ring on the wire while practice is suspended:
+		// force the released value equal to the last actually sent input (never a CountInput
+		// press) and do not feed the practice input history while blocked. Together with the
+		// frozen practice world (TickPracticeWorld) this prevents self-attacks on resume.
+		if(Size >= (int)sizeof(CNetObj_PlayerInput))
+		{
+			const int Slot = (g_Config.m_ClDummy ^ (int)Dummy) & 1;
+			((CNetObj_PlayerInput *)pData)->m_Fire = ReleasedFireState(GameClient()->m_Controls.m_aLastSentFire[Slot]);
+		}
+		if(DebugLogActive())
+			log_info("fast_practice", "[fp-send] PrepareInputForSend suspended dummy=%d blocked=%d spectating=%d forced_fire=%d",
+				Dummy ? 1 : 0, m_Blocked ? 1 : 0, Spectating ? 1 : 0,
+				Size >= (int)sizeof(CNetObj_PlayerInput) ? (((const CNetObj_PlayerInput *)pData)->m_Fire & INPUT_STATE_MASK) : -1);
 		return;
+	}
 
 	CNetObj_PlayerInput Source{};
 	if(Size >= (int)sizeof(CNetObj_PlayerInput))
@@ -1701,6 +1807,11 @@ void CFastPractice::TickPracticeWorld()
 	if(!Active())
 		return;
 
+	// task-72: never advance the practice world while paused/spectating; the ghost/entity is
+	// frozen via RepublishCachedCores() and only resumes after a safe re-anchor.
+	if(m_Blocked)
+		return;
+
 	int LocalClientId = -1;
 	int DummyClientId = -1;
 	if(!ResolvePracticeRoles(LocalClientId, DummyClientId))
@@ -2045,6 +2156,30 @@ void CFastPractice::SyncFromPrediction()
 		ReleaseBufferedInputState();
 	}
 
+	// task-72: while paused/spectating, freeze the practice world: do not tick it, do not apply
+	// any input and keep publishing the last cached cores. The ghost/entity therefore stays
+	// frozen (no attack animation) and nothing can register a fire press on resume.
+	UpdateInteractionBlockedState();
+	if(m_Blocked)
+	{
+		GameClient()->m_PredictedDummyId = -1;
+		RepublishCachedCores();
+		UpdateGhostData();
+		return;
+	}
+
+	// task-73: Rebuild() replaces the practice characters' LatestInput with fire=0 while the
+	// stored neutral inputs use the locked even value (m_aServerLockedFire, e.g. 12). After a
+	// long pause/spec gap (>3s) that would make the first non-suppressed tick apply
+	// CountInput(0, locked) and count multiple presses -> a self attack on resume. Align the
+	// controls ring, prediction history and the practice characters to the locked fire state
+	// right after every rebuild, before the next TickPracticeWorld() applies any input.
+	const auto SyncAfterRebuild = [&]() {
+		SyncToggleFireState();
+		m_SuppressFireOnNextPredictTick = true;
+		m_InputSuppressTicks = std::max(m_InputSuppressTicks, 2);
+	};
+
 	if(GameClient()->m_Snap.m_SpecInfo.m_Active || (GameClient()->m_Snap.m_pLocalInfo && GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS))
 	{
 		GameClient()->m_PredictedDummyId = -1;
@@ -2064,6 +2199,7 @@ void CFastPractice::SyncFromPrediction()
 				Disable();
 				return;
 			}
+			SyncAfterRebuild();
 		}
 
 		auto &Pending = m_aPracticeCommandState[LocalClientId];
@@ -2088,6 +2224,7 @@ void CFastPractice::SyncFromPrediction()
 				Disable();
 				return;
 			}
+			SyncAfterRebuild();
 			ApplyPendingTeleport();
 			TickPracticeWorld();
 		}
@@ -2113,6 +2250,7 @@ void CFastPractice::SyncFromPrediction()
 			Disable();
 			return;
 		}
+		SyncAfterRebuild();
 	}
 
 	auto &Pending = m_aPracticeCommandState[LocalClientId];
@@ -2138,6 +2276,7 @@ void CFastPractice::SyncFromPrediction()
 			Disable();
 			return;
 		}
+		SyncAfterRebuild();
 		ApplyPendingTeleport();
 		TickPracticeWorld();
 	}
@@ -2199,6 +2338,16 @@ void CFastPractice::OnNewSnapshot()
 		return;
 	}
 
+	// task-72: detect /pause, /spec, free view and game pause edges as soon as the snapshot is
+	// available, then keep the practice world suspended and the fire rings safely released.
+	UpdateInteractionBlockedState();
+	if(m_Blocked)
+	{
+		GameClient()->m_PredictedDummyId = -1;
+		RepublishCachedCores();
+		return;
+	}
+
 	if(GameClient()->m_Snap.m_SpecInfo.m_Active || (GameClient()->m_Snap.m_pLocalInfo && GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS))
 		GameClient()->m_PredictedDummyId = -1;
 	else
@@ -2228,6 +2377,10 @@ void CFastPractice::OnRender()
 {
 	if(!m_Enabled)
 		return;
+
+	// task-72: hold the fire rings at the safe released state on every frame while the practice
+	// simulation is suspended (menu/binds can still modify the physical ring between snapshots).
+	UpdateInteractionBlockedState();
 
 	const auto RenderRealMarker = [&](const SGhostData &Ghost, float Alpha) {
 		if(!Ghost.m_Valid)
