@@ -1,6 +1,6 @@
 # IntegratedClient
 
-以 **BestClient** 为底座的整合客户端项目，在 DDNet / TClient 生态基础上整合 **RanbiClient** 的功能，并新增本项目特性。当前版本：**1.0.3**。
+以 **BestClient** 为底座的整合客户端项目，在 DDNet / TClient 生态基础上整合 **RanbiClient** 的功能，并新增本项目特性。当前版本：**1.1.0**。
 
 ## 来源仓库
 
