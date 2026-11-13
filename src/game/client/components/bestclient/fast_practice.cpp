@@ -159,17 +159,8 @@ void CFastPractice::ConFastPracticeToggle(IConsole::IResult *pResult, void *pUse
 
 void CFastPractice::ResetPracticeState()
 {
-	// task-74: drop the local practice-spectate override so the normal server state takes over.
-	if(m_PracticeSpectate)
-	{
-		m_PracticeSpectate = false;
-		RestorePracticeSpectateSpecInfo();
-	}
-	// task-77: drop the native spec-char / position-restore state as well.
-	ClearPracticeSpectateNativeEffects();
-	m_RestorePracticePositionPending = false;
-	m_aPracticeSpectateSavedValid[0] = false;
-	m_aPracticeSpectateSavedValid[1] = false;
+	// task-24: drop all per-participant local spectate state / spec-char circles.
+	ClearAllParticipantSpectateState();
 	m_Enabled = false;
 	m_Ready = false;
 	m_NeedsRebuild = false;
@@ -1028,19 +1019,14 @@ int CFastPractice::UiFreezeFireState(int Conn)
 
 bool CFastPractice::IsInteractionBlocked() const
 {
-	// task-72: in these states the practice simulation must not run and no buffered input may
-	// reach the practice world or the server: /pause (player paused), /spec/free view (local
-	// spec info active), local team spectators, game paused, and the DDNet spec flag.
+	// task-72/24: server-side states that suspend the whole practice simulation (pause, real
+	// spectator, game pause). The local practice spectate is per-participant and must NOT block
+	// the whole world here.
 	if(!m_Enabled || Client()->State() != IClient::STATE_ONLINE)
 		return false;
 
-	// task-74: local practice spectate (fake spectator state) also suspends the practice sim.
-	if(m_PracticeSpectate)
-		return true;
-	const CGameClient::CSnapState &Snap = GameClient()->m_Snap;
-	if(Snap.m_SpecInfo.m_Active)
-		return true;
-	if(Snap.m_pLocalInfo && Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS)
+	const auto &Snap = GameClient()->m_Snap;
+	if(IsServerSpectating() || (Snap.m_pLocalInfo && Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS))
 		return true;
 	if(Snap.m_pGameInfoObj && (Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED))
 		return true;
@@ -1064,7 +1050,7 @@ void CFastPractice::HoldBlockedFireState()
 
 bool CFastPractice::IsServerSpectating() const
 {
-	// task-74: server-derived spectator state only (our fake practice-spectate sets
+	// task-74: server-derived spectator state only (the local practice spectate sets
 	// m_Snap.m_SpecInfo.m_Active locally, so that field must not be used here).
 	const auto &Snap = GameClient()->m_Snap;
 	if(Snap.m_pLocalInfo && Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS)
@@ -1078,10 +1064,73 @@ bool CFastPractice::IsServerSpectating() const
 	return false;
 }
 
+int CFastPractice::ParticipantSlotForClientId(int ClientId) const
+{
+	if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+		return -1;
+	if(ClientId == m_EnableLocalClientId)
+		return 0;
+	if(m_EnableDummyClientId >= 0 && ClientId == m_EnableDummyClientId)
+		return 1;
+	return -1;
+}
+
+int CFastPractice::ParticipantClientIdForSlot(int Slot) const
+{
+	if(Slot == 0)
+		return m_EnableLocalClientId;
+	if(Slot == 1)
+		return m_EnableDummyClientId;
+	return -1;
+}
+
+int CFastPractice::ActiveParticipantSlot() const
+{
+	const int ActiveConn = g_Config.m_ClDummy ? IClient::CONN_DUMMY : IClient::CONN_MAIN;
+	const int ActiveClientId = GameClient()->m_aLocalIds[ActiveConn];
+	int Slot = ParticipantSlotForClientId(ActiveClientId);
+	if(Slot < 0)
+		Slot = ParticipantSlotForClientId(GameClient()->m_Snap.m_LocalClientId);
+	return Slot;
+}
+
+bool CFastPractice::IsPracticeParticipantSpectating(int ClientId) const
+{
+	if(!m_Enabled)
+		return false;
+	const int Slot = ParticipantSlotForClientId(ClientId);
+	return Slot >= 0 && m_aParticipantSpectate[Slot];
+}
+
+bool CFastPractice::ActivePracticeSpectating() const
+{
+	if(!m_Enabled)
+		return false;
+	const int Slot = ActiveParticipantSlot();
+	return Slot >= 0 && m_aParticipantSpectate[Slot];
+}
+
+bool CFastPractice::AnyParticipantSpectating() const
+{
+	return m_aParticipantSpectate[0] || m_aParticipantSpectate[1];
+}
+
+void CFastPractice::CaptureServerSpecInfoFromSnapshot()
+{
+	auto &Spec = GameClient()->m_Snap.m_SpecInfo;
+	m_SavedSpecActive = Spec.m_Active;
+	m_SavedSpecSpectatorId = Spec.m_SpectatorId;
+	m_SavedSpecUsePosition = Spec.m_UsePosition;
+	m_SavedSpecPosition = Spec.m_Position;
+	m_SavedSpecHasCameraInfo = Spec.m_HasCameraInfo;
+	m_SavedSpecZoom = Spec.m_Zoom;
+	m_SavedSpecDeadzone = Spec.m_Deadzone;
+	m_SavedSpecFollowFactor = Spec.m_FollowFactor;
+	m_HasSavedServerSpecInfo = true;
+}
+
 void CFastPractice::ApplyPracticeSpectateSpecInfo()
 {
-	if(!m_PracticeSpectate)
-		return;
 	auto &Spec = GameClient()->m_Snap.m_SpecInfo;
 	Spec.m_Active = true;
 	Spec.m_SpectatorId = SPEC_FREEVIEW;
@@ -1100,178 +1149,230 @@ void CFastPractice::RestorePracticeSpectateSpecInfo()
 	Spec.m_SpectatorId = m_SavedSpecSpectatorId;
 	Spec.m_UsePosition = m_SavedSpecUsePosition;
 	Spec.m_Position = m_SavedSpecPosition;
-	// task-75 R4: restore the camera-info fields too (one-frame fake zoom/deadzone otherwise).
 	Spec.m_HasCameraInfo = m_SavedSpecHasCameraInfo;
 	Spec.m_Zoom = m_SavedSpecZoom;
 	Spec.m_Deadzone = m_SavedSpecDeadzone;
 	Spec.m_FollowFactor = m_SavedSpecFollowFactor;
 }
 
-int CFastPractice::PracticeSpectateLocalClientId() const
+void CFastPractice::ApplyActiveSpectateCamera()
 {
-	const int LocalId = GameClient()->m_Snap.m_LocalClientId;
-	if(LocalId >= 0 && LocalId < MAX_CLIENTS)
-		return LocalId;
-	const int ControlledId = ControlledPracticeId();
-	if(ControlledId >= 0 && ControlledId < MAX_CLIENTS)
-		return ControlledId;
-	return m_EnableLocalClientId;
+	if(!m_Enabled)
+	{
+		if(m_FakeSpectateActive && m_HasSavedServerSpecInfo)
+			RestorePracticeSpectateSpecInfo();
+		m_FakeSpectateActive = false;
+		return;
+	}
+
+	// task-24: the fake freeview only mirrors the participant of the current active connection.
+	const bool Fake = ActivePracticeSpectating() && !IsServerSpectating() && m_HasSavedServerSpecInfo;
+	if(Fake)
+		ApplyPracticeSpectateSpecInfo();
+	else if(m_FakeSpectateActive)
+		RestorePracticeSpectateSpecInfo();
+	m_FakeSpectateActive = Fake;
 }
 
-void CFastPractice::RefreshPracticeSpectateNativeEffects()
+void CFastPractice::RefreshParticipantSpecChar(int Slot)
 {
-	if(!m_PracticeSpectate || m_SavedSpecCharClientId < 0 || m_SavedSpecCharClientId >= MAX_CLIENTS)
+	if(Slot < 0 || Slot > 1 || !m_aParticipantSpectate[Slot])
 		return;
-	// Native /spec broadcasts a spec char for the paused tee; the client stores it in the
-	// client data and CPlayers::OnRender draws it with the dashed "x_spec" skin. The snapshot
-	// invalidation clears it every tick, so keep re-applying our saved (old tee) position.
-	CGameClient::CClientData &ClientData = GameClient()->m_aClients[m_SavedSpecCharClientId];
+	const int ClientId = m_aParticipantSpectateSpecCharId[Slot];
+	if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+		return;
+	// Native /spec broadcasts a spec char that the client renders as the dashed x_spec circle
+	// (CPlayers::OnRender). The snapshot invalidation clears it every tick, so re-apply it.
+	CGameClient::CClientData &ClientData = GameClient()->m_aClients[ClientId];
 	ClientData.m_SpecCharPresent = true;
-	ClientData.m_SpecChar = m_SavedSpecCharPos;
+	ClientData.m_SpecChar = m_aParticipantSpectateSpecCharPos[Slot];
 }
 
-void CFastPractice::ClearPracticeSpectateNativeEffects()
+void CFastPractice::ClearParticipantSpecChar(int Slot)
 {
-	if(m_SavedSpecCharClientId >= 0 && m_SavedSpecCharClientId < MAX_CLIENTS)
-		GameClient()->m_aClients[m_SavedSpecCharClientId].m_SpecCharPresent = false;
-	m_SavedSpecCharClientId = -1;
+	if(Slot < 0 || Slot > 1)
+		return;
+	const int ClientId = m_aParticipantSpectateSpecCharId[Slot];
+	if(ClientId >= 0 && ClientId < MAX_CLIENTS)
+		GameClient()->m_aClients[ClientId].m_SpecCharPresent = false;
+	m_aParticipantSpectateSpecCharId[Slot] = -1;
 }
 
-void CFastPractice::RestorePracticeSpectatePositions()
+void CFastPractice::RefreshAllParticipantSpecChars()
 {
-	m_RestorePracticePositionPending = false;
-	if(!m_Enabled)
-		return;
-
-	CCharacter *pLocalChar = nullptr;
-	bool Restored = false;
-	for(int i = 0; i < 2; i++)
-	{
-		if(!m_aPracticeSpectateSavedValid[i])
-			continue;
-		const int ClientId = i == 0 ? m_EnableLocalClientId : m_EnableDummyClientId;
-		if(ClientId < 0 || ClientId >= MAX_CLIENTS)
-			continue;
-		CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId);
-		if(!pChar)
-			continue;
-		// task-77: a long spectate (>3s) makes TickPracticeWorld rebuild the practice world from
-		// the real server world, which would move the ghost to the server anchor. Keep the
-		// position the practice character had when /spec was entered instead.
-		ApplyPracticeTeleport(ClientId, pChar, m_aPracticeSpectateSavedPos[i]);
-		pChar->SetVelocity(vec2(0.0f, 0.0f));
-		if(i == 0)
-			pLocalChar = pChar;
-		Restored = true;
-	}
-
-	if(Restored)
-	{
-		if(!pLocalChar)
-			pLocalChar = m_PracticeWorld.GetCharacterById(m_EnableLocalClientId);
-		FinishMutation(m_EnableLocalClientId, m_EnableDummyClientId, pLocalChar, false);
-		if(DebugLogActive())
-			log_info("fast_practice", "[fp-state] practice-spectate position restored local=%.2f,%.2f dummy=%.2f,%.2f",
-				m_aPracticeSpectateSavedPos[0].x, m_aPracticeSpectateSavedPos[0].y,
-				m_aPracticeSpectateSavedPos[1].x, m_aPracticeSpectateSavedPos[1].y);
-	}
-	m_aPracticeSpectateSavedValid[0] = false;
-	m_aPracticeSpectateSavedValid[1] = false;
+	for(int Slot = 0; Slot < 2; Slot++)
+		RefreshParticipantSpecChar(Slot);
 }
 
-void CFastPractice::SetPracticeSpectate(bool Enable)
+void CFastPractice::ClearAllParticipantSpecChars()
 {
-	if(!m_Enabled)
+	for(int Slot = 0; Slot < 2; Slot++)
+		ClearParticipantSpecChar(Slot);
+}
+
+void CFastPractice::FreezeSpectatingParticipant(int Slot)
+{
+	if(Slot < 0 || Slot > 1 || !m_aParticipantSpectate[Slot] || !m_aParticipantSpectateSavedValid[Slot])
 		return;
-	if(Enable == m_PracticeSpectate)
+	const int ClientId = ParticipantClientIdForSlot(Slot);
+	if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+		return;
+	CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId);
+	if(!pChar)
+		return;
+	// Keep the local-spectating participant where /spec was entered. Its input is neutralized,
+	// but resetting the core each tick also prevents gravity/hook/collision drift while the rest
+	// of the practice world keeps simulating for the other participant.
+	const vec2 Pos = m_aParticipantSpectateSavedPos[Slot];
+	CCharacterCore Core = pChar->GetCore();
+	Core.m_Pos = Pos;
+	Core.m_Vel = vec2(0.0f, 0.0f);
+	pChar->SetCore(Core);
+	pChar->m_Pos = Pos;
+	pChar->m_PrevPos = Pos;
+	pChar->m_PrevPrevPos = Pos;
+}
+
+void CFastPractice::FreezeSpectatingParticipants()
+{
+	for(int Slot = 0; Slot < 2; Slot++)
+		FreezeSpectatingParticipant(Slot);
+}
+
+void CFastPractice::SyncFireAfterSpectateEdge()
+{
+	// task-24: same safe reset as the task-72 blocked edge, but without freezing the practice
+	// world: the participant edge only changes the outgoing fire/input ring state.
+	CaptureServerLockedTargets();
+	ReleaseBufferedInputState();
+	SyncToggleFireState();
+	ResetStoredInputs();
+	m_SuppressFireOnNextPredictTick = true;
+	m_InputSuppressTicks = std::max(m_InputSuppressTicks, 2);
+}
+
+void CFastPractice::SetParticipantSpectate(int Slot, bool Enable)
+{
+	if(!m_Enabled || Slot < 0 || Slot > 1)
+		return;
+	if(m_aParticipantSpectate[Slot] == Enable)
 		return;
 
+	const int ClientId = ParticipantClientIdForSlot(Slot);
 	if(Enable)
 	{
-		if(IsServerSpectating())
-		{
-			EchoPractice("cannot practice-spectate while spectating");
+		if(ClientId < 0 || ClientId >= MAX_CLIENTS)
 			return;
-		}
-		m_SavedSpecActive = GameClient()->m_Snap.m_SpecInfo.m_Active;
-		m_SavedSpecSpectatorId = GameClient()->m_Snap.m_SpecInfo.m_SpectatorId;
-		m_SavedSpecUsePosition = GameClient()->m_Snap.m_SpecInfo.m_UsePosition;
-		m_SavedSpecPosition = GameClient()->m_Snap.m_SpecInfo.m_Position;
-		m_SavedSpecHasCameraInfo = GameClient()->m_Snap.m_SpecInfo.m_HasCameraInfo;
-		m_SavedSpecZoom = GameClient()->m_Snap.m_SpecInfo.m_Zoom;
-		m_SavedSpecDeadzone = GameClient()->m_Snap.m_SpecInfo.m_Deadzone;
-		m_SavedSpecFollowFactor = GameClient()->m_Snap.m_SpecInfo.m_FollowFactor;
-		m_PracticeSpectate = true;
-		ApplyPracticeSpectateSpecInfo();
-		// task-76: the cores currently published for the participants are the practice ghost's
-		// (frozen/invincible) ones. OnPredict refreshes the real cores every prediction tick, but
-		// to avoid a one-frame ghost-visual flash on the real tees drop them right away.
-		for(const int ClientId : {m_EnableLocalClientId, m_EnableDummyClientId})
+		if(IsServerSpectating())
+			return;
+		CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId);
+		m_aParticipantSpectateSavedValid[Slot] = false;
+		if(pChar)
 		{
-			if(ClientId < 0 || ClientId >= MAX_CLIENTS)
-				continue;
-			if(CCharacter *pChar = GameClient()->m_PredictedWorld.GetCharacterById(ClientId))
-			{
-				const CCharacterCore Core = pChar->GetCore();
-				CGameClient::CClientData &ClientData = GameClient()->m_aClients[ClientId];
-				ClientData.m_Predicted = Core;
-				ClientData.m_PrevPredicted = Core;
-				ClientData.m_RegularPredicted = Core;
-			}
+			m_aParticipantSpectateSavedPos[Slot] = pChar->Core()->m_Pos;
+			m_aParticipantSpectateSavedValid[Slot] = true;
 		}
-		// task-77: remember where the practice characters are. A long spectate makes
-		// SyncFromPrediction rebuild the practice world from the real server world on exit;
-		// the restore path below then keeps the ghost where it was.
-		for(int i = 0; i < 2; i++)
-		{
-			const int ClientId = i == 0 ? m_EnableLocalClientId : m_EnableDummyClientId;
-			m_aPracticeSpectateSavedValid[i] = false;
-			if(ClientId < 0 || ClientId >= MAX_CLIENTS)
-				continue;
-			if(CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId))
-			{
-				m_aPracticeSpectateSavedPos[i] = pChar->Core()->m_Pos;
-				m_aPracticeSpectateSavedValid[i] = true;
-			}
-		}
+		if(!m_aParticipantSpectateSavedValid[Slot])
+			return;
 
-		// task-77: reproduce the native /spec client feedback locally. The server kills the tee
-		// when it moves it to spectators (death particles + SOUND_PLAYER_DIE) and keeps a spec
-		// char at the tee position, which the client renders as the dashed x_spec circle.
-		m_SavedSpecCharClientId = PracticeSpectateLocalClientId();
-		int SpecPosIdx = 0;
-		if(m_SavedSpecCharClientId == m_EnableDummyClientId && m_EnableDummyClientId >= 0)
-			SpecPosIdx = 1;
-		if(m_aPracticeSpectateSavedValid[SpecPosIdx])
-			m_SavedSpecCharPos = m_aPracticeSpectateSavedPos[SpecPosIdx];
-		else
-			m_SavedSpecCharPos = GameClient()->m_LocalCharacterPos;
-		if(m_SavedSpecCharClientId >= 0 && m_SavedSpecCharClientId < MAX_CLIENTS)
-		{
-			GameClient()->m_Effects.PlayerDeath(m_SavedSpecCharPos, m_SavedSpecCharClientId, 1.0f);
-			if(g_Config.m_SndGame)
-				GameClient()->m_Sounds.PlayAt(CSounds::CHN_WORLD, SOUND_PLAYER_DIE, 1.0f, m_SavedSpecCharPos);
-		}
-		RefreshPracticeSpectateNativeEffects();
-		EchoPractice("practice spectate on (local only; /spec again to exit)");
+		m_aParticipantSpectate[Slot] = true;
+		m_aParticipantSpectatePending[Slot] = false;
+		m_aParticipantSpectateSpecCharId[Slot] = ClientId;
+		m_aParticipantSpectateSpecCharPos[Slot] = m_aParticipantSpectateSavedPos[Slot];
+		FreezeSpectatingParticipant(Slot);
+
+		// Native /spec feedback: the server kills the tee (death particles + SOUND_PLAYER_DIE)
+		// and keeps a spec char at the tee position (dashed x_spec circle).
+		GameClient()->m_Effects.PlayerDeath(m_aParticipantSpectateSavedPos[Slot], ClientId, 1.0f);
+		if(g_Config.m_SndGame)
+			GameClient()->m_Sounds.PlayAt(CSounds::CHN_WORLD, SOUND_PLAYER_DIE, 1.0f, m_aParticipantSpectateSavedPos[Slot]);
+		RefreshParticipantSpecChar(Slot);
+
+		SyncFireAfterSpectateEdge();
+		ApplyActiveSpectateCamera();
+		if(DebugLogActive())
+			log_info("fast_practice", "[fp-state] participant-spectate on slot=%d client=%d active=%d", Slot, ClientId, ActiveParticipantSlot() == Slot ? 1 : 0);
 	}
 	else
 	{
-		m_PracticeSpectate = false;
-		RestorePracticeSpectateSpecInfo();
-		const vec2 SpawnPos = m_SavedSpecCharPos;
-		ClearPracticeSpectateNativeEffects();
-		// Native exit un-pauses the tee with a player-spawn effect (spawn particles and the
-		// spawn sound). Position restore happens once the (possibly rebuilt) practice world is
-		// ready again in SyncFromPrediction.
-		GameClient()->m_Effects.PlayerSpawn(SpawnPos, 1.0f, 1.0f);
-		m_RestorePracticePositionPending = true;
-		EchoPractice("practice spectate off");
+		const vec2 SpawnPos = m_aParticipantSpectateSavedPos[Slot];
+		m_aParticipantSpectate[Slot] = false;
+		m_aParticipantSpectatePending[Slot] = false;
+		ClearParticipantSpecChar(Slot);
+		if(m_aParticipantSpectateSavedValid[Slot])
+		{
+			// Native exit un-pauses the tee with a player-spawn effect (particles + sound).
+			GameClient()->m_Effects.PlayerSpawn(SpawnPos, 1.0f, 1.0f);
+			if(ClientId >= 0 && ClientId < MAX_CLIENTS)
+			{
+				if(CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId))
+				{
+					ApplyPracticeTeleport(ClientId, pChar, SpawnPos);
+					pChar->SetVelocity(vec2(0.0f, 0.0f));
+				}
+			}
+		}
+		m_aParticipantSpectateSavedValid[Slot] = false;
+		SyncFireAfterSpectateEdge();
+		ApplyActiveSpectateCamera();
+		if(DebugLogActive())
+			log_info("fast_practice", "[fp-state] participant-spectate off slot=%d client=%d active=%d", Slot, ClientId, ActiveParticipantSlot() == Slot ? 1 : 0);
 	}
+}
 
-	// Re-run the safe fire-ring edge handling (task-72/73): entering/leaving this state changes
-	// IsInteractionBlocked exactly like a pause/spec edge.
-	UpdateInteractionBlockedState();
+void CFastPractice::ClearAllParticipantSpectateState(bool RestoreCamera)
+{
+	for(int Slot = 0; Slot < 2; Slot++)
+	{
+		ClearParticipantSpecChar(Slot);
+		m_aParticipantSpectate[Slot] = false;
+		m_aParticipantSpectatePending[Slot] = false;
+		m_aParticipantSpectateSavedValid[Slot] = false;
+	}
+	// task-75 R5: when the real server spectator state takes over, the current snapshot already
+	// carries the real camera info, so do not restore the stale pre-spectate fields over it.
+	if(RestoreCamera && m_FakeSpectateActive && m_HasSavedServerSpecInfo)
+		RestorePracticeSpectateSpecInfo();
+	m_FakeSpectateActive = false;
+	m_HasSavedServerSpecInfo = false;
+}
+
+bool CFastPractice::IsParticipantSpectateEntryReady(int Slot)
+{
+	if(!m_Enabled || m_Blocked || Slot < 0 || Slot > 1 || m_aParticipantSpectate[Slot])
+		return false;
+	const int ClientId = ParticipantClientIdForSlot(Slot);
+	if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+		return false;
+	CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId);
+	if(!pChar)
+		return false;
+	// task-78/24: match the native server CPlayer::CanSpec() condition exactly
+	// (IsGrounded() && m_Pos == m_PrevPos) so /spec never triggers in the air or while moving.
+	return pChar->IsGrounded() && pChar->m_Pos == pChar->m_PrevPos;
+}
+
+void CFastPractice::UpdatePracticeSpectatePending()
+{
+	if(!m_Enabled)
+	{
+		m_aParticipantSpectatePending[0] = false;
+		m_aParticipantSpectatePending[1] = false;
+		return;
+	}
+	for(int Slot = 0; Slot < 2; Slot++)
+	{
+		if(!m_aParticipantSpectatePending[Slot])
+			continue;
+		if(IsServerSpectating())
+		{
+			m_aParticipantSpectatePending[Slot] = false;
+			continue;
+		}
+		if(!IsParticipantSpectateEntryReady(Slot))
+			continue;
+		SetParticipantSpectate(Slot, true);
+	}
 }
 
 void CFastPractice::UpdateInteractionBlockedState()
@@ -1283,6 +1384,19 @@ void CFastPractice::UpdateInteractionBlockedState()
 	}
 
 	const bool Blocked = IsInteractionBlocked();
+	// task-24: queued /spec entries are dropped when the whole interaction is blocked by a
+	// server-side pause/spec state before the participant could enter the local spectate.
+	if(Blocked)
+	{
+		for(int Slot = 0; Slot < 2; Slot++)
+		{
+			if(!m_aParticipantSpectatePending[Slot])
+				continue;
+			m_aParticipantSpectatePending[Slot] = false;
+			if(DebugLogActive())
+				log_info("fast_practice", "[fp-state] participant-spectate pending cleared slot=%d (blocked)", Slot);
+		}
+	}
 	if(Blocked == m_Blocked)
 	{
 		if(m_Blocked)
@@ -1399,15 +1513,11 @@ void CFastPractice::Enable()
 	}
 	m_RequireDummy = m_EnableDummyClientId >= 0;
 
-	if(m_RequireDummy &&
-		(GameClient()->m_aClients[m_EnableLocalClientId].m_Solo || GameClient()->m_aClients[m_EnableDummyClientId].m_Solo))
-	{
-		EchoPractice("you and dummy must not be in solo");
-		m_EnableLocalClientId = -1;
-		m_EnableDummyClientId = -1;
-		m_RequireDummy = false;
-		return;
-	}
+	// task-78: solo no longer blocks enabling Fast Practice. The practice world already copies
+	// the per-character solo flag (SyncPracticeWorldConfig/RepublishCachedCores) and the local
+	// input path only uses the practice world, so a solo tee/dummy pair runs normally without
+	// sending any extra attack to the server. (Only the local collision behaviour differs, which
+	// matches the server's solo state at enable time.)
 
 	if(!Rebuild())
 	{
@@ -1566,17 +1676,22 @@ void CFastPractice::PrepareInputForSend(int *pData, int Size, bool Dummy)
 	// blocked state (and its safe ring release) is applied before deciding how to neutralize.
 	UpdateInteractionBlockedState();
 
-	if(m_PracticeSpectate)
+	// task-24: only the connection whose practice participant is locally spectating gets the
+	// fully neutral input; the other connection keeps normal practice behaviour.
 	{
-		// task-74: local practice spectate must not move/attack the real server entity. Send a
-		// fully neutral input (fire stays on the locked even ring) instead of the physical input.
-		CNetObj_PlayerInput Neutral{};
-		BuildNeutralInput(Neutral, Dummy, true);
-		if(Size >= (int)sizeof(CNetObj_PlayerInput))
-			mem_copy(pData, &Neutral, sizeof(Neutral));
-		if(DebugLogActive())
-			log_info("fast_practice", "[fp-send] practice-spectate neutral dummy=%d fire=%d", Dummy ? 1 : 0, Neutral.m_Fire & INPUT_STATE_MASK);
-		return;
+		const int PhysConn = (g_Config.m_ClDummy ^ (int)Dummy) & 1;
+		const int ConnClientId = GameClient()->m_aLocalIds[PhysConn];
+		const int ConnSlot = ParticipantSlotForClientId(ConnClientId);
+		if(ConnSlot >= 0 && m_aParticipantSpectate[ConnSlot])
+		{
+			CNetObj_PlayerInput Neutral{};
+			BuildNeutralInput(Neutral, Dummy, true);
+			if(Size >= (int)sizeof(CNetObj_PlayerInput))
+				mem_copy(pData, &Neutral, sizeof(Neutral));
+			if(DebugLogActive())
+				log_info("fast_practice", "[fp-send] participant-spectate neutral dummy=%d slot=%d fire=%d", Dummy ? 1 : 0, ConnSlot, Neutral.m_Fire & INPUT_STATE_MASK);
+			return;
+		}
 	}
 
 	const bool Spectating = GameClient()->m_Snap.m_SpecInfo.m_Active ||
@@ -1904,18 +2019,14 @@ void CFastPractice::CacheRegularPredictedCore(int ClientId, const CCharacterCore
 
 void CFastPractice::RepublishCachedCores() const
 {
-	// task-76 R1-B1: while the local practice spectate is active the real server tees must be
-	// rendered with their real (server/predicted) cores. OnPredict keeps writing those into
-	// m_aClients[].m_Predicted/m_PrevPredicted/m_RegularPredicted, so republishing the frozen
-	// practice cores here would leak ghost-frozen/invincible visuals (skin/flags/weapons) onto
-	// the real tees. Never overwrite the real cores in this state.
-	if(m_PracticeSpectate)
-		return;
-
 	const int ControlledId = ControlledPracticeId();
 	for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++)
 	{
 		if(!IsPracticeParticipant(ClientId) || !m_aPublishedValid[ClientId])
+			continue;
+		// task-24/76: only the locally spectating participant keeps its real (server/predicted)
+		// cores; the other participant keeps the normal practice cores.
+		if(IsPracticeParticipantSpectating(ClientId))
 			continue;
 		CGameClient::CClientData &ClientData = GameClient()->m_aClients[ClientId];
 		ClientData.m_Predicted = m_aPublishedPredicted[ClientId];
@@ -2082,8 +2193,13 @@ void CFastPractice::TickPracticeWorld()
 	}
 
 	const bool CloudInputMode = GameClient()->IsCloudInputMode();
-	const bool Spectating = GameClient()->m_Snap.m_SpecInfo.m_Active ||
+	const bool Spectating = IsServerSpectating() ||
 				(GameClient()->m_Snap.m_pLocalInfo && GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS);
+	// task-24: per-participant local spectate: only that participant is neutralized/frozen.
+	const int LocalParticipantSlot = ParticipantSlotForClientId(LocalClientId);
+	const int DummyParticipantSlot = pDummyChar ? ParticipantSlotForClientId(DummyClientId) : -1;
+	const bool LocalParticipantSpectating = LocalParticipantSlot >= 0 && m_aParticipantSpectate[LocalParticipantSlot];
+	const bool DummyParticipantSpectating = DummyParticipantSlot >= 0 && m_aParticipantSpectate[DummyParticipantSlot];
 	const float FastInputOffsetTicks = (CloudInputMode || Spectating) ? 0.0f : BcInputs::EffectiveOffsetTicks();
 	const int FastInputTicks = Spectating ? 0 : (CloudInputMode ? GameClient()->m_CloudInput.SelfTickOffset() : BcInputs::PredictionTicks(FastInputOffsetTicks));
 	const int FastInputOthersTicks = Spectating ? 0 : (CloudInputMode ? GameClient()->m_CloudInput.OthersTickOffset() : (BcInputs::AnyOthers() ? BcInputs::PredictionTicksOthers(FastInputOffsetTicks) : 0));
@@ -2193,6 +2309,18 @@ void CFastPractice::TickPracticeWorld()
 			if(FastInputTicks > 0 && Tick > FinalTickRegular)
 				pInputData = CloudInputMode ? &GameClient()->m_CloudInput.Input(LocalTee) : &GameClient()->m_Controls.m_aFastInput[LocalTee];
 		}
+		// task-24: locally spectating participants are fully neutralized while the other
+		// participant keeps its normal practice input/simulation.
+		if(LocalParticipantSpectating)
+		{
+			BuildNeutralInput(LiveInput, GameClient()->m_IsDummySwapping != 0, true);
+			pInputData = &LiveInput;
+		}
+		if(DummyParticipantSpectating && pDummyChar)
+		{
+			BuildNeutralInput(LiveDummyInput, (GameClient()->m_IsDummySwapping ^ 1) != 0, true);
+			pDummyInputData = &LiveDummyInput;
+		}
 		const bool SuppressTransitionTick = Tick == BaseGameTick + 1 && (m_SuppressFireOnNextPredictTick || GameClient()->m_IsDummySwapping);
 		const bool SuppressCooldownTick = m_InputSuppressTicks > 0;
 		if(SuppressTransitionTick || SuppressCooldownTick)
@@ -2271,6 +2399,9 @@ void CFastPractice::TickPracticeWorld()
 		if(pDummyInputData)
 			pDummyChar->OnPredictedInput(pDummyInputData);
 		m_PracticeWorld.Tick();
+		// task-24: keep the spectating participant pinned to its entry position; the rest of
+		// the world keeps running so the other participant remains controllable.
+		FreezeSpectatingParticipants();
 		m_PracticeWorld.m_WorldConfig.m_PredictEvents = PredictEvents;
 
 		if(Tick == FinalTickRegular)
@@ -2393,6 +2524,9 @@ void CFastPractice::SyncFromPrediction()
 		return;
 	}
 
+	// task-24: queued /spec entries for either participant (native CanSpec landing gate).
+	UpdatePracticeSpectatePending();
+
 	if(m_LastClDummy != g_Config.m_ClDummy)
 	{
 		CaptureServerLockedTargets();
@@ -2402,6 +2536,9 @@ void CFastPractice::SyncFromPrediction()
 		m_InputSuppressTicks = std::max(m_InputSuppressTicks, 2);
 		ReleaseBufferedInputState();
 	}
+	// task-24: switching cl_dummy does not change either participant's spectate state; only the
+	// active participant (and therefore the fake camera) changes.
+	ApplyActiveSpectateCamera();
 
 	// task-72: while paused/spectating, freeze the practice world: do not tick it, do not apply
 	// any input and keep publishing the last cached cores. The ghost/entity therefore stays
@@ -2427,7 +2564,10 @@ void CFastPractice::SyncFromPrediction()
 		m_InputSuppressTicks = std::max(m_InputSuppressTicks, 2);
 	};
 
-	if(GameClient()->m_Snap.m_SpecInfo.m_Active || (GameClient()->m_Snap.m_pLocalInfo && GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS))
+	// task-24: use the server-derived spectator state here, not the local fake freeview, so a
+	// locally spectating active participant still runs the normal practice path for the other
+	// participant.
+	if(IsServerSpectating() || (GameClient()->m_Snap.m_pLocalInfo && GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS))
 	{
 		GameClient()->m_PredictedDummyId = -1;
 
@@ -2527,10 +2667,9 @@ void CFastPractice::SyncFromPrediction()
 		ApplyPendingTeleport();
 		TickPracticeWorld();
 	}
-	// task-77: exiting the local practice spectate restores the practice position; a long
-	// spectate gap may have just rebuilt the practice world from the real server world.
-	if(m_RestorePracticePositionPending)
-		RestorePracticeSpectatePositions();
+	// task-24: a rebuild (e.g. after a long external pause/spectate gap) can move the locally
+	// spectating participant back to the server world position; pin it to its entry position.
+	FreezeSpectatingParticipants();
 	Pending.m_HasPendingTeleport = false;
 	RepublishCachedCores();
 	UpdateFreezeSkinDebounce();
@@ -2589,28 +2728,19 @@ void CFastPractice::OnNewSnapshot()
 		return;
 	}
 
-	// task-74: the new snapshot overwrote m_Snap.m_SpecInfo; re-apply the local practice
-	// spectator override so the camera stays in freeview. If the server really moved us to
-	// spectators, drop the local override and let the real spectator state take over.
-	if(m_PracticeSpectate)
+	// task-24: the snapshot overwrote m_Snap.m_SpecInfo with the real server state. Keep a copy
+	// so the fake freeview can be restored later, then apply it only when the participant of the
+	// current active connection is in the local practice spectate.
+	CaptureServerSpecInfoFromSnapshot();
+	if(IsServerSpectating())
 	{
-		if(IsServerSpectating())
-		{
-			// task-75 R5: the current snapshot already carries the real spectator info, so only
-			// clear the local flag instead of restoring the stale pre-spectate fields over it.
-			m_PracticeSpectate = false;
-			ClearPracticeSpectateNativeEffects();
-			m_RestorePracticePositionPending = true;
-			UpdateInteractionBlockedState(); // stays blocked: we are a real spectator now
-			EchoPractice("practice spectate off (server spectator state)");
-		}
-		else
-		{
-			ApplyPracticeSpectateSpecInfo();
-			// task-77: re-apply the saved native spec char (snapshot invalidation clears it).
-			RefreshPracticeSpectateNativeEffects();
-		}
+		// Real server spectator state takes over; drop local participant spectate states without
+		// replaying the local death/spawn feedback.
+		if(AnyParticipantSpectating() || m_aParticipantSpectatePending[0] || m_aParticipantSpectatePending[1])
+			ClearAllParticipantSpectateState(false);
 	}
+	ApplyActiveSpectateCamera();
+	RefreshAllParticipantSpecChars();
 
 	// task-72: detect /pause, /spec, free view and game pause edges as soon as the snapshot is
 	// available, then keep the practice world suspended and the fire rings safely released.
@@ -2656,17 +2786,14 @@ void CFastPractice::OnRender()
 	// simulation is suspended (menu/binds can still modify the physical ring between snapshots).
 	UpdateInteractionBlockedState();
 
-	// task-74: in local practice spectate the practice ghost markers are not drawn; the real
-	// server tees are rendered normally from the snapshot.
-	if(m_PracticeSpectate)
-	{
-		// task-77: keep the native dashed x_spec circle at the saved tee position.
-		RefreshPracticeSpectateNativeEffects();
-		return;
-	}
+	// task-24: refresh the dashed x_spec circles of all locally spectating participants.
+	RefreshAllParticipantSpecChars();
 
 	const auto RenderRealMarker = [&](const SGhostData &Ghost, float Alpha) {
 		if(!Ghost.m_Valid)
+			return;
+		// Locally spectating participants are shown as x_spec circles, not as ghost markers.
+		if(IsPracticeParticipantSpectating(Ghost.m_ClientId))
 			return;
 		if(CCharacter *pPracticeChar = m_PracticeWorld.GetCharacterById(Ghost.m_ClientId))
 		{
@@ -3559,7 +3686,32 @@ bool CFastPractice::ConsumePracticeChatCommand(int Team, const char *pLine)
 		{
 			if(!IsServerSpectating())
 			{
-				SetPracticeSpectate(!m_PracticeSpectate);
+				// task-24: /spec only affects the practice participant of the current active
+				// connection. Switching cl_dummy later does not change either participant's state.
+				const int ActiveSlot = ActiveParticipantSlot();
+				if(ActiveSlot >= 0)
+				{
+					if(m_aParticipantSpectate[ActiveSlot])
+					{
+						m_aParticipantSpectatePending[ActiveSlot] = false;
+						SetParticipantSpectate(ActiveSlot, false);
+					}
+					else if(m_aParticipantSpectatePending[ActiveSlot])
+					{
+						m_aParticipantSpectatePending[ActiveSlot] = false;
+						if(DebugLogActive())
+							log_info("fast_practice", "[fp-state] participant-spectate pending cancelled slot=%d", ActiveSlot);
+					}
+					else
+					{
+						// task-78: native /spec only enters when the tee is grounded and standing
+						// still (CPlayer::CanSpec). Queue it for this participant and let
+						// UpdatePracticeSpectatePending() enter once that is true.
+						m_aParticipantSpectatePending[ActiveSlot] = true;
+						if(DebugLogActive())
+							log_info("fast_practice", "[fp-state] participant-spectate pending slot=%d", ActiveSlot);
+					}
+				}
 				return true;
 			}
 			// Real spectator state: let the server handle the command as before.

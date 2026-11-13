@@ -48,9 +48,11 @@ public:
 	// a UI is open cannot create a CountInput press in the practice world. Falls back to
 	// CControls::m_aLastSentFire when practice is disabled or the participant is missing.
 	int UiFreezeFireState(int Conn);
-	// task-74: local practice spectate: /spec in practice mode only switches the camera/practice
-	// ghost to spectator, the real server entity keeps playing (no /spec is sent to the server).
-	bool PracticeSpectating() const { return m_PracticeSpectate; }
+	// task-24: per-participant local practice spectate. /spec only affects the participant of
+	// the current active connection; switching cl_dummy only switches which participant is
+	// controlled and never changes either participant's spectate state or position.
+	bool IsPracticeParticipantSpectating(int ClientId) const;
+	bool ActivePracticeSpectating() const;
 	void BuildNeutralInput(CNetObj_PlayerInput &OutInput, bool Dummy, bool UseFrozenTarget = true) const;
 	void SyncFromPrediction();
 	bool ForcePredictWeapons() const;
@@ -163,29 +165,27 @@ private:
 	// local spectator, game paused). On enter/leave the buffered fire rings are safely released
 	// and the practice input history is reset so no transition can count a fire press.
 	bool m_Blocked = false;
-	// task-74: local practice spectate (fake spectator state for the camera/practice ghost; the
-	// real server entity is untouched because /spec is intercepted instead of being sent).
-	bool m_PracticeSpectate = false;
+	// task-24: per-participant local practice spectate state (slot 0 = m_EnableLocalClientId,
+	// slot 1 = m_EnableDummyClientId). Each participant independently queues/enters/leaves the
+	// local spectate; switching cl_dummy only selects which participant is controlled.
+	bool m_aParticipantSpectate[2] = {false, false};
+	bool m_aParticipantSpectatePending[2] = {false, false};
+	bool m_aParticipantSpectateSavedValid[2] = {false, false};
+	vec2 m_aParticipantSpectateSavedPos[2] = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f)};
+	int m_aParticipantSpectateSpecCharId[2] = {-1, -1};
+	vec2 m_aParticipantSpectateSpecCharPos[2] = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f)};
+	// Saved real server camera state so the fake freeview can be applied only while the active
+	// participant is spectating and restored on the same snapshot it stops.
 	bool m_SavedSpecActive = false;
 	int m_SavedSpecSpectatorId = 0;
 	bool m_SavedSpecUsePosition = false;
 	vec2 m_SavedSpecPosition = vec2(0.0f, 0.0f);
-	// task-75 R4: also restore the camera-info fields so leaving local practice spectate does
-	// not leave a one-frame fake zoom/deadzone/follow-factor on the local camera.
 	bool m_SavedSpecHasCameraInfo = false;
 	float m_SavedSpecZoom = 1.0f;
 	int m_SavedSpecDeadzone = 0;
 	int m_SavedSpecFollowFactor = 0;
-	// task-77: native /spec feedback + practice position restore for the local practice spectate.
-	// Entering /spec in the real game kills the tee (death particles + SOUND_PLAYER_DIE) and
-	// broadcasts a spec-char that is rendered as the dashed x_spec circle; leaving it spawns the
-	// tee again. The practice character position is saved so a long spectate (which makes
-	// SyncFromPrediction rebuild the practice world) cannot move the ghost to the server anchor.
-	bool m_RestorePracticePositionPending = false;
-	bool m_aPracticeSpectateSavedValid[2] = {false, false};
-	vec2 m_aPracticeSpectateSavedPos[2] = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f)};
-	int m_SavedSpecCharClientId = -1;
-	vec2 m_SavedSpecCharPos = vec2(0.0f, 0.0f);
+	bool m_HasSavedServerSpecInfo = false;
+	bool m_FakeSpectateActive = false;
 	int m_EnableLocalClientId = -1;
 	int m_EnableDummyClientId = -1;
 	bool m_HasDummyAnchor = false;
@@ -265,16 +265,33 @@ private:
 	bool IsInteractionBlocked() const;
 	void UpdateInteractionBlockedState();
 	void HoldBlockedFireState();
-	// task-74: local practice spectate (/spec) helpers
+	// task-74/24: server spectator detection + local practice spectate helpers
 	bool IsServerSpectating() const;
-	void SetPracticeSpectate(bool Enable);
+	// task-24: per-participant spectate state machine
+	int ParticipantSlotForClientId(int ClientId) const;
+	int ParticipantClientIdForSlot(int Slot) const;
+	int ActiveParticipantSlot() const;
+	bool AnyParticipantSpectating() const;
+	void SetParticipantSpectate(int Slot, bool Enable);
+	void ClearAllParticipantSpectateState(bool RestoreCamera = true);
+	// task-74/75: fake freeview camera (only mirrors the active participant's spectate state)
 	void ApplyPracticeSpectateSpecInfo();
 	void RestorePracticeSpectateSpecInfo();
-	// task-77: native spec feedback + practice position restore
-	int PracticeSpectateLocalClientId() const;
-	void RefreshPracticeSpectateNativeEffects();
-	void ClearPracticeSpectateNativeEffects();
-	void RestorePracticeSpectatePositions();
+	void CaptureServerSpecInfoFromSnapshot();
+	void ApplyActiveSpectateCamera();
+	// task-77: native feedback (death/spawn particles + sounds, x_spec spec-char circle)
+	void RefreshParticipantSpecChar(int Slot);
+	void ClearParticipantSpecChar(int Slot);
+	void RefreshAllParticipantSpecChars();
+	void ClearAllParticipantSpecChars();
+	// task-24: per-participant freeze/neutral while only part of the world is spectating
+	void FreezeSpectatingParticipant(int Slot);
+	void FreezeSpectatingParticipants();
+	void SyncFireAfterSpectateEdge();
+	// task-78: native /spec only switches when the tee is grounded and standing still
+	// (server CPlayer::CanSpec: IsGrounded() && m_Pos == m_PrevPos).
+	bool IsParticipantSpectateEntryReady(int Slot);
+	void UpdatePracticeSpectatePending();
 	void BeginDebugLog();
 	void LogAttackState(const char *pStage);
 	int64_t m_DebugLogUntil = 0;

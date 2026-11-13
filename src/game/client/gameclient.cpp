@@ -5061,10 +5061,8 @@ void CGameClient::UpdateRenderedCharacters()
 	const bool HasFastInputOthers = FastInputTicksOthers > 0;
 	// bestclient
 	const bool PracticeActive = m_FastPractice.Active();
-	// task-74: in local practice spectate the practice-controlled tees are "in spectator" (not
-	// rendered); the real server entities are rendered from the snapshot instead, while their
-	// server-side team/visibility/collision stay untouched.
-	const bool PracticeSpectating = PracticeActive && m_FastPractice.PracticeSpectating();
+	// task-24: only the locally spectating participant is rendered as the real server entity;
+	// the other participant keeps the normal practice-world rendering/control.
 	const int PracticeControlledId = PracticeActive ? m_FastPractice.ControlledPracticeId() : -1;
 	const int PracticePartnerId = PracticeActive ? m_FastPractice.PartnerPracticeId() : -1;
 	// bestclient
@@ -5084,7 +5082,7 @@ void CGameClient::UpdateRenderedCharacters()
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
 		// bestclient
-		const bool IsPracticeParticipant = PracticeActive && !PracticeSpectating && m_FastPractice.IsPracticeParticipant(i);
+		const bool IsPracticeParticipant = PracticeActive && m_FastPractice.IsPracticeParticipant(i) && !m_FastPractice.IsPracticeParticipantSpectating(i);
 		if(!m_Snap.m_aCharacters[i].m_Active && !IsPracticeParticipant)
 			continue;
 		if(m_Snap.m_aCharacters[i].m_Active)
@@ -5107,7 +5105,7 @@ void CGameClient::UpdateRenderedCharacters()
 		// bestclient
 		CCharacter *pChar = IsPracticeParticipant ? m_FastPractice.PracticeWorld().GetCharacterById(i) : m_PredictedWorld.GetCharacterById(i);
 
-		if(i == ((PracticeActive && !PracticeSpectating) ? PracticeControlledId : m_Snap.m_LocalClientId))
+		if(i == ((PracticeActive && !m_FastPractice.IsPracticeParticipantSpectating(i)) ? PracticeControlledId : m_Snap.m_LocalClientId))
 			Client()->m_IsLocalFrozen = pChar && pChar->m_FreezeTime > 0;
 
 		if(IsPracticeParticipant && pChar)
