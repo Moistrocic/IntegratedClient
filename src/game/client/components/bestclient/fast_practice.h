@@ -170,6 +170,22 @@ private:
 	int m_SavedSpecSpectatorId = 0;
 	bool m_SavedSpecUsePosition = false;
 	vec2 m_SavedSpecPosition = vec2(0.0f, 0.0f);
+	// task-75 R4: also restore the camera-info fields so leaving local practice spectate does
+	// not leave a one-frame fake zoom/deadzone/follow-factor on the local camera.
+	bool m_SavedSpecHasCameraInfo = false;
+	float m_SavedSpecZoom = 1.0f;
+	int m_SavedSpecDeadzone = 0;
+	int m_SavedSpecFollowFactor = 0;
+	// task-77: native /spec feedback + practice position restore for the local practice spectate.
+	// Entering /spec in the real game kills the tee (death particles + SOUND_PLAYER_DIE) and
+	// broadcasts a spec-char that is rendered as the dashed x_spec circle; leaving it spawns the
+	// tee again. The practice character position is saved so a long spectate (which makes
+	// SyncFromPrediction rebuild the practice world) cannot move the ghost to the server anchor.
+	bool m_RestorePracticePositionPending = false;
+	bool m_aPracticeSpectateSavedValid[2] = {false, false};
+	vec2 m_aPracticeSpectateSavedPos[2] = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f)};
+	int m_SavedSpecCharClientId = -1;
+	vec2 m_SavedSpecCharPos = vec2(0.0f, 0.0f);
 	int m_EnableLocalClientId = -1;
 	int m_EnableDummyClientId = -1;
 	bool m_HasDummyAnchor = false;
@@ -254,6 +270,11 @@ private:
 	void SetPracticeSpectate(bool Enable);
 	void ApplyPracticeSpectateSpecInfo();
 	void RestorePracticeSpectateSpecInfo();
+	// task-77: native spec feedback + practice position restore
+	int PracticeSpectateLocalClientId() const;
+	void RefreshPracticeSpectateNativeEffects();
+	void ClearPracticeSpectateNativeEffects();
+	void RestorePracticeSpectatePositions();
 	void BeginDebugLog();
 	void LogAttackState(const char *pStage);
 	int64_t m_DebugLogUntil = 0;

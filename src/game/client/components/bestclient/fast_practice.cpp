@@ -165,6 +165,11 @@ void CFastPractice::ResetPracticeState()
 		m_PracticeSpectate = false;
 		RestorePracticeSpectateSpecInfo();
 	}
+	// task-77: drop the native spec-char / position-restore state as well.
+	ClearPracticeSpectateNativeEffects();
+	m_RestorePracticePositionPending = false;
+	m_aPracticeSpectateSavedValid[0] = false;
+	m_aPracticeSpectateSavedValid[1] = false;
 	m_Enabled = false;
 	m_Ready = false;
 	m_NeedsRebuild = false;
@@ -1095,6 +1100,83 @@ void CFastPractice::RestorePracticeSpectateSpecInfo()
 	Spec.m_SpectatorId = m_SavedSpecSpectatorId;
 	Spec.m_UsePosition = m_SavedSpecUsePosition;
 	Spec.m_Position = m_SavedSpecPosition;
+	// task-75 R4: restore the camera-info fields too (one-frame fake zoom/deadzone otherwise).
+	Spec.m_HasCameraInfo = m_SavedSpecHasCameraInfo;
+	Spec.m_Zoom = m_SavedSpecZoom;
+	Spec.m_Deadzone = m_SavedSpecDeadzone;
+	Spec.m_FollowFactor = m_SavedSpecFollowFactor;
+}
+
+int CFastPractice::PracticeSpectateLocalClientId() const
+{
+	const int LocalId = GameClient()->m_Snap.m_LocalClientId;
+	if(LocalId >= 0 && LocalId < MAX_CLIENTS)
+		return LocalId;
+	const int ControlledId = ControlledPracticeId();
+	if(ControlledId >= 0 && ControlledId < MAX_CLIENTS)
+		return ControlledId;
+	return m_EnableLocalClientId;
+}
+
+void CFastPractice::RefreshPracticeSpectateNativeEffects()
+{
+	if(!m_PracticeSpectate || m_SavedSpecCharClientId < 0 || m_SavedSpecCharClientId >= MAX_CLIENTS)
+		return;
+	// Native /spec broadcasts a spec char for the paused tee; the client stores it in the
+	// client data and CPlayers::OnRender draws it with the dashed "x_spec" skin. The snapshot
+	// invalidation clears it every tick, so keep re-applying our saved (old tee) position.
+	CGameClient::CClientData &ClientData = GameClient()->m_aClients[m_SavedSpecCharClientId];
+	ClientData.m_SpecCharPresent = true;
+	ClientData.m_SpecChar = m_SavedSpecCharPos;
+}
+
+void CFastPractice::ClearPracticeSpectateNativeEffects()
+{
+	if(m_SavedSpecCharClientId >= 0 && m_SavedSpecCharClientId < MAX_CLIENTS)
+		GameClient()->m_aClients[m_SavedSpecCharClientId].m_SpecCharPresent = false;
+	m_SavedSpecCharClientId = -1;
+}
+
+void CFastPractice::RestorePracticeSpectatePositions()
+{
+	m_RestorePracticePositionPending = false;
+	if(!m_Enabled)
+		return;
+
+	CCharacter *pLocalChar = nullptr;
+	bool Restored = false;
+	for(int i = 0; i < 2; i++)
+	{
+		if(!m_aPracticeSpectateSavedValid[i])
+			continue;
+		const int ClientId = i == 0 ? m_EnableLocalClientId : m_EnableDummyClientId;
+		if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+			continue;
+		CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId);
+		if(!pChar)
+			continue;
+		// task-77: a long spectate (>3s) makes TickPracticeWorld rebuild the practice world from
+		// the real server world, which would move the ghost to the server anchor. Keep the
+		// position the practice character had when /spec was entered instead.
+		ApplyPracticeTeleport(ClientId, pChar, m_aPracticeSpectateSavedPos[i]);
+		pChar->SetVelocity(vec2(0.0f, 0.0f));
+		if(i == 0)
+			pLocalChar = pChar;
+		Restored = true;
+	}
+
+	if(Restored)
+	{
+		if(!pLocalChar)
+			pLocalChar = m_PracticeWorld.GetCharacterById(m_EnableLocalClientId);
+		FinishMutation(m_EnableLocalClientId, m_EnableDummyClientId, pLocalChar, false);
+		if(DebugLogActive())
+			log_info("fast_practice", "[fp-state] practice-spectate position restored local=%.2f,%.2f dummy=%.2f,%.2f",
+				m_aPracticeSpectateSavedPos[0].x, m_aPracticeSpectateSavedPos[0].y,
+				m_aPracticeSpectateSavedPos[1].x, m_aPracticeSpectateSavedPos[1].y);
+	}
+	m_aPracticeSpectateSavedValid[0] = false;
+	m_aPracticeSpectateSavedValid[1] = false;
 }
 
 void CFastPractice::SetPracticeSpectate(bool Enable)
@@ -1115,14 +1197,75 @@ void CFastPractice::SetPracticeSpectate(bool Enable)
 		m_SavedSpecSpectatorId = GameClient()->m_Snap.m_SpecInfo.m_SpectatorId;
 		m_SavedSpecUsePosition = GameClient()->m_Snap.m_SpecInfo.m_UsePosition;
 		m_SavedSpecPosition = GameClient()->m_Snap.m_SpecInfo.m_Position;
+		m_SavedSpecHasCameraInfo = GameClient()->m_Snap.m_SpecInfo.m_HasCameraInfo;
+		m_SavedSpecZoom = GameClient()->m_Snap.m_SpecInfo.m_Zoom;
+		m_SavedSpecDeadzone = GameClient()->m_Snap.m_SpecInfo.m_Deadzone;
+		m_SavedSpecFollowFactor = GameClient()->m_Snap.m_SpecInfo.m_FollowFactor;
 		m_PracticeSpectate = true;
 		ApplyPracticeSpectateSpecInfo();
+		// task-76: the cores currently published for the participants are the practice ghost's
+		// (frozen/invincible) ones. OnPredict refreshes the real cores every prediction tick, but
+		// to avoid a one-frame ghost-visual flash on the real tees drop them right away.
+		for(const int ClientId : {m_EnableLocalClientId, m_EnableDummyClientId})
+		{
+			if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+				continue;
+			if(CCharacter *pChar = GameClient()->m_PredictedWorld.GetCharacterById(ClientId))
+			{
+				const CCharacterCore Core = pChar->GetCore();
+				CGameClient::CClientData &ClientData = GameClient()->m_aClients[ClientId];
+				ClientData.m_Predicted = Core;
+				ClientData.m_PrevPredicted = Core;
+				ClientData.m_RegularPredicted = Core;
+			}
+		}
+		// task-77: remember where the practice characters are. A long spectate makes
+		// SyncFromPrediction rebuild the practice world from the real server world on exit;
+		// the restore path below then keeps the ghost where it was.
+		for(int i = 0; i < 2; i++)
+		{
+			const int ClientId = i == 0 ? m_EnableLocalClientId : m_EnableDummyClientId;
+			m_aPracticeSpectateSavedValid[i] = false;
+			if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+				continue;
+			if(CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId))
+			{
+				m_aPracticeSpectateSavedPos[i] = pChar->Core()->m_Pos;
+				m_aPracticeSpectateSavedValid[i] = true;
+			}
+		}
+
+		// task-77: reproduce the native /spec client feedback locally. The server kills the tee
+		// when it moves it to spectators (death particles + SOUND_PLAYER_DIE) and keeps a spec
+		// char at the tee position, which the client renders as the dashed x_spec circle.
+		m_SavedSpecCharClientId = PracticeSpectateLocalClientId();
+		int SpecPosIdx = 0;
+		if(m_SavedSpecCharClientId == m_EnableDummyClientId && m_EnableDummyClientId >= 0)
+			SpecPosIdx = 1;
+		if(m_aPracticeSpectateSavedValid[SpecPosIdx])
+			m_SavedSpecCharPos = m_aPracticeSpectateSavedPos[SpecPosIdx];
+		else
+			m_SavedSpecCharPos = GameClient()->m_LocalCharacterPos;
+		if(m_SavedSpecCharClientId >= 0 && m_SavedSpecCharClientId < MAX_CLIENTS)
+		{
+			GameClient()->m_Effects.PlayerDeath(m_SavedSpecCharPos, m_SavedSpecCharClientId, 1.0f);
+			if(g_Config.m_SndGame)
+				GameClient()->m_Sounds.PlayAt(CSounds::CHN_WORLD, SOUND_PLAYER_DIE, 1.0f, m_SavedSpecCharPos);
+		}
+		RefreshPracticeSpectateNativeEffects();
 		EchoPractice("practice spectate on (local only; /spec again to exit)");
 	}
 	else
 	{
 		m_PracticeSpectate = false;
 		RestorePracticeSpectateSpecInfo();
+		const vec2 SpawnPos = m_SavedSpecCharPos;
+		ClearPracticeSpectateNativeEffects();
+		// Native exit un-pauses the tee with a player-spawn effect (spawn particles and the
+		// spawn sound). Position restore happens once the (possibly rebuilt) practice world is
+		// ready again in SyncFromPrediction.
+		GameClient()->m_Effects.PlayerSpawn(SpawnPos, 1.0f, 1.0f);
+		m_RestorePracticePositionPending = true;
 		EchoPractice("practice spectate off");
 	}
 
@@ -1761,6 +1904,14 @@ void CFastPractice::CacheRegularPredictedCore(int ClientId, const CCharacterCore
 
 void CFastPractice::RepublishCachedCores() const
 {
+	// task-76 R1-B1: while the local practice spectate is active the real server tees must be
+	// rendered with their real (server/predicted) cores. OnPredict keeps writing those into
+	// m_aClients[].m_Predicted/m_PrevPredicted/m_RegularPredicted, so republishing the frozen
+	// practice cores here would leak ghost-frozen/invincible visuals (skin/flags/weapons) onto
+	// the real tees. Never overwrite the real cores in this state.
+	if(m_PracticeSpectate)
+		return;
+
 	const int ControlledId = ControlledPracticeId();
 	for(int ClientId = 0; ClientId < MAX_CLIENTS; ClientId++)
 	{
@@ -2376,6 +2527,10 @@ void CFastPractice::SyncFromPrediction()
 		ApplyPendingTeleport();
 		TickPracticeWorld();
 	}
+	// task-77: exiting the local practice spectate restores the practice position; a long
+	// spectate gap may have just rebuilt the practice world from the real server world.
+	if(m_RestorePracticePositionPending)
+		RestorePracticeSpectatePositions();
 	Pending.m_HasPendingTeleport = false;
 	RepublishCachedCores();
 	UpdateFreezeSkinDebounce();
@@ -2440,9 +2595,21 @@ void CFastPractice::OnNewSnapshot()
 	if(m_PracticeSpectate)
 	{
 		if(IsServerSpectating())
-			SetPracticeSpectate(false);
+		{
+			// task-75 R5: the current snapshot already carries the real spectator info, so only
+			// clear the local flag instead of restoring the stale pre-spectate fields over it.
+			m_PracticeSpectate = false;
+			ClearPracticeSpectateNativeEffects();
+			m_RestorePracticePositionPending = true;
+			UpdateInteractionBlockedState(); // stays blocked: we are a real spectator now
+			EchoPractice("practice spectate off (server spectator state)");
+		}
 		else
+		{
 			ApplyPracticeSpectateSpecInfo();
+			// task-77: re-apply the saved native spec char (snapshot invalidation clears it).
+			RefreshPracticeSpectateNativeEffects();
+		}
 	}
 
 	// task-72: detect /pause, /spec, free view and game pause edges as soon as the snapshot is
@@ -2492,7 +2659,11 @@ void CFastPractice::OnRender()
 	// task-74: in local practice spectate the practice ghost markers are not drawn; the real
 	// server tees are rendered normally from the snapshot.
 	if(m_PracticeSpectate)
+	{
+		// task-77: keep the native dashed x_spec circle at the saved tee position.
+		RefreshPracticeSpectateNativeEffects();
 		return;
+	}
 
 	const auto RenderRealMarker = [&](const SGhostData &Ghost, float Alpha) {
 		if(!Ghost.m_Valid)
