@@ -240,8 +240,9 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 		Ui()->DoLabel(&VersionLine3, aBestClientBuf, 14.0f, TEXTALIGN_MR);
 		Ui()->DoLabel(&VersionLine4, aIntegratedBuf, 14.0f, TEXTALIGN_MR);
 
-		// integratedclient: passive "new release available" hint. It is only a badge: no click,
-		// download or update action; the check itself lives in CMenus (async, silent on failure).
+		// integratedclient: "new release available" badge. Clicking it opens the GitHub
+		// release page; it never downloads or installs anything. The check itself lives in
+		// CMenus (async, silent on failure).
 		if(GameClient()->m_Menus.HasIntegratedClientVersionUpdate())
 		{
 			CUIRect Badge = VersionBadge;
@@ -249,11 +250,17 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 			Badge.y = VersionLine4.y + (VersionLine4.h - Badge.h) / 2.0f;
 			Badge.x += 2.0f;
 			Badge.w -= 4.0f;
-			Graphics()->DrawRect(Badge.x, Badge.y, Badge.w, Badge.h, ColorRGBA(0.91f, 0.26f, 0.15f, 1.0f), IGraphics::CORNER_ALL, 3.5f);
+			static CButtonContainer s_NewReleaseButton;
+			const bool Clicked = Ui()->DoButtonLogic(&s_NewReleaseButton, 0, &Badge, BUTTONFLAG_LEFT) != 0;
+			const bool Hovered = Ui()->MouseInside(&Badge);
+			const ColorRGBA BadgeColor = Hovered ? ColorRGBA(1.0f, 0.42f, 0.20f, 1.0f) : ColorRGBA(0.91f, 0.26f, 0.15f, 1.0f);
+			Graphics()->DrawRect(Badge.x, Badge.y, Badge.w, Badge.h, BadgeColor, IGraphics::CORNER_ALL, 3.5f);
 			const ColorRGBA PrevTextColor = TextRender()->GetTextColor();
 			TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
 			Ui()->DoLabel(&Badge, "NEW", 9.0f, TEXTALIGN_MC);
 			TextRender()->TextColor(PrevTextColor);
+			if(Clicked)
+				Client()->ViewLink("https://github.com/Moistrocic/IntegratedClient/releases/latest");
 		}
 
 		static CButtonContainer s_ConsoleButton;
