@@ -185,6 +185,14 @@ private:
 	// task-28: locally selected spectator target per participant (-1 = freeview). Persists across
 	// snapshots and cl_dummy switches so the fake spec does not force freeview every frame.
 	int m_aParticipantSpectateSpectatorId[2] = {-1, -1};
+	// task-29: /pause must not freeze the practice world mid-air: keep simulating (neutral
+	// inputs, no control) until the practice characters are grounded/standing still, then freeze;
+	// save their positions so a long pause (which rebuilds the world) can restore them.
+	bool m_PauseGrounding = false;
+	bool m_PauseFrozen = false;
+	bool m_RestorePausePositionPending = false;
+	bool m_aPauseSavedPosValid[2] = {false, false};
+	vec2 m_aPauseSavedPos[2] = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f)};
 	int m_aParticipantSpectateSpecCharId[2] = {-1, -1};
 	vec2 m_aParticipantSpectateSpecCharPos[2] = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f)};
 	// Saved real server camera state so the fake freeview can be applied only while the active
@@ -302,6 +310,14 @@ private:
 	void FreezeSpectatingParticipant(int Slot);
 	void FreezeSpectatingParticipants();
 	void SyncFireAfterSpectateEdge();
+	// task-29: pause grounding / position restore + robust input resync after spectate/pause edges
+	bool IsLocalPlayerPauseState() const;
+	bool ArePracticeParticipantsGrounded();
+	void FreezePracticeWorldForPause();
+	void RestorePausePracticePositions();
+	void ResyncPracticeInputAfterTransition();
+	// task-32: debug-only transition trace for the asymmetric spectate/pause attack reports
+	void LogSpectateAttackDebug(const char *pEvent);
 	// task-78: native /spec only switches when the tee is grounded and standing still
 	// (server CPlayer::CanSpec: IsGrounded() && m_Pos == m_PrevPos).
 	bool IsParticipantSpectateEntryReady(int Slot);

@@ -166,6 +166,11 @@ void CFastPractice::ResetPracticeState()
 	m_NeedsRebuild = false;
 	m_RequireDummy = false;
 	m_Blocked = false;
+	m_PauseGrounding = false;
+	m_PauseFrozen = false;
+	m_RestorePausePositionPending = false;
+	m_aPauseSavedPosValid[0] = false;
+	m_aPauseSavedPosValid[1] = false;
 	m_EnableLocalClientId = -1;
 	m_EnableDummyClientId = -1;
 	m_HasDummyAnchor = false;
@@ -1120,6 +1125,175 @@ bool CFastPractice::AnyParticipantSpectating() const
 	return m_aParticipantSpectate[0] || m_aParticipantSpectate[1];
 }
 
+bool CFastPractice::IsLocalPlayerPauseState() const
+{
+	if(!m_Enabled || Client()->State() != IClient::STATE_ONLINE)
+		return false;
+	const auto &Snap = GameClient()->m_Snap;
+	if(IsServerSpectating() || (Snap.m_pLocalInfo && Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS))
+		return false;
+	if(Snap.m_pGameInfoObj && (Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED))
+		return false;
+	if(Snap.m_LocalClientId < 0 || Snap.m_LocalClientId >= MAX_CLIENTS)
+		return false;
+	return GameClient()->m_aClients[Snap.m_LocalClientId].m_Paused;
+}
+
+bool CFastPractice::ArePracticeParticipantsGrounded()
+{
+	int LocalClientId = -1;
+	int DummyClientId = -1;
+	if(!ResolvePracticeRoles(LocalClientId, DummyClientId))
+		return false;
+	CCharacter *pLocalChar = m_PracticeWorld.GetCharacterById(LocalClientId);
+	if(!pLocalChar || !pLocalChar->IsGrounded() || pLocalChar->m_Pos != pLocalChar->m_PrevPos)
+		return false;
+	if(m_RequireDummy && DummyClientId >= 0)
+	{
+		CCharacter *pDummyChar = m_PracticeWorld.GetCharacterById(DummyClientId);
+		if(!pDummyChar || !pDummyChar->IsGrounded() || pDummyChar->m_Pos != pDummyChar->m_PrevPos)
+			return false;
+	}
+	return true;
+}
+
+void CFastPractice::ResyncPracticeInputAfterTransition()
+{
+	if(!m_Enabled)
+		return;
+	// task-32 root cause: aligning only LatestInput is not enough. The next applied input is
+	// compared against LatestPrevInput in CountInput, so a stale odd/practice ring there still
+	// produced presses for a participant that was not the one being resynced. Align BOTH rings,
+	// and use the same locked server-safe even value as the controls rings for each physical
+	// connection (the physical conn is where m_aLocalIds[Conn] lives, not the participant slot).
+	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
+	{
+		const int Fire = m_aServerLockedFire[Conn] & INPUT_STATE_MASK;
+		GameClient()->m_Controls.m_aInputData[Conn].m_Fire = Fire;
+		GameClient()->m_Controls.m_aLastData[Conn].m_Fire = Fire;
+		const int ClientId = GameClient()->m_aLocalIds[Conn];
+		if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+			continue;
+		CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId);
+		if(!pChar)
+			continue;
+		// SetInput writes m_LatestInput (and m_Input); the next OnDirectInput moves it into
+		// m_LatestPrevInput before FireWeapon/CountInput runs, so the first applied input (the
+		// locked even value from the controls ring below) compares equal -> no press.
+		CNetObj_PlayerInput Input = *pChar->LatestInput();
+		Input.m_Fire = Fire;
+		Input.m_WantedWeapon = 0;
+		Input.m_NextWeapon = 0;
+		Input.m_PrevWeapon = 0;
+		pChar->SetInput(&Input);
+	}
+	ResetStoredInputs();
+	m_SuppressFireOnNextPredictTick = true;
+	m_InputSuppressTicks = std::max(m_InputSuppressTicks, 2);
+	m_PracticePrevWorld.CopyWorldClean(&m_PracticeWorld);
+	SyncPracticeWorldConfig(m_PracticePrevWorld);
+	ResetAttackTickHistory();
+	PublishParticipantCores(m_EnableLocalClientId, m_EnableDummyClientId);
+	if(DebugLogActive())
+		log_info("fast_practice", "[fp-attackdbg] resync done locked0=%d locked1=%d", m_aServerLockedFire[0], m_aServerLockedFire[1]);
+}
+
+void CFastPractice::LogSpectateAttackDebug(const char *pEvent)
+{
+	if(!DebugLogActive())
+		return;
+	const int ActiveConn = g_Config.m_ClDummy ? IClient::CONN_DUMMY : IClient::CONN_MAIN;
+	for(int Conn = 0; Conn < NUM_DUMMIES; Conn++)
+	{
+		const int ClientId = GameClient()->m_aLocalIds[Conn];
+		const int Slot = ParticipantSlotForClientId(ClientId);
+		int LatestFire = -1, PrevFire = -1, PrevWorldFire = -1, Presses = -1, AttackTick = -1, PrevWorldAttackTick = -1;
+		if(ClientId >= 0 && ClientId < MAX_CLIENTS)
+		{
+			if(CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId))
+			{
+				LatestFire = pChar->LatestInput()->m_Fire & INPUT_STATE_MASK;
+				AttackTick = pChar->GetAttackTick();
+			}
+			if(CCharacter *pPrevChar = m_PracticePrevWorld.GetCharacterById(ClientId))
+			{
+				PrevWorldFire = pPrevChar->LatestInput()->m_Fire & INPUT_STATE_MASK;
+				PrevWorldAttackTick = pPrevChar->GetAttackTick();
+			}
+		}
+		// "prev" here is the previous practice-world ring (LatestPrevInput is private).
+		PrevFire = PrevWorldFire;
+		if(LatestFire >= 0 && PrevFire >= 0)
+			Presses = CountInput(PrevFire, LatestFire).m_Presses;
+		log_info("fast_practice", "[fp-attackdbg] %s conn=%d active_conn=%d client=%d slot=%d spectate=%d frozen=%d pend=%d pause_ground=%d pause_frozen=%d latest=%d prev=%d prevworld=%d presses=%d attack_tick=%d prevworld_attack_tick=%d lastSent=%d",
+			pEvent, Conn, ActiveConn, ClientId, Slot,
+			(Slot >= 0 && m_aParticipantSpectate[Slot]) ? 1 : 0,
+			(Slot >= 0 && m_aParticipantSpectateFrozen[Slot]) ? 1 : 0,
+			(Slot >= 0 && m_aParticipantSpectatePending[Slot]) ? 1 : 0,
+			m_PauseGrounding ? 1 : 0, m_PauseFrozen ? 1 : 0,
+			LatestFire, PrevFire, PrevWorldFire, Presses, AttackTick, PrevWorldAttackTick,
+			GameClient()->m_Controls.m_aLastSentFire[Conn]);
+	}
+}
+
+void CFastPractice::FreezePracticeWorldForPause()
+{
+	m_PauseGrounding = false;
+	m_PauseFrozen = true;
+	for(int Slot = 0; Slot < 2; Slot++)
+	{
+		const int ClientId = ParticipantClientIdForSlot(Slot);
+		m_aPauseSavedPosValid[Slot] = false;
+		if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+			continue;
+		if(CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId))
+		{
+			m_aPauseSavedPos[Slot] = pChar->Core()->m_Pos;
+			m_aPauseSavedPosValid[Slot] = true;
+		}
+	}
+	m_Blocked = true;
+	CaptureServerLockedTargets();
+	ReleaseBufferedInputState();
+	SyncToggleFireState();
+	ResetStoredInputs();
+	m_SuppressFireOnNextPredictTick = true;
+	m_InputSuppressTicks = std::max(m_InputSuppressTicks, 2);
+	ResyncPracticeInputAfterTransition();
+	LogSpectateAttackDebug("pause-frozen");
+	if(DebugLogActive())
+		log_info("fast_practice", "[fp-state] pause grounded and practice world frozen");
+}
+
+void CFastPractice::RestorePausePracticePositions()
+{
+	if(!m_Enabled)
+		return;
+	CCharacter *pLocalChar = nullptr;
+	for(int Slot = 0; Slot < 2; Slot++)
+	{
+		if(!m_aPauseSavedPosValid[Slot])
+			continue;
+		const int ClientId = ParticipantClientIdForSlot(Slot);
+		if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+			continue;
+		CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId);
+		if(!pChar)
+			continue;
+		ApplyPracticeTeleport(ClientId, pChar, m_aPauseSavedPos[Slot]);
+		pChar->SetVelocity(vec2(0.0f, 0.0f));
+		if(Slot == 0)
+			pLocalChar = pChar;
+	}
+	if(!pLocalChar)
+		pLocalChar = m_PracticeWorld.GetCharacterById(m_EnableLocalClientId);
+	FinishMutation(m_EnableLocalClientId, m_EnableDummyClientId, pLocalChar, false);
+	for(int Slot = 0; Slot < 2; Slot++)
+		m_aPauseSavedPosValid[Slot] = false;
+	if(DebugLogActive())
+		log_info("fast_practice", "[fp-state] pause practice positions restored");
+}
+
 bool CFastPractice::HandleLocalSpectateSelection(int SpectatorId)
 {
 	if(!m_Enabled || !ActivePracticeSpectating())
@@ -1166,6 +1340,8 @@ void CFastPractice::FreezeParticipantSpectate(int Slot)
 	if(g_Config.m_SndGame)
 		GameClient()->m_Sounds.PlayAt(CSounds::CHN_WORLD, SOUND_PLAYER_DIE, 1.0f, m_aParticipantSpectateSavedPos[Slot]);
 	RefreshParticipantSpecChar(Slot);
+	ResyncPracticeInputAfterTransition();
+	LogSpectateAttackDebug("spectate-frozen");
 	if(DebugLogActive())
 		log_info("fast_practice", "[fp-state] participant-spectate frozen slot=%d client=%d", Slot, ClientId);
 }
@@ -1338,6 +1514,9 @@ void CFastPractice::SyncFireAfterSpectateEdge()
 	ResetStoredInputs();
 	m_SuppressFireOnNextPredictTick = true;
 	m_InputSuppressTicks = std::max(m_InputSuppressTicks, 2);
+	// task-29: also align both practice characters' latest fire ring with the released state and
+	// drop stale attack history so a spectate cancel can never replay an attack animation/press.
+	ResyncPracticeInputAfterTransition();
 }
 
 void CFastPractice::SetParticipantSpectate(int Slot, bool Enable)
@@ -1378,6 +1557,7 @@ void CFastPractice::SetParticipantSpectate(int Slot, bool Enable)
 
 		SyncFireAfterSpectateEdge();
 		ApplyActiveSpectateCamera();
+		LogSpectateAttackDebug("spectate-armed");
 		if(DebugLogActive())
 			log_info("fast_practice", "[fp-state] participant-spectate armed slot=%d client=%d active=%d", Slot, ClientId, ActiveParticipantSlot() == Slot ? 1 : 0);
 	}
@@ -1416,6 +1596,7 @@ void CFastPractice::SetParticipantSpectate(int Slot, bool Enable)
 		m_aParticipantSpectateSavedSolo[Slot] = false;
 		SyncFireAfterSpectateEdge();
 		ApplyActiveSpectateCamera();
+		LogSpectateAttackDebug("spectate-off");
 		if(DebugLogActive())
 			log_info("fast_practice", "[fp-state] participant-spectate off slot=%d client=%d frozen=%d active=%d", Slot, ClientId, WasFrozen ? 1 : 0, ActiveParticipantSlot() == Slot ? 1 : 0);
 	}
@@ -1509,6 +1690,41 @@ void CFastPractice::UpdateInteractionBlockedState()
 	}
 
 	const bool Blocked = IsInteractionBlocked();
+
+	// task-29: for a local /pause keep the practice world running (neutral inputs) until the
+	// practice characters have fallen to the ground and stand still, then freeze. The native
+	// entity lands even though it is paused; freezing the practice world mid-air was wrong.
+	const bool PauseLike = IsLocalPlayerPauseState();
+	if(PauseLike)
+	{
+		if(!m_PauseFrozen)
+		{
+			if(!m_PauseGrounding)
+			{
+				m_PauseGrounding = true;
+				SyncFireAfterSpectateEdge();
+				if(DebugLogActive())
+					log_info("fast_practice", "[fp-state] pause pending grounding");
+			}
+			m_Blocked = false;
+			return;
+		}
+	}
+	else if(m_PauseGrounding || m_PauseFrozen)
+	{
+		if(m_PauseFrozen)
+			m_RestorePausePositionPending = true;
+		m_PauseGrounding = false;
+		m_PauseFrozen = false;
+		// task-32 (verifier B1): the physical fire ring may have changed while paused/grounding
+		// (pressed/released fire, cl_dummy_hammer ...). Align both practice participants and the
+		// controls/history rings before any input is applied, even when m_Blocked never changed
+		// (pause cancelled before the grounded freeze): otherwise the first StoreInput P compared
+		// against the locked ring L produces CountInput(L,P) presses -> ghost attack.
+		SyncFireAfterSpectateEdge();
+		LogSpectateAttackDebug("pause-end");
+	}
+
 	// task-28: when the whole interaction is blocked by a server-side pause/spec state, cancel
 	// the local spectate intents that have not reached the frozen physics state yet (camera
 	// included); frozen ones stay frozen and are handled by the normal blocked/resume logic.
@@ -1544,6 +1760,15 @@ void CFastPractice::UpdateInteractionBlockedState()
 	// No forced rebuild on leave: TickPracticeWorld's own staleness check rebuilds only when the
 	// pause/spectate gap exceeds its tolerance; short pause/spec resumes from the frozen state.
 	HoldBlockedFireState();
+
+	// task-32: the pause/blocked release needs the same both-participant LatestInput/
+	// LatestPrevInput alignment as the spectate edges, otherwise both practice ghosts count a
+	// press on the first non-suppressed tick after unpause.
+	if(!m_Blocked)
+	{
+		ResyncPracticeInputAfterTransition();
+		LogSpectateAttackDebug("blocked-leave");
+	}
 
 	LogAttackState(m_Blocked ? "blocked-enter" : "blocked-leave");
 	if(DebugLogActive())
@@ -2324,7 +2549,8 @@ void CFastPractice::TickPracticeWorld()
 
 	const bool CloudInputMode = GameClient()->IsCloudInputMode();
 	const bool Spectating = IsServerSpectating() ||
-				(GameClient()->m_Snap.m_pLocalInfo && GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS);
+				(GameClient()->m_Snap.m_pLocalInfo && GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS) ||
+				m_PauseGrounding;
 	// task-24: per-participant local spectate: only that participant is neutralized/frozen.
 	const int LocalParticipantSlot = ParticipantSlotForClientId(LocalClientId);
 	const int DummyParticipantSlot = pDummyChar ? ParticipantSlotForClientId(DummyClientId) : -1;
@@ -2796,6 +3022,15 @@ void CFastPractice::SyncFromPrediction()
 		SyncAfterRebuild();
 		ApplyPendingTeleport();
 		TickPracticeWorld();
+	}
+	// task-29: while paused, keep simulating until the practice characters are grounded/static,
+	// then freeze the world; on unpause restore their saved positions (even after a rebuild).
+	if(m_PauseGrounding && !m_PauseFrozen && !m_Blocked && ArePracticeParticipantsGrounded())
+		FreezePracticeWorldForPause();
+	if(m_RestorePausePositionPending)
+	{
+		RestorePausePracticePositions();
+		m_RestorePausePositionPending = false;
 	}
 	// task-24: a rebuild (e.g. after a long external pause/spectate gap) can move the locally
 	// spectating participant back to the server world position; pin it to its entry position.

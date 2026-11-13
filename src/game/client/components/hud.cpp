@@ -672,7 +672,11 @@ void CHud::RenderTextInfo()
 			TextRender()->Text(4.0f, OffsetY, FontSize, aBuf, -1.0f);
 		}
 	}
-	if(g_Config.m_TcRenderCursorSpec && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW)
+	// task-29: the local practice spectate must respect the spectator cursor settings:
+	// cl_spec_cursor ("Show spectator cursor") gates the whole fake spec cursor, and
+	// tc_cursor_in_spec is the TClient freeview gun cursor. Native spectating is unchanged.
+	if(g_Config.m_TcRenderCursorSpec && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW &&
+		(!GameClient()->m_FastPractice.ActivePracticeSpectating() || g_Config.m_ClSpecCursor))
 	{
 		int CurWeapon = 1;
 		Graphics()->SetColor(1.f, 1.f, 1.f, g_Config.m_TcRenderCursorSpecAlpha / 100.0f);
@@ -750,7 +754,9 @@ void CHud::RenderCursor()
 	CScreenRect ScreenRect = Graphics()->MapScreenToWorld(Center.x, Center.y, 100.0f, 100.0f, 100.0f, 0, 0, Graphics()->ScreenAspect(), 1.0f);
 	Graphics()->MapScreen(ScreenRect);
 
-	if(Client()->State() != IClient::STATE_DEMOPLAYBACK && GameClient()->m_Snap.m_pLocalCharacter)
+	// task-29: while the local practice spectate is active the local-character cursor must not be
+	// drawn; fall through to the native spectator cursor path, which honours cl_spec_cursor.
+	if(Client()->State() != IClient::STATE_DEMOPLAYBACK && GameClient()->m_Snap.m_pLocalCharacter && !GameClient()->m_FastPractice.ActivePracticeSpectating())
 	{
 		// Render local cursor
 		CurWeapon = std::max(0, GameClient()->m_aClients[GameClient()->m_Snap.m_LocalClientId].m_Predicted.m_ActiveWeapon);

@@ -444,7 +444,7 @@ void CPlayers::RenderHookCollLine(
 	float Alpha = GameClient()->IsOtherTeam(ClientId) ? g_Config.m_ClShowOthersAlpha / 100.0f : 1.0f;
 	Alpha *= (float)g_Config.m_ClHookCollAlpha / 100;
 	// bestclient
-	if(ClientId >= 0 && GameClient()->m_FastPractice.Enabled() && (!GameClient()->m_Snap.m_SpecInfo.m_Active || GameClient()->m_FastPractice.ActivePracticeSpectating()) && !GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))
+	if(ClientId >= 0 && GameClient()->m_FastPractice.Enabled() && !GameClient()->m_Snap.m_SpecInfo.m_Active && !GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))
 		Alpha = std::min(Alpha, 0.5f);
 	// bestclient
 	if(Alpha <= 0.0f)
@@ -541,7 +541,7 @@ void CPlayers::RenderHook(
 	if(ClientId == -2) // ghost
 		Alpha = g_Config.m_ClRaceGhostAlpha / 100.0f;
 	// bestclient
-	if(ClientId >= 0 && GameClient()->m_FastPractice.Enabled() && (!GameClient()->m_Snap.m_SpecInfo.m_Active || GameClient()->m_FastPractice.ActivePracticeSpectating()) && !GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))
+	if(ClientId >= 0 && GameClient()->m_FastPractice.Enabled() && !GameClient()->m_Snap.m_SpecInfo.m_Active && !GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))
 		Alpha = std::min(Alpha, 0.5f);
 	// bestclient
 
@@ -664,9 +664,7 @@ void CPlayers::RenderPlayer(
 
 	const bool Local = GameClient()->m_Snap.m_LocalClientId == ClientId;
 	const bool OtherTeam = GameClient()->IsOtherTeam(ClientId);
-	// task-28: the local practice spectate is a client-only fake spectator state; real entities
-	// must keep their normal transparency/ghost rendering rules while it is active.
-	const bool Spec = GameClient()->m_Snap.m_SpecInfo.m_Active && !GameClient()->m_FastPractice.ActivePracticeSpectating();
+	const bool Spec = GameClient()->m_Snap.m_SpecInfo.m_Active;
 	const bool FrozenSwappingHide = ClientId >= 0 && GameClient()->m_aClients[ClientId].m_FreezeEnd > 0 && g_Config.m_TcHideFrozenGhosts && g_Config.m_TcSwapGhosts;
 
 	vec2 Position;
@@ -730,7 +728,7 @@ void CPlayers::RenderPlayer(
 	if(ClientId == -2) // ghost
 		Alpha = g_Config.m_ClRaceGhostAlpha / 100.0f;
 	// bestclient
-	if(ClientId >= 0 && GameClient()->m_FastPractice.Enabled() && (!GameClient()->m_Snap.m_SpecInfo.m_Active || GameClient()->m_FastPractice.ActivePracticeSpectating()) && !GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))
+	if(ClientId >= 0 && GameClient()->m_FastPractice.Enabled() && !GameClient()->m_Snap.m_SpecInfo.m_Active && !GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))
 		Alpha = std::min(Alpha, 0.5f);
 	// bestclient
 	// TODO: snd_game_volume_others
@@ -1444,7 +1442,7 @@ void CPlayers::OnRender()
 			Alpha = g_Config.m_ClRaceGhostAlpha / 100.f;
 		}
 		// bestclient
-		if(ClientId >= 0 && GameClient()->m_FastPractice.Enabled() && (!GameClient()->m_Snap.m_SpecInfo.m_Active || GameClient()->m_FastPractice.ActivePracticeSpectating()) && !GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))
+		if(ClientId >= 0 && GameClient()->m_FastPractice.Enabled() && !GameClient()->m_Snap.m_SpecInfo.m_Active && !GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))
 			Alpha = std::min(Alpha, 0.5f);
 		// bestclient
 		if(!ScreenRect.Inside(Client.m_SpecChar))
