@@ -159,6 +159,12 @@ void CFastPractice::ConFastPracticeToggle(IConsole::IResult *pResult, void *pUse
 
 void CFastPractice::ResetPracticeState()
 {
+	// task-74: drop the local practice-spectate override so the normal server state takes over.
+	if(m_PracticeSpectate)
+	{
+		m_PracticeSpectate = false;
+		RestorePracticeSpectateSpecInfo();
+	}
 	m_Enabled = false;
 	m_Ready = false;
 	m_NeedsRebuild = false;
@@ -1023,6 +1029,9 @@ bool CFastPractice::IsInteractionBlocked() const
 	if(!m_Enabled || Client()->State() != IClient::STATE_ONLINE)
 		return false;
 
+	// task-74: local practice spectate (fake spectator state) also suspends the practice sim.
+	if(m_PracticeSpectate)
+		return true;
 	const CGameClient::CSnapState &Snap = GameClient()->m_Snap;
 	if(Snap.m_SpecInfo.m_Active)
 		return true;
@@ -1046,6 +1055,80 @@ void CFastPractice::HoldBlockedFireState()
 	// states (CountInput press) when practice resumes or when the entity is back in game.
 	// ResetDummyHammerCounter=false: the cl_dummy_hammer cadence must not be reset per tick.
 	GameClient()->m_Controls.RanbiClearBufferedFire("fp-blocked", false, false, false);
+}
+
+bool CFastPractice::IsServerSpectating() const
+{
+	// task-74: server-derived spectator state only (our fake practice-spectate sets
+	// m_Snap.m_SpecInfo.m_Active locally, so that field must not be used here).
+	const auto &Snap = GameClient()->m_Snap;
+	if(Snap.m_pLocalInfo && Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS)
+		return true;
+	if(Snap.m_LocalClientId >= 0 && Snap.m_LocalClientId < MAX_CLIENTS)
+	{
+		const auto &Local = GameClient()->m_aClients[Snap.m_LocalClientId];
+		if(Local.m_Spec)
+			return true;
+	}
+	return false;
+}
+
+void CFastPractice::ApplyPracticeSpectateSpecInfo()
+{
+	if(!m_PracticeSpectate)
+		return;
+	auto &Spec = GameClient()->m_Snap.m_SpecInfo;
+	Spec.m_Active = true;
+	Spec.m_SpectatorId = SPEC_FREEVIEW;
+	Spec.m_UsePosition = false;
+	Spec.m_HasCameraInfo = false;
+	Spec.m_Zoom = GameClient()->m_Camera.m_Zoom > 0.0f ? GameClient()->m_Camera.m_Zoom : 1.0f;
+	Spec.m_Deadzone = 0;
+	Spec.m_FollowFactor = 0;
+	Spec.m_Position = GameClient()->m_Camera.m_Center;
+}
+
+void CFastPractice::RestorePracticeSpectateSpecInfo()
+{
+	auto &Spec = GameClient()->m_Snap.m_SpecInfo;
+	Spec.m_Active = m_SavedSpecActive;
+	Spec.m_SpectatorId = m_SavedSpecSpectatorId;
+	Spec.m_UsePosition = m_SavedSpecUsePosition;
+	Spec.m_Position = m_SavedSpecPosition;
+}
+
+void CFastPractice::SetPracticeSpectate(bool Enable)
+{
+	if(!m_Enabled)
+		return;
+	if(Enable == m_PracticeSpectate)
+		return;
+
+	if(Enable)
+	{
+		if(IsServerSpectating())
+		{
+			EchoPractice("cannot practice-spectate while spectating");
+			return;
+		}
+		m_SavedSpecActive = GameClient()->m_Snap.m_SpecInfo.m_Active;
+		m_SavedSpecSpectatorId = GameClient()->m_Snap.m_SpecInfo.m_SpectatorId;
+		m_SavedSpecUsePosition = GameClient()->m_Snap.m_SpecInfo.m_UsePosition;
+		m_SavedSpecPosition = GameClient()->m_Snap.m_SpecInfo.m_Position;
+		m_PracticeSpectate = true;
+		ApplyPracticeSpectateSpecInfo();
+		EchoPractice("practice spectate on (local only; /spec again to exit)");
+	}
+	else
+	{
+		m_PracticeSpectate = false;
+		RestorePracticeSpectateSpecInfo();
+		EchoPractice("practice spectate off");
+	}
+
+	// Re-run the safe fire-ring edge handling (task-72/73): entering/leaving this state changes
+	// IsInteractionBlocked exactly like a pause/spec edge.
+	UpdateInteractionBlockedState();
 }
 
 void CFastPractice::UpdateInteractionBlockedState()
@@ -1339,6 +1422,19 @@ void CFastPractice::PrepareInputForSend(int *pData, int Size, bool Dummy)
 	// task-72: the pause/spec edge may have happened in this frame's snapshot; make sure the
 	// blocked state (and its safe ring release) is applied before deciding how to neutralize.
 	UpdateInteractionBlockedState();
+
+	if(m_PracticeSpectate)
+	{
+		// task-74: local practice spectate must not move/attack the real server entity. Send a
+		// fully neutral input (fire stays on the locked even ring) instead of the physical input.
+		CNetObj_PlayerInput Neutral{};
+		BuildNeutralInput(Neutral, Dummy, true);
+		if(Size >= (int)sizeof(CNetObj_PlayerInput))
+			mem_copy(pData, &Neutral, sizeof(Neutral));
+		if(DebugLogActive())
+			log_info("fast_practice", "[fp-send] practice-spectate neutral dummy=%d fire=%d", Dummy ? 1 : 0, Neutral.m_Fire & INPUT_STATE_MASK);
+		return;
+	}
 
 	const bool Spectating = GameClient()->m_Snap.m_SpecInfo.m_Active ||
 				(GameClient()->m_Snap.m_pLocalInfo && GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS);
@@ -2338,6 +2434,17 @@ void CFastPractice::OnNewSnapshot()
 		return;
 	}
 
+	// task-74: the new snapshot overwrote m_Snap.m_SpecInfo; re-apply the local practice
+	// spectator override so the camera stays in freeview. If the server really moved us to
+	// spectators, drop the local override and let the real spectator state take over.
+	if(m_PracticeSpectate)
+	{
+		if(IsServerSpectating())
+			SetPracticeSpectate(false);
+		else
+			ApplyPracticeSpectateSpecInfo();
+	}
+
 	// task-72: detect /pause, /spec, free view and game pause edges as soon as the snapshot is
 	// available, then keep the practice world suspended and the fire rings safely released.
 	UpdateInteractionBlockedState();
@@ -2381,6 +2488,11 @@ void CFastPractice::OnRender()
 	// task-72: hold the fire rings at the safe released state on every frame while the practice
 	// simulation is suspended (menu/binds can still modify the physical ring between snapshots).
 	UpdateInteractionBlockedState();
+
+	// task-74: in local practice spectate the practice ghost markers are not drawn; the real
+	// server tees are rendered normally from the snapshot.
+	if(m_PracticeSpectate)
+		return;
 
 	const auto RenderRealMarker = [&](const SGhostData &Ghost, float Alpha) {
 		if(!Ghost.m_Valid)
@@ -3265,6 +3377,24 @@ bool CFastPractice::ConsumePracticeChatCommand(int Team, const char *pLine)
 	std::vector<std::string> vArgs;
 	if(!ParseCommandArgs(pLine, vArgs))
 		return false;
+
+	// task-74: /spec and /spectate in practice mode must only affect the practice ghost/camera.
+	// Consume them locally and never forward them to the server, so the real entity keeps its
+	// team/visibility/collision on the server. Flipping the local state again exits.
+	if(!vArgs.empty() && vArgs[0].size() >= 2 && vArgs[0][0] == '/')
+	{
+		const std::string Cmd = LowercaseCopy(vArgs[0].substr(1));
+		if(Cmd == "spec" || Cmd == "spectate")
+		{
+			if(!IsServerSpectating())
+			{
+				SetPracticeSpectate(!m_PracticeSpectate);
+				return true;
+			}
+			// Real spectator state: let the server handle the command as before.
+			return false;
+		}
+	}
 
 	int LocalClientId = -1;
 	int DummyClientId = -1;

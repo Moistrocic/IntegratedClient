@@ -48,6 +48,9 @@ public:
 	// a UI is open cannot create a CountInput press in the practice world. Falls back to
 	// CControls::m_aLastSentFire when practice is disabled or the participant is missing.
 	int UiFreezeFireState(int Conn);
+	// task-74: local practice spectate: /spec in practice mode only switches the camera/practice
+	// ghost to spectator, the real server entity keeps playing (no /spec is sent to the server).
+	bool PracticeSpectating() const { return m_PracticeSpectate; }
 	void BuildNeutralInput(CNetObj_PlayerInput &OutInput, bool Dummy, bool UseFrozenTarget = true) const;
 	void SyncFromPrediction();
 	bool ForcePredictWeapons() const;
@@ -160,6 +163,13 @@ private:
 	// local spectator, game paused). On enter/leave the buffered fire rings are safely released
 	// and the practice input history is reset so no transition can count a fire press.
 	bool m_Blocked = false;
+	// task-74: local practice spectate (fake spectator state for the camera/practice ghost; the
+	// real server entity is untouched because /spec is intercepted instead of being sent).
+	bool m_PracticeSpectate = false;
+	bool m_SavedSpecActive = false;
+	int m_SavedSpecSpectatorId = 0;
+	bool m_SavedSpecUsePosition = false;
+	vec2 m_SavedSpecPosition = vec2(0.0f, 0.0f);
 	int m_EnableLocalClientId = -1;
 	int m_EnableDummyClientId = -1;
 	bool m_HasDummyAnchor = false;
@@ -239,6 +249,11 @@ private:
 	bool IsInteractionBlocked() const;
 	void UpdateInteractionBlockedState();
 	void HoldBlockedFireState();
+	// task-74: local practice spectate (/spec) helpers
+	bool IsServerSpectating() const;
+	void SetPracticeSpectate(bool Enable);
+	void ApplyPracticeSpectateSpecInfo();
+	void RestorePracticeSpectateSpecInfo();
 	void BeginDebugLog();
 	void LogAttackState(const char *pStage);
 	int64_t m_DebugLogUntil = 0;
