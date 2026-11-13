@@ -27,11 +27,12 @@
 - **角落指示最大范围**：BestClient → Visuals → Corner indicator 可设置 `Max range (blocks)`（0 = 不限制，单位格）；超出范围的队友不显示角落图标
 - Fast Practice 状态切换修复：进入/离开 `/pause`、`/spec`、自由视角时不再让虚影或真实实体自发攻击；长暂停/长旁观（>3s）恢复后也不会再攻击。
 - Fast Practice 练习内 `/spec`：只影响练习虚影/相机，不发送给服务器；真实实体仍留在服务器 playing、可见且碰撞正常。
-  - 对齐原生落地 gating：空中/移动中只排队，练习角色落地且静止后才进入；pending 再按 `/spec` 取消。
-  - 进入播放原生死亡音效/粒子并在虚影位置显示 x_spec 虚线圆；退出播放原生重生音效/粒子并恢复到进入前位置。
-  - 本体/分身各自独立保存 spec/pending/位置状态；切 `cl_dummy` 只切换操控，不改变双方状态（已 spec 一方保持 spec，另一方立即可控）。
+  - 按 `/spec` 立即进入原生 freeview 相机；练习角色落地且静止后才冻结、禁用碰撞、显示 x_spec 虚线圆并播放死亡音效/粒子。
+  - spec 后保留原生选人旁观：可使用 spectator UI/next/prev/closest/鼠标选择跟随玩家，选人只影响本地练习相机，不发送服务器命令。
+  - 退出播放原生重生音效/粒子并恢复到进入前位置。
+  - 本体/分身各自独立保存 spec/选择/位置状态；切 `cl_dummy` 只切换操控，不改变双方状态（已 spec 一方保持 spec，另一方立即可控）。
   - 聊天框不再输出 practice-spectate 状态提示（仅 `debug 1` 日志）。
-- Fast Practice 现在也支持在 solo 中开启。
+  - 有分身时，本体或分身任一方 solo 仍会拒绝开启练习（保持原有提示）；无分身时 solo 行为保持原状。
 - 修复 Fast Practice / dummy 输入 fire 回归：
   - 开启/关闭练习不再触发一次真实出锤，关闭后不再出现高频预测出锤；
   - ESC / 聊天 / 控制台打开后 dummy 不再异常预测出锤；
