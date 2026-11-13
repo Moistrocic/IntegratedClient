@@ -53,6 +53,9 @@ public:
 	// controlled and never changes either participant's spectate state or position.
 	bool IsPracticeParticipantSpectating(int ClientId) const;
 	bool ActivePracticeSpectating() const;
+	// task-28: local spectator selection (follow a player / freeview) while the practice fake
+	// spectate is active; called by CSpectator::Spectate so no server message is sent.
+	bool HandleLocalSpectateSelection(int SpectatorId);
 	void BuildNeutralInput(CNetObj_PlayerInput &OutInput, bool Dummy, bool UseFrozenTarget = true) const;
 	void SyncFromPrediction();
 	bool ForcePredictWeapons() const;
@@ -176,6 +179,12 @@ private:
 	// spectating the participant is forced solo inside the practice world so the other
 	// participant can neither collide with, hook nor hammer it (native /spec has no tee).
 	bool m_aParticipantSpectateSavedSolo[2] = {false, false};
+	// task-28: camera/intent is immediate on /spec, the no-collision physics state is applied only
+	// after the practice character is grounded and standing still (native CPlayer::CanSpec).
+	bool m_aParticipantSpectateFrozen[2] = {false, false};
+	// task-28: locally selected spectator target per participant (-1 = freeview). Persists across
+	// snapshots and cl_dummy switches so the fake spec does not force freeview every frame.
+	int m_aParticipantSpectateSpectatorId[2] = {-1, -1};
 	int m_aParticipantSpectateSpecCharId[2] = {-1, -1};
 	vec2 m_aParticipantSpectateSpecCharPos[2] = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f)};
 	// Saved real server camera state so the fake freeview can be applied only while the active
@@ -277,6 +286,7 @@ private:
 	int ActiveParticipantSlot() const;
 	bool AnyParticipantSpectating() const;
 	void SetParticipantSpectate(int Slot, bool Enable);
+	void FreezeParticipantSpectate(int Slot);
 	void ClearAllParticipantSpectateState(bool RestoreCamera = true);
 	// task-74/75: fake freeview camera (only mirrors the active participant's spectate state)
 	void ApplyPracticeSpectateSpecInfo();

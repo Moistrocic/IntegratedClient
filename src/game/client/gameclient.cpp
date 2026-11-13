@@ -5664,11 +5664,20 @@ bool CGameClient::IsOtherTeam(int ClientId) const
 	{
 		return false;
 	}
-	else if((m_Snap.m_SpecInfo.m_Active && m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW) || ClientId < 0)
+	if(ClientId < 0)
 	{
 		return false;
 	}
-	else if(m_Snap.m_SpecInfo.m_Active && m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
+	// task-28: the local practice spectate is a client-only fake spectator state. It must not
+	// change other players' visibility/transparency (cl_show_others alpha etc.), so compute the
+	// team relation exactly like normal gameplay while it is active. Real server spectating keeps
+	// the native spectator relativity below.
+	const bool FakePracticeSpectate = m_FastPractice.ActivePracticeSpectating();
+	if(!FakePracticeSpectate && m_Snap.m_SpecInfo.m_Active && m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW)
+	{
+		return false;
+	}
+	else if(!FakePracticeSpectate && m_Snap.m_SpecInfo.m_Active && m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
 	{
 		if(m_Teams.Team(ClientId) == m_Teams.TeamSuper() || m_Teams.Team(m_Snap.m_SpecInfo.m_SpectatorId) == m_Teams.TeamSuper())
 			return false;

@@ -652,6 +652,9 @@ void CSpectator::Spectate(int SpectatorId)
 		return;
 	}
 
+	if(GameClient()->m_FastPractice.HandleLocalSpectateSelection(SpectatorId))
+		return;
+
 	if(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SpectatorId)
 		return;
 
