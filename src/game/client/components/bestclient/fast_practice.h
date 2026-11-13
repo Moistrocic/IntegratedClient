@@ -172,6 +172,10 @@ private:
 	bool m_aParticipantSpectatePending[2] = {false, false};
 	bool m_aParticipantSpectateSavedValid[2] = {false, false};
 	vec2 m_aParticipantSpectateSavedPos[2] = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f)};
+	// task-26: solo state of the participant before it entered the local spectate; while
+	// spectating the participant is forced solo inside the practice world so the other
+	// participant can neither collide with, hook nor hammer it (native /spec has no tee).
+	bool m_aParticipantSpectateSavedSolo[2] = {false, false};
 	int m_aParticipantSpectateSpecCharId[2] = {-1, -1};
 	vec2 m_aParticipantSpectateSpecCharPos[2] = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f)};
 	// Saved real server camera state so the fake freeview can be applied only while the active

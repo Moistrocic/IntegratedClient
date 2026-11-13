@@ -239,7 +239,9 @@ bool CFastPractice::CanEnable() const
 	if(!GameClient()->m_Snap.m_pLocalInfo || !GameClient()->m_Snap.m_pLocalCharacter)
 		return false;
 
-	if(GameClient()->m_Snap.m_SpecInfo.m_Active || GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS)
+	// task-26: use the server-derived spectator state so a stale local fake freeview can never
+	// block enabling practice; detection is otherwise the same as before.
+	if(IsServerSpectating() || GameClient()->m_Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS)
 		return false;
 
 	if(GameClient()->m_Snap.m_pGameInfoObj && (GameClient()->m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED))
@@ -1131,15 +1133,13 @@ void CFastPractice::CaptureServerSpecInfoFromSnapshot()
 
 void CFastPractice::ApplyPracticeSpectateSpecInfo()
 {
+	// task-26: mirror the native /spec freeview snapshot fields only. Do not invent a custom
+	// zoom/deadzone/follow-factor/has-camera-info/position: the camera must behave like vanilla
+	// spectator freeview (the other fields stay at the values the snapshot delivered).
 	auto &Spec = GameClient()->m_Snap.m_SpecInfo;
 	Spec.m_Active = true;
 	Spec.m_SpectatorId = SPEC_FREEVIEW;
 	Spec.m_UsePosition = false;
-	Spec.m_HasCameraInfo = false;
-	Spec.m_Zoom = GameClient()->m_Camera.m_Zoom > 0.0f ? GameClient()->m_Camera.m_Zoom : 1.0f;
-	Spec.m_Deadzone = 0;
-	Spec.m_FollowFactor = 0;
-	Spec.m_Position = GameClient()->m_Camera.m_Center;
 }
 
 void CFastPractice::RestorePracticeSpectateSpecInfo()
@@ -1224,6 +1224,12 @@ void CFastPractice::FreezeSpectatingParticipant(int Slot)
 	// but resetting the core each tick also prevents gravity/hook/collision drift while the rest
 	// of the practice world keeps simulating for the other participant.
 	const vec2 Pos = m_aParticipantSpectateSavedPos[Slot];
+	// task-26: force solo in the practice world so the other participant can neither collide
+	// with, hook nor hammer this participant (native /spec has no tee in the world). SetSolo()
+	// updates both the core flag and the practice world teams core, which is what CanCollide()
+	// (player collision / hook / hammer / projectile checks) uses. Apply it before capturing the
+	// core so the frozen core keeps the solo flag for the next world-config sync.
+	pChar->SetSolo(true);
 	CCharacterCore Core = pChar->GetCore();
 	Core.m_Pos = Pos;
 	Core.m_Vel = vec2(0.0f, 0.0f);
@@ -1267,9 +1273,11 @@ void CFastPractice::SetParticipantSpectate(int Slot, bool Enable)
 			return;
 		CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId);
 		m_aParticipantSpectateSavedValid[Slot] = false;
+		m_aParticipantSpectateSavedSolo[Slot] = false;
 		if(pChar)
 		{
 			m_aParticipantSpectateSavedPos[Slot] = pChar->Core()->m_Pos;
+			m_aParticipantSpectateSavedSolo[Slot] = pChar->Core()->m_Solo;
 			m_aParticipantSpectateSavedValid[Slot] = true;
 		}
 		if(!m_aParticipantSpectateSavedValid[Slot])
@@ -1307,12 +1315,16 @@ void CFastPractice::SetParticipantSpectate(int Slot, bool Enable)
 			{
 				if(CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId))
 				{
+					// task-26: restore the participant's original solo state once it leaves the
+					// local spectate (the practice world may have been rebuilt in the meantime).
+					pChar->SetSolo(m_aParticipantSpectateSavedSolo[Slot]);
 					ApplyPracticeTeleport(ClientId, pChar, SpawnPos);
 					pChar->SetVelocity(vec2(0.0f, 0.0f));
 				}
 			}
 		}
 		m_aParticipantSpectateSavedValid[Slot] = false;
+		m_aParticipantSpectateSavedSolo[Slot] = false;
 		SyncFireAfterSpectateEdge();
 		ApplyActiveSpectateCamera();
 		if(DebugLogActive())
@@ -1324,15 +1336,35 @@ void CFastPractice::ClearAllParticipantSpectateState(bool RestoreCamera)
 {
 	for(int Slot = 0; Slot < 2; Slot++)
 	{
+		// task-26: restore the participant's original solo state before dropping the local
+		// spectate state (the char may still be present in the practice world).
+		if(m_aParticipantSpectate[Slot])
+		{
+			const int ClientId = ParticipantClientIdForSlot(Slot);
+			if(ClientId >= 0 && ClientId < MAX_CLIENTS)
+			{
+				if(CCharacter *pChar = m_PracticeWorld.GetCharacterById(ClientId))
+					pChar->SetSolo(m_aParticipantSpectateSavedSolo[Slot]);
+			}
+		}
 		ClearParticipantSpecChar(Slot);
 		m_aParticipantSpectate[Slot] = false;
 		m_aParticipantSpectatePending[Slot] = false;
 		m_aParticipantSpectateSavedValid[Slot] = false;
+		m_aParticipantSpectateSavedSolo[Slot] = false;
 	}
 	// task-75 R5: when the real server spectator state takes over, the current snapshot already
 	// carries the real camera info, so do not restore the stale pre-spectate fields over it.
 	if(RestoreCamera && m_FakeSpectateActive && m_HasSavedServerSpecInfo)
 		RestorePracticeSpectateSpecInfo();
+	else if(m_FakeSpectateActive && !m_HasSavedServerSpecInfo)
+	{
+		// task-26: never leave a stale fake freeview behind if the saved server state is missing.
+		auto &Spec = GameClient()->m_Snap.m_SpecInfo;
+		Spec.m_Active = false;
+		Spec.m_SpectatorId = SPEC_FREEVIEW;
+		Spec.m_UsePosition = false;
+	}
 	m_FakeSpectateActive = false;
 	m_HasSavedServerSpecInfo = false;
 }
@@ -1496,8 +1528,33 @@ void CFastPractice::CaptureServerLockedTargets()
 
 void CFastPractice::Enable()
 {
-	if(m_Enabled || !CanEnable())
+	if(m_Enabled)
 		return;
+	if(!CanEnable())
+	{
+		// task-26: debug-only diagnostics; no chat output (user requested silence for practice
+		// state messages). This also makes the "solo + dummy cannot enable" report traceable.
+		if(DebugLogActive())
+		{
+			const auto &Snap = GameClient()->m_Snap;
+			const int LocalId = Snap.m_LocalClientId;
+			const int ActiveConn = g_Config.m_ClDummy ? IClient::CONN_DUMMY : IClient::CONN_MAIN;
+			const int ActiveId = GameClient()->m_aLocalIds[ActiveConn];
+			log_info("fast_practice", "[fp-enable] CanEnable failed online=%d local_info=%d local_char=%d server_spec=%d team_spec=%d game_paused=%d local_active=%d local_paused=%d active_id=%d active_active=%d active_paused=%d",
+				Client()->State() == IClient::STATE_ONLINE ? 1 : 0,
+				Snap.m_pLocalInfo != nullptr ? 1 : 0,
+				Snap.m_pLocalCharacter != nullptr ? 1 : 0,
+				IsServerSpectating() ? 1 : 0,
+				(Snap.m_pLocalInfo && Snap.m_pLocalInfo->m_Team == TEAM_SPECTATORS) ? 1 : 0,
+				(Snap.m_pGameInfoObj && (Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED)) ? 1 : 0,
+				(LocalId >= 0 && LocalId < MAX_CLIENTS && Snap.m_aCharacters[LocalId].m_Active) ? 1 : 0,
+				(LocalId >= 0 && LocalId < MAX_CLIENTS && GameClient()->m_aClients[LocalId].m_Paused) ? 1 : 0,
+				ActiveId,
+				(ActiveId >= 0 && ActiveId < MAX_CLIENTS && Snap.m_aCharacters[ActiveId].m_Active) ? 1 : 0,
+				(ActiveId >= 0 && ActiveId < MAX_CLIENTS && GameClient()->m_aClients[ActiveId].m_Paused) ? 1 : 0);
+		}
+		return;
+	}
 
 	const int ActiveConn = g_Config.m_ClDummy ? IClient::CONN_DUMMY : IClient::CONN_MAIN;
 	const int InactiveConn = ActiveConn ^ 1;
@@ -1509,6 +1566,8 @@ void CFastPractice::Enable()
 	if(m_EnableDummyClientId < 0 || m_EnableDummyClientId >= MAX_CLIENTS ||
 		!GameClient()->m_Snap.m_aCharacters[m_EnableDummyClientId].m_Active || GameClient()->m_aClients[m_EnableDummyClientId].m_Paused)
 	{
+		if(DebugLogActive())
+			log_info("fast_practice", "[fp-enable] partner unavailable (solo/spectator visibility or inactive) candidate=%d", CandidateDummyId);
 		m_EnableDummyClientId = -1;
 	}
 	m_RequireDummy = m_EnableDummyClientId >= 0;
@@ -1519,17 +1578,48 @@ void CFastPractice::Enable()
 	// sending any extra attack to the server. (Only the local collision behaviour differs, which
 	// matches the server's solo state at enable time.)
 
+	// task-26: with a dummy connected and solo enabled, the server hides the solo'd tee from the
+	// other connection's snapshot, so the partner character can be missing from the predicted /
+	// practice world (and with it the partner anchor). Do not fail the whole toggle: retry
+	// without the partner so the visible tee can still be practised (both-tee practice comes
+	// back once the partner is visible again, e.g. after /unsolo and re-toggling practice).
 	if(!Rebuild())
 	{
-		ResetPracticeState();
-		return;
+		if(m_RequireDummy)
+		{
+			if(DebugLogActive())
+				log_info("fast_practice", "[fp-enable] partner rebuild failed; retrying as single-tee practice");
+			m_EnableDummyClientId = -1;
+			m_RequireDummy = false;
+		}
+		if(!Rebuild())
+		{
+			if(DebugLogActive())
+				log_info("fast_practice", "[fp-enable] rebuild failed local=%d", m_EnableLocalClientId);
+			ResetPracticeState();
+			return;
+		}
 	}
 
 	CaptureAnchorsFromSnapshot();
 	if(!m_MainAnchor.m_Valid || (m_RequireDummy && !m_HasDummyAnchor))
 	{
-		ResetPracticeState();
-		return;
+		if(m_RequireDummy && m_MainAnchor.m_Valid)
+		{
+			if(DebugLogActive())
+				log_info("fast_practice", "[fp-enable] partner anchor missing; retrying as single-tee practice");
+			m_EnableDummyClientId = -1;
+			m_RequireDummy = false;
+			CaptureAnchorsFromSnapshot();
+		}
+		if(!m_MainAnchor.m_Valid || (m_RequireDummy && !m_HasDummyAnchor))
+		{
+			if(DebugLogActive())
+				log_info("fast_practice", "[fp-enable] anchors invalid local_valid=%d dummy_valid=%d require_dummy=%d",
+					m_MainAnchor.m_Valid ? 1 : 0, m_HasDummyAnchor ? 1 : 0, m_RequireDummy ? 1 : 0);
+			ResetPracticeState();
+			return;
+		}
 	}
 
 	m_Enabled = true;
