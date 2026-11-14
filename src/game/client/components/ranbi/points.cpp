@@ -15,6 +15,7 @@
 
 #include <game/client/gameclient.h>
 
+#include <algorithm>
 #include <cctype>
 #include <cstdarg>
 #include <cstdio>
@@ -24,6 +25,12 @@ namespace
 {
 	constexpr int64_t POINTS_FAILURE_BACKOFF_MS = 30 * 1000;
 	constexpr int64_t POINTS_GIVE_UP_MS = 24 * 60 * 60 * 1000;
+	// task-84: fetched/failed cache entries outlive the player. Residual chat lines/scoreboard/
+	// nameplates keep asking for a name for ~20 s after it leaves; deleting the cache entry then
+	// caused a request -> fetch -> cleanup -> request loop. Keep untouched entries for a long
+	// stale window and enforce a large LRU cap as the memory bound.
+	constexpr int64_t POINTS_CACHE_STALE_MS = 30 * 60 * 1000;
+	constexpr size_t POINTS_CACHE_MAX_ENTRIES = 4096;
 
 	void LogPoints(const char *pFormat, ...)
 	{
@@ -85,7 +92,12 @@ void CPoints::OnRender()
 		MarkFailure(Name);
 	}
 
-	// cleanup inactive names, but never erase in-flight or freshly failed entries.
+	// task-84: keep fetched (incl. 0 points), pending and failure/backoff entries after the
+	// player leaves: residual chat lines/scoreboard/nameplates still reference the name for a
+	// while, and an immediately erased fetched entry caused a request->fetch->erase loop
+	// (in-flight de-dupe only prevented simultaneous duplicates). Only purge entries that are
+	// not active, not in-flight and untouched for the long stale window; enforce a large LRU cap
+	// as the memory bound so recent/displayed names are never affected.
 	std::unique_lock LockCache(m_PointsMutex);
 	std::set<std::string> NameSet;
 	for(int i = 0; i < MAX_CLIENTS; i++)
@@ -94,14 +106,61 @@ void CPoints::OnRender()
 			NameSet.insert(GameClient()->m_aClients[i].m_aName);
 	}
 	const int64_t Now = time_get();
+	const int64_t StaleTicks = POINTS_CACHE_STALE_MS * time_freq() / 1000;
 	for(auto It = m_PointsCache.begin(); It != m_PointsCache.end();)
 	{
-		if(NameSet.contains(It->first) || It->second.m_Points == -1 || It->second.m_RetryAt > Now)
+		if(NameSet.contains(It->first))
+		{
+			// Active players stay cached; refresh the access time so a player leaving does not
+			// start its stale window from an old access.
+			It->second.m_LastAccess = Now;
+			++It;
+			continue;
+		}
+		if(It->second.m_Points == -1)
+		{
+			// in-flight request: the OnRender request completion handling owns this entry
+			It->second.m_LastAccess = Now;
+			++It;
+			continue;
+		}
+		const int64_t Age = Now - It->second.m_LastAccess;
+		if(Age < StaleTicks)
 		{
 			++It;
 			continue;
 		}
+		LogPoints("cleanup erase name=%s reason=stale age_ms=%lld fetched=%d failures=%d requests=%d hits=%d",
+			It->first.c_str(), (long long)(Age * 1000 / time_freq()), It->second.m_Fetched ? 1 : 0,
+			It->second.m_FailureCount, It->second.m_RequestStartCount, It->second.m_CacheHitCount);
 		It = m_PointsCache.erase(It);
+	}
+
+	if(m_PointsCache.size() > POINTS_CACHE_MAX_ENTRIES)
+	{
+		// Large LRU bound: evict the least-recently-used non-active, non-in-flight entries.
+		std::vector<std::unordered_map<std::string, SCacheEntry>::iterator> vEvict;
+		vEvict.reserve(m_PointsCache.size());
+		for(auto It = m_PointsCache.begin(); It != m_PointsCache.end(); ++It)
+		{
+			if(NameSet.contains(It->first) || It->second.m_Points == -1)
+				continue;
+			vEvict.push_back(It);
+		}
+		std::sort(vEvict.begin(), vEvict.end(), [](const auto &A, const auto &B) {
+			return A->second.m_LastAccess < B->second.m_LastAccess;
+		});
+		size_t NumToEvict = m_PointsCache.size() - POINTS_CACHE_MAX_ENTRIES;
+		for(const auto &It : vEvict)
+		{
+			if(NumToEvict == 0)
+				break;
+			LogPoints("cleanup erase name=%s reason=lru age_ms=%lld fetched=%d requests=%d",
+				It->first.c_str(), (long long)((Now - It->second.m_LastAccess) * 1000 / time_freq()),
+				It->second.m_Fetched ? 1 : 0, It->second.m_RequestStartCount);
+			m_PointsCache.erase(It);
+			NumToEvict--;
+		}
 	}
 }
 
@@ -146,19 +205,24 @@ int CPoints::GetPoints(const std::string &Name)
 
 	{
 		std::unique_lock LockPoints(m_PointsMutex);
-		const auto It = m_PointsCache.find(Name);
+		auto It = m_PointsCache.find(Name);
 		if(It != m_PointsCache.end())
 		{
+			It->second.m_LastAccess = Now;
 			if(It->second.m_Points == -1)
 			{
 				// request marked pending; de-dupe below
 			}
 			else if(It->second.m_Fetched)
 			{
+				if(It->second.m_CacheHitCount++ == 0)
+					LogPoints("cache hit name=%s points=%d hits=%d", Name.c_str(), It->second.m_Points, It->second.m_CacheHitCount);
 				return It->second.m_Points;
 			}
 			else if(It->second.m_FailureCount >= 2)
 			{
+				if(It->second.m_CacheHitCount++ == 0)
+					LogPoints("cache hit name=%s points=%d give_up=1 hits=%d", Name.c_str(), It->second.m_Points, It->second.m_CacheHitCount);
 				return 0; // gave up after the one allowed retry
 			}
 			else if(It->second.m_RetryAt > Now)
@@ -177,6 +241,7 @@ int CPoints::GetPoints(const std::string &Name)
 		std::unique_lock LockPoints(m_PointsMutex);
 		auto &Entry = m_PointsCache[Name];
 		Entry.m_Points = -1;
+		Entry.m_LastAccess = Now;
 		return -1;
 	}
 
@@ -186,8 +251,10 @@ int CPoints::GetPoints(const std::string &Name)
 		Entry.m_Points = -1;
 		Entry.m_Fetched = false;
 		Entry.m_RetryAt = 0;
+		Entry.m_LastAccess = Now;
+		Entry.m_RequestStartCount++;
+		LogPoints("request start name=%s count=%d", Name.c_str(), Entry.m_RequestStartCount);
 	}
-	LogPoints("request start name=%s", Name.c_str());
 
 	std::string NameUrl = EncodePlayerName(Name);
 	const std::string Url = "https://ddnet.org/players/?json2=" + NameUrl;
@@ -209,9 +276,12 @@ bool CPoints::TryGetPoints(const char *pName, int *pPoints) const
 	if(!pName || !pName[0] || !pPoints)
 		return false;
 	std::unique_lock LockPoints(m_PointsMutex);
-	const auto It = m_PointsCache.find(pName);
+	auto It = m_PointsCache.find(pName);
 	if(It == m_PointsCache.end() || !It->second.m_Fetched)
 		return false;
+	// task-84: a cache hit keeps the entry alive for the stale/LRU cleanup.
+	It->second.m_LastAccess = time_get();
+	It->second.m_CacheHitCount++;
 	*pPoints = It->second.m_Points;
 	return true;
 }
@@ -235,6 +305,7 @@ void CPoints::MarkFailure(const std::string &Name)
 	auto &Entry = m_PointsCache[Name];
 	Entry.m_Points = 0;
 	Entry.m_Fetched = false;
+	Entry.m_LastAccess = Now;
 	Entry.m_FailureCount++;
 	if(Entry.m_FailureCount < 2)
 	{
@@ -337,6 +408,7 @@ bool CPoints::Run(const std::string &Name, std::shared_ptr<IHttpRequest> pPoints
 	Entry.m_Fetched = true;
 	Entry.m_RetryAt = 0;
 	Entry.m_FailureCount = 0;
-	LogPoints("request done name=%s points=%d", Name.c_str(), Points);
+	Entry.m_LastAccess = time_get();
+	LogPoints("request done name=%s points=%d requests=%d", Name.c_str(), Points, Entry.m_RequestStartCount);
 	return true;
 }

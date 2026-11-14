@@ -25,6 +25,12 @@ class CPoints : public CComponent
 		bool m_Fetched = false; // true = request completed successfully (0 is a valid value)
 		int64_t m_RetryAt = 0; // monotonic time before which a failed name is not retried
 		int m_FailureCount = 0; // 0 success, 1 first failure (one retry allowed), 2+ give up
+		// task-84: cache lifetime/debug statistics. Fetched entries (incl. 0 points) and
+		// failure/backoff entries must survive the player leaving so residual chat/scoreboard/
+		// nameplate displays still hit the cache instead of starting a new request each frame.
+		mutable int64_t m_LastAccess = 0; // last time a display path asked for this name
+		int m_RequestStartCount = 0; // debug: how often an actual HTTP request was started
+		mutable int m_CacheHitCount = 0; // debug: how often a cached value answered a display
 	};
 
 	std::vector<std::pair<std::string, std::shared_ptr<IHttpRequest>>> m_vPointsRequests;
