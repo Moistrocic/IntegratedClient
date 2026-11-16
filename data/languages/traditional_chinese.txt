@@ -2646,6 +2646,93 @@ Frozen tee gray filter
 0 = original colors, 100 = fully gray frozen tee icons.
 == 0 = 原色，100 = 凍結 Tee 圖示完全灰色。
 
+Bind Manager
+== 按鍵管理
+
+Operation failed (see console for details)
+== 操作失敗（詳見控制台）
+
+Config deleted
+== 配置已刪除
+
+Initialize binds and parameters before entering a game
+== 進入遊戲前初始化綁鍵和參數
+
+When disabled, no Bind Manager cfg is executed when joining a server and the current binds stay unchanged.
+== 關閉後，加入伺服器時不會執行任何按鍵管理 cfg，當前綁鍵保持不變。
+
+Configuration saved
+== 配置已保存
+
+Configuration loaded
+== 配置已加載
+
+Configuration imported
+== 配置已導入
+
+Configuration exported
+== 配置已導出
+
+Zip path (fallback)
+== Zip 路徑（回退）
+
+All folders in binds/ are listed. Selecting a config loads its manager.txt; rename changes the folder name.
+== binds/ 下的所有資料夾都會列出。選擇配置會加載其 manager.txt；重命名會修改資料夾名稱。
+
+Rename
+== 重命名
+
+Config renamed
+== 配置已重命名
+
+New config
+== 新建配置
+
+Config created
+== 配置已創建
+
+Are you sure you want to delete config "%s"?
+== 確定要刪除配置 “%s” 嗎？
+
+Delete config
+== 刪除配置
+
+Configuration selected
+== 已選擇配置
+
+No configs yet. Press Save to create the default config in binds/default/.
+== 還沒有配置。點擊保存會在 binds/default/ 創建默認配置。
+
+Entries (manager.txt order)
+== 條目（manager.txt 順序）
+
+Long-press the \u2630 handle and drag to reorder; order is written to manager.txt immediately.
+== 長按 ☰ 手柄並拖動可調整順序；順序會立即寫入 manager.txt。
+
+Add entry
+== 添加條目
+
+Init commands
+== 初始化命令
+
+Init contains a command that is not executable (it is still written to init.cfg unchanged).
+== 初始化命令中包含不可執行命令（仍會原樣寫入 init.cfg）。
+
+This entry has no key bound; it cannot be advanced by pressing a key.
+== 該條目未綁定按鍵，無法通過按鍵推進。
+
+Command %d
+== 命令 %d
+
+This command is not executable (it is still written to the cfg unchanged).
+== 該命令不可執行（仍會原樣寫入 cfg）。
+
+Extend / add command
+== 擴展 / 添加命令
+
+Entry order updated
+== 條目順序已更新
+
 BETA
 == 
 
@@ -5182,9 +5269,6 @@ Links
 Integration registry
 == 
 
-Bind Manager
-== 
-
 Fixes
 == 
 
@@ -5549,90 +5633,6 @@ Knowledge base
 == 
 
 Text files in ranbi/knowledge/*.txt are used as extra context; ddnet_wiki.txt is created on first start.
-== 
-
-Operation failed (see console for details)
-== 
-
-Config deleted
-== 
-
-Initialize binds and parameters before entering a game
-== 
-
-When disabled, no Bind Manager cfg is executed when joining a server and the current binds stay unchanged.
-== 
-
-Configuration saved
-== 
-
-Configuration loaded
-== 
-
-Configuration imported
-== 
-
-Configuration exported
-== 
-
-Zip path (fallback)
-== 
-
-All folders in binds/ are listed. Selecting a config loads its manager.txt; rename changes the folder name.
-== 
-
-Rename
-== 
-
-Config renamed
-== 
-
-New config
-== 
-
-Config created
-== 
-
-Are you sure you want to delete config "%s"?
-== 
-
-Delete config
-== 
-
-Configuration selected
-== 
-
-No configs yet. Press Save to create the default config in binds/default/.
-== 
-
-Entries (manager.txt order)
-== 
-
-Long-press the \u2630 handle and drag to reorder; order is written to manager.txt immediately.
-== 
-
-Add entry
-== 
-
-Init commands
-== 
-
-Init contains a command that is not executable (it is still written to init.cfg unchanged).
-== 
-
-This entry has no key bound; it cannot be advanced by pressing a key.
-== 
-
-Command %d
-== 
-
-This command is not executable (it is still written to the cfg unchanged).
-== 
-
-Extend / add command
-== 
-
-Entry order updated
 == 
 
 [bgdraw]

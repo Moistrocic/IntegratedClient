@@ -3144,6 +3144,93 @@ Frozen tee gray filter
 0 = original colors, 100 = fully gray frozen tee icons.
 == 0 = 原色，100 = 冻结 Tee 图标完全灰色。
 
+Bind Manager
+== 按键管理
+
+Operation failed (see console for details)
+== 操作失败（详见控制台）
+
+Config deleted
+== 配置已删除
+
+Initialize binds and parameters before entering a game
+== 进入游戏前初始化绑键和参数
+
+When disabled, no Bind Manager cfg is executed when joining a server and the current binds stay unchanged.
+== 关闭后，加入服务器时不会执行任何按键管理 cfg，当前绑键保持不变。
+
+Configuration saved
+== 配置已保存
+
+Configuration loaded
+== 配置已加载
+
+Configuration imported
+== 配置已导入
+
+Configuration exported
+== 配置已导出
+
+Zip path (fallback)
+== Zip 路径（回退）
+
+All folders in binds/ are listed. Selecting a config loads its manager.txt; rename changes the folder name.
+== binds/ 下的所有文件夹都会列出。选择配置会加载其 manager.txt；重命名会修改文件夹名称。
+
+Rename
+== 重命名
+
+Config renamed
+== 配置已重命名
+
+New config
+== 新建配置
+
+Config created
+== 配置已创建
+
+Are you sure you want to delete config "%s"?
+== 确定要删除配置 “%s” 吗？
+
+Delete config
+== 删除配置
+
+Configuration selected
+== 已选择配置
+
+No configs yet. Press Save to create the default config in binds/default/.
+== 还没有配置。点击保存会在 binds/default/ 创建默认配置。
+
+Entries (manager.txt order)
+== 条目（manager.txt 顺序）
+
+Long-press the \u2630 handle and drag to reorder; order is written to manager.txt immediately.
+== 长按 ☰ 手柄并拖动可调整顺序；顺序会立即写入 manager.txt。
+
+Add entry
+== 添加条目
+
+Init commands
+== 初始化命令
+
+Init contains a command that is not executable (it is still written to init.cfg unchanged).
+== 初始化命令中包含不可执行命令（仍会原样写入 init.cfg）。
+
+This entry has no key bound; it cannot be advanced by pressing a key.
+== 该条目未绑定按键，无法通过按键推进。
+
+Command %d
+== 命令 %d
+
+This command is not executable (it is still written to the cfg unchanged).
+== 该命令不可执行（仍会原样写入 cfg）。
+
+Extend / add command
+== 扩展 / 添加命令
+
+Entry order updated
+== 条目顺序已更新
+
 BETA
 == 
 
@@ -5546,93 +5633,6 @@ You are muted. Your voice was muted by a moderator.
 == 
 
 Voice chat is only for the original BestClient. Your client was detected as fake.
-== 
-
-Bind Manager
-== 
-
-Operation failed (see console for details)
-== 
-
-Config deleted
-== 
-
-Initialize binds and parameters before entering a game
-== 
-
-When disabled, no Bind Manager cfg is executed when joining a server and the current binds stay unchanged.
-== 
-
-Configuration saved
-== 
-
-Configuration loaded
-== 
-
-Configuration imported
-== 
-
-Configuration exported
-== 
-
-Zip path (fallback)
-== 
-
-All folders in binds/ are listed. Selecting a config loads its manager.txt; rename changes the folder name.
-== 
-
-Rename
-== 
-
-Config renamed
-== 
-
-New config
-== 
-
-Config created
-== 
-
-Are you sure you want to delete config "%s"?
-== 
-
-Delete config
-== 
-
-Configuration selected
-== 
-
-No configs yet. Press Save to create the default config in binds/default/.
-== 
-
-Entries (manager.txt order)
-== 
-
-Long-press the \u2630 handle and drag to reorder; order is written to manager.txt immediately.
-== 
-
-Add entry
-== 
-
-Init commands
-== 
-
-Init contains a command that is not executable (it is still written to init.cfg unchanged).
-== 
-
-This entry has no key bound; it cannot be advanced by pressing a key.
-== 
-
-Command %d
-== 
-
-This command is not executable (it is still written to the cfg unchanged).
-== 
-
-Extend / add command
-== 
-
-Entry order updated
 == 
 
 [bgdraw]
