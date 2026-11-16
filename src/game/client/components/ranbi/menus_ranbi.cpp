@@ -8,10 +8,12 @@
 
 #include <base/color.h>
 #include <base/str.h>
+#include <base/time.h>
 
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
 
+#include <game/client/components/key_binder.h>
 #include <game/client/components/menus.h>
 #include <game/client/components/ranbi/weapons.h>
 #include <game/client/gameclient.h>
@@ -21,9 +23,17 @@
 #include <game/localization.h>
 
 #include <algorithm>
+#include <array>
+#include <string>
 #include <vector>
 
 static int s_CurRanbiTab = CMenus::RANBI_TAB_GENERAL;
+
+// task-49: Bind Manager config delete confirmation state (popup callback has no arguments).
+static std::string s_BindManagerPendingDeleteConfig;
+static bool s_BindManagerForceConfigNameSync = false;
+static char s_BindManagerPostActionStatus[512] = "";
+static bool s_BindManagerPostActionStatusError = false;
 
 static constexpr float s_FontSize = 14.0f;
 static constexpr float s_EditBoxFontSize = 12.0f;
@@ -107,6 +117,7 @@ void CMenus::RenderSettingsRanbi(CUIRect MainView)
 		Localize("Chat & Scoreboard"),
 		Localize("Notify"),
 		Localize("Weapons"),
+		Localize("Bind Manager"),
 		Localize("AI"),
 	};
 
@@ -132,6 +143,8 @@ void CMenus::RenderSettingsRanbi(CUIRect MainView)
 		RenderSettingsRanbiNotify(MainView);
 	else if(s_CurRanbiTab == RANBI_TAB_WEAPONS)
 		RenderSettingsRanbiWeapons(MainView);
+	else if(s_CurRanbiTab == RANBI_TAB_BIND_MANAGER)
+		RenderSettingsRanbiBindManager(MainView);
 	else if(s_CurRanbiTab == RANBI_TAB_AI)
 		RenderSettingsRanbiAi(MainView);
 }
@@ -774,6 +787,587 @@ void CMenus::RenderSettingsRanbiAi(CUIRect MainView)
 	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
 	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Knowledge base"));
 	RenderRanbiHint(Ui(), &Column, Localize("Text files in ranbi/knowledge/*.txt are used as extra context; ddnet_wiki.txt is created on first start."));
+
+	EndRanbiPageScroll(s_ScrollRegion, MainView, Column);
+}
+
+namespace
+{
+	struct SBindManagerUiState
+	{
+		std::vector<CButtonContainer> m_vConfigButtons;
+		std::vector<CButtonContainer> m_vConfigDeleteButtons;
+		std::vector<CButtonContainer> m_vExpandButtons;
+		std::vector<CButtonContainer> m_vDeleteButtons;
+		std::vector<CButtonContainer> m_vAddCommandButtons;
+		std::vector<std::vector<CButtonContainer>> m_vDeleteCommandButtons;
+		std::vector<CButtonContainer> m_vKeyReaderButtons;
+		std::vector<CButtonContainer> m_vKeyClearButtons;
+		std::vector<CLineInput> m_vNameInputs;
+		std::vector<std::array<char, 64>> m_vNameBuffers;
+		std::vector<CLineInput> m_vInitInputs;
+		std::vector<std::array<char, 512>> m_vInitBuffers;
+		std::vector<std::vector<CLineInput>> m_vCommandInputs;
+		std::vector<std::vector<std::array<char, 512>>> m_vCommandBuffers;
+		int m_DragIndex = -1;
+		int64_t m_DragStart = 0;
+		bool m_Initialized = false;
+		bool m_ConfigNameDirty = false;
+		std::vector<CUIRect> m_vHeaderRects;
+		char m_aStatus[512] = "";
+		bool m_StatusError = false;
+		CLineInput m_ImportPathInput;
+		CLineInput m_ExportPathInput;
+		std::array<char, 512> m_aImportPathBuffer = {};
+		std::array<char, 512> m_aExportPathBuffer = {};
+	};
+
+	void EnsureBindManagerUiSize(SBindManagerUiState &State, const std::vector<CBindManager::SEntry> &Entries)
+	{
+		const size_t Num = Entries.size();
+		State.m_vConfigButtons.resize(std::max<size_t>(Num, 1));
+		State.m_vExpandButtons.resize(Num);
+		State.m_vDeleteButtons.resize(Num);
+		State.m_vAddCommandButtons.resize(Num);
+		State.m_vKeyReaderButtons.resize(Num);
+		State.m_vKeyClearButtons.resize(Num);
+		State.m_vNameBuffers.resize(Num);
+		State.m_vNameInputs.resize(Num);
+		State.m_vInitBuffers.resize(Num);
+		State.m_vInitInputs.resize(Num);
+		State.m_vCommandBuffers.resize(Num);
+		State.m_vCommandInputs.resize(Num);
+		State.m_vDeleteCommandButtons.resize(Num);
+		for(size_t i = 0; i < Num; i++)
+		{
+			const size_t NumCommands = std::max<size_t>(1, Entries[i].m_vCommands.size());
+			State.m_vCommandBuffers[i].resize(NumCommands);
+			State.m_vCommandInputs[i].resize(NumCommands);
+			State.m_vDeleteCommandButtons[i].resize(NumCommands);
+		}
+	}
+
+	ColorRGBA BindManagerDefaultColorRgba()
+	{
+		return color_cast<ColorRGBA>(ColorHSLA(CBindManager::DEFAULT_COMMAND_COLOR, false));
+	}
+
+	void SetBindManagerStatus(SBindManagerUiState &State, bool Error, const char *pMessage)
+	{
+		str_copy(State.m_aStatus, pMessage && pMessage[0] ? pMessage : "", sizeof(State.m_aStatus));
+		State.m_StatusError = Error;
+	}
+
+	void ReportBindManagerResult(SBindManagerUiState &State, CBindManager &Manager, bool Ok, const char *pSuccess)
+	{
+		if(Ok)
+		{
+			// task-87: manager.txt/import may succeed with sanitized (invalid) keys; surface
+			// that warning instead of a plain success message.
+			char aWarning[512];
+			if(Manager.LastError(aWarning, sizeof(aWarning)))
+				SetBindManagerStatus(State, true, aWarning);
+			else
+				SetBindManagerStatus(State, false, pSuccess);
+			return;
+		}
+		char aError[512];
+		if(Manager.LastError(aError, sizeof(aError)))
+			SetBindManagerStatus(State, true, aError);
+		else
+			SetBindManagerStatus(State, true, Localize("Operation failed (see console for details)"));
+	}
+} // namespace
+
+void CMenus::PopupConfirmDeleteBindManagerConfig()
+{
+	if(s_BindManagerPendingDeleteConfig.empty())
+		return;
+	const std::string Name = s_BindManagerPendingDeleteConfig;
+	s_BindManagerPendingDeleteConfig.clear();
+	std::string Error;
+	if(GameClient()->m_BindManager.DeleteConfig(Name.c_str(), Error))
+	{
+		str_copy(s_BindManagerPostActionStatus, Localize("Config deleted"), sizeof(s_BindManagerPostActionStatus));
+		s_BindManagerPostActionStatusError = false;
+	}
+	else
+	{
+		str_copy(s_BindManagerPostActionStatus, Error.empty() ? Localize("Operation failed (see console for details)") : Error.c_str(), sizeof(s_BindManagerPostActionStatus));
+		s_BindManagerPostActionStatusError = true;
+	}
+	s_BindManagerForceConfigNameSync = true;
+}
+
+void CMenus::RenderSettingsRanbiBindManager(CUIRect MainView)
+{
+	CBindManager &Manager = GameClient()->m_BindManager;
+	static SBindManagerUiState s_State;
+	static CScrollRegion s_ScrollRegion;
+	static CButtonContainer s_aSaveButton;
+	static CButtonContainer s_aLoadButton;
+	static CButtonContainer s_aImportButton;
+	static CButtonContainer s_aExportButton;
+	static CButtonContainer s_aRenameConfigButton;
+	static CButtonContainer s_aNewConfigButton;
+	static CButtonContainer s_aAddEntryButton;
+	static CLineInput s_ConfigNameInput;
+	static std::array<char, 128> s_aConfigNameBuffer = {};
+
+	if(s_BindManagerForceConfigNameSync)
+	{
+		s_State.m_ConfigNameDirty = false;
+		s_BindManagerForceConfigNameSync = false;
+	}
+	if(s_BindManagerPostActionStatus[0] != '\0')
+	{
+		SetBindManagerStatus(s_State, s_BindManagerPostActionStatusError, s_BindManagerPostActionStatus);
+		s_BindManagerPostActionStatus[0] = '\0';
+	}
+
+	if(!s_State.m_Initialized)
+	{
+		s_State.m_Initialized = true;
+		s_State.m_ImportPathInput.SetBuffer(s_State.m_aImportPathBuffer.data(), s_State.m_aImportPathBuffer.size());
+		s_State.m_ExportPathInput.SetBuffer(s_State.m_aExportPathBuffer.data(), s_State.m_aExportPathBuffer.size());
+		Manager.RefreshConfigs();
+		if(g_Config.m_RcBindManagerConfig[0] != '\0')
+			Manager.SelectConfig(g_Config.m_RcBindManagerConfig, true);
+	}
+
+	BeginRanbiPageScroll(s_ScrollRegion, MainView);
+	CUIRect Column = MainView;
+	Column.HSplitTop(s_Margin, nullptr, &Column);
+
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Bind Manager"));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcBindManagerInit, Localize("Initialize binds and parameters before entering a game"), &g_Config.m_RcBindManagerInit, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("When disabled, no Bind Manager cfg is executed when joining a server and the current binds stay unchanged."));
+
+	if(s_State.m_aStatus[0] != '\0')
+	{
+		if(s_State.m_StatusError)
+			RenderRanbiWarning(Ui(), &Column, s_State.m_aStatus);
+		else
+			RenderRanbiHint(Ui(), &Column, s_State.m_aStatus);
+	}
+
+	// 保存 / 加载 / 导入 / 导出
+	CUIRect ButtonRow;
+	Column.HSplitTop(s_LineSize + s_MarginExtraSmall, &ButtonRow, &Column);
+	const float ButtonWidth = ButtonRow.w / 4.0f;
+	const char *apButtonNames[4] = {Localize("Save"), Localize("Load"), Localize("Import"), Localize("Export")};
+	CButtonContainer *apButtons[4] = {&s_aSaveButton, &s_aLoadButton, &s_aImportButton, &s_aExportButton};
+	for(int i = 0; i < 4; i++)
+	{
+		CUIRect Button;
+		ButtonRow.VSplitLeft(ButtonWidth, &Button, &ButtonRow);
+		Button.HMargin(1.0f, &Button);
+		if(DoButton_Menu(apButtons[i], apButtonNames[i], 0, &Button))
+		{
+			if(i == 0)
+			{
+				bool RenameOk = true;
+				if(s_State.m_ConfigNameDirty && s_aConfigNameBuffer[0] != '\0')
+				{
+					RenameOk = Manager.RenameConfig(s_aConfigNameBuffer.data());
+					if(RenameOk)
+					{
+						s_State.m_ConfigNameDirty = false;
+						Ui()->SetActiveItem(nullptr);
+					}
+					else
+					{
+						char aError[512];
+						if(Manager.LastError(aError, sizeof(aError)))
+							SetBindManagerStatus(s_State, true, aError);
+						else
+							SetBindManagerStatus(s_State, true, Localize("Operation failed (see console for details)"));
+					}
+				}
+				if(RenameOk)
+					ReportBindManagerResult(s_State, Manager, Manager.SaveCurrent(), Localize("Configuration saved"));
+			}
+			else if(i == 1)
+			{
+				ReportBindManagerResult(s_State, Manager, Manager.LoadCurrent(), Localize("Configuration loaded"));
+			}
+			else if(i == 2)
+			{
+				char aPath[512];
+				aPath[0] = '\0';
+#if defined(CONF_FAMILY_WINDOWS)
+				if(Manager.PickFile(false, "", aPath, sizeof(aPath)))
+#else
+				str_copy(aPath, s_State.m_aImportPathBuffer.data(), sizeof(aPath));
+				if(aPath[0] != '\0')
+#endif
+				{
+					std::string Error;
+					const bool Ok = Manager.ImportZip(aPath, Error);
+					ReportBindManagerResult(s_State, Manager, Ok, Localize("Configuration imported"));
+					if(!Ok && !Error.empty())
+						SetBindManagerStatus(s_State, true, Error.c_str());
+				}
+			}
+			else
+			{
+				char aPath[512];
+				aPath[0] = '\0';
+				char aDefaultName[128];
+				str_format(aDefaultName, sizeof(aDefaultName), "%s.zip", Manager.CurrentConfig()[0] ? Manager.CurrentConfig() : "bind");
+#if defined(CONF_FAMILY_WINDOWS)
+				if(Manager.PickFile(true, aDefaultName, aPath, sizeof(aPath)))
+#else
+				str_copy(aPath, s_State.m_aExportPathBuffer.data(), sizeof(aPath));
+				if(aPath[0] != '\0')
+#endif
+				{
+					std::string Error;
+					const bool Ok = Manager.ExportZip(aPath, Error);
+					ReportBindManagerResult(s_State, Manager, Ok, Localize("Configuration exported"));
+					if(!Ok && !Error.empty())
+						SetBindManagerStatus(s_State, true, Error.c_str());
+				}
+			}
+		}
+	}
+
+#if !defined(CONF_FAMILY_WINDOWS)
+	// Native file dialogs are Windows-only; fall back to explicit paths on other platforms.
+	CUIRect FallbackRow;
+	Column.HSplitTop(s_LineSize, &FallbackRow, &Column);
+	FallbackRow.VSplitLeft(110.0f, &FallbackRow, &FallbackRow);
+	Ui()->DoLabel(&FallbackRow, Localize("Zip path (fallback)"), s_EditBoxFontSize, TEXTALIGN_ML);
+	Column.HSplitTop(s_LineSize, &FallbackRow, &Column);
+	CUIRect ImportPathBox, ExportPathBox;
+	FallbackRow.VSplitMid(&ImportPathBox, &ExportPathBox);
+	Ui()->DoEditBox(&s_State.m_ImportPathInput, &ImportPathBox, s_EditBoxFontSize);
+	Ui()->DoEditBox(&s_State.m_ExportPathInput, &ExportPathBox, s_EditBoxFontSize);
+#endif
+
+	// 配置列表
+	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Configs"));
+	RenderRanbiHint(Ui(), &Column, Localize("All folders in binds/ are listed. Selecting a config loads its manager.txt; rename changes the folder name."));
+
+	CUIRect ConfigNameRow;
+	Column.HSplitTop(s_LineSize, &ConfigNameRow, &Column);
+	CUIRect ConfigNameBox, ConfigRenameBox;
+	ConfigNameRow.VSplitLeft(ConfigNameRow.w - 110.0f, &ConfigNameBox, &ConfigRenameBox);
+	ConfigRenameBox.HMargin(2.0f, &ConfigRenameBox);
+	if(!s_ConfigNameInput.IsActive() && !s_State.m_ConfigNameDirty)
+	{
+		str_copy(s_aConfigNameBuffer.data(), Manager.CurrentConfig(), s_aConfigNameBuffer.size());
+		s_ConfigNameInput.SetBuffer(s_aConfigNameBuffer.data(), s_aConfigNameBuffer.size());
+	}
+	if(Ui()->DoEditBox(&s_ConfigNameInput, &ConfigNameBox, s_EditBoxFontSize))
+		s_State.m_ConfigNameDirty = true;
+	if(DoButton_Menu(&s_aRenameConfigButton, Localize("Rename"), 0, &ConfigRenameBox))
+	{
+		const std::string NewName(s_aConfigNameBuffer.data());
+		const bool Ok = Manager.RenameConfig(NewName.c_str());
+		if(Ok)
+		{
+			s_State.m_ConfigNameDirty = false;
+			Ui()->SetActiveItem(nullptr);
+			s_ConfigNameInput.SetBuffer(s_aConfigNameBuffer.data(), s_aConfigNameBuffer.size());
+			SetBindManagerStatus(s_State, false, Localize("Config renamed"));
+		}
+		else
+		{
+			char aError[512];
+			if(Manager.LastError(aError, sizeof(aError)))
+				SetBindManagerStatus(s_State, true, aError);
+			else
+				SetBindManagerStatus(s_State, true, Localize("Operation failed (see console for details)"));
+		}
+		s_State.m_Initialized = true;
+	}
+
+	CUIRect NewConfigRow;
+	Column.HSplitTop(s_LineSize, &NewConfigRow, &Column);
+	CUIRect NewConfigButton;
+	NewConfigRow.VSplitRight(150.0f, &NewConfigRow, &NewConfigButton);
+	NewConfigButton.HMargin(2.0f, &NewConfigButton);
+	if(DoButton_Menu(&s_aNewConfigButton, Localize("New config"), 0, &NewConfigButton))
+	{
+		const bool Ok = Manager.CreateConfig();
+		if(Ok)
+		{
+			s_State.m_ConfigNameDirty = false;
+			Ui()->SetActiveItem(nullptr);
+			SetBindManagerStatus(s_State, false, Localize("Config created"));
+		}
+		else
+		{
+			char aError[512];
+			if(Manager.LastError(aError, sizeof(aError)))
+				SetBindManagerStatus(s_State, true, aError);
+			else
+				SetBindManagerStatus(s_State, true, Localize("Operation failed (see console for details)"));
+		}
+	}
+
+	const std::vector<std::string> &Configs = Manager.Configs();
+	s_State.m_vConfigButtons.resize(std::max<size_t>(Configs.size(), 1));
+	s_State.m_vConfigDeleteButtons.resize(std::max<size_t>(Configs.size(), 1));
+	for(size_t i = 0; i < Configs.size(); i++)
+	{
+		CUIRect ConfigRow, ConfigSelectRow, ConfigDeleteButton;
+		Column.HSplitTop(s_LineSize, &ConfigRow, &Column);
+		ConfigRow.VSplitRight(86.0f, &ConfigSelectRow, &ConfigDeleteButton);
+		ConfigDeleteButton.HMargin(2.0f, &ConfigDeleteButton);
+		const bool Selected = str_comp(Configs[i].c_str(), Manager.CurrentConfig()) == 0;
+		if(DoButton_Menu(&s_State.m_vConfigDeleteButtons[i], Localize("Delete"), 0, &ConfigDeleteButton))
+		{
+			s_BindManagerPendingDeleteConfig = Configs[i];
+			char aMessage[512];
+			str_format(aMessage, sizeof(aMessage), Localize("Are you sure you want to delete config \"%s\"?"), Configs[i].c_str());
+			PopupConfirm(Localize("Delete config"), aMessage, Localize("Delete"), Localize("Cancel"), &CMenus::PopupConfirmDeleteBindManagerConfig);
+		}
+		if(DoButton_Menu(&s_State.m_vConfigButtons[i], Configs[i].c_str(), Selected ? 1 : 0, &ConfigSelectRow))
+		{
+			const bool Ok = Manager.SelectConfig(Configs[i].c_str(), true);
+			if(Ok)
+			{
+				// task-88 (verifier B3): switching config clears the previously managed keys;
+				// the selected config is applied by Load/join (closed loop).
+				if(!Selected)
+					Manager.ClearManagedBindings();
+				s_State.m_ConfigNameDirty = false;
+				Ui()->SetActiveItem(nullptr);
+			}
+			ReportBindManagerResult(s_State, Manager, Ok, Localize("Configuration selected"));
+		}
+	}
+	if(Configs.empty())
+		RenderRanbiHint(Ui(), &Column, Localize("No configs yet. Press Save to create the default config in binds/default/."));
+
+	// 条目列表
+	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
+	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Entries (manager.txt order)"));
+	{
+		CUIRect AddRow;
+		Column.HSplitTop(s_LineSize, &AddRow, &Column);
+		CUIRect AddButton;
+		AddRow.VSplitRight(140.0f, &AddRow, &AddButton);
+		AddButton.HMargin(2.0f, &AddButton);
+		RenderRanbiHint(Ui(), &AddRow, Localize("Long-press the \u2630 handle and drag to reorder; order is written to manager.txt immediately."));
+		if(DoButton_Menu(&s_aAddEntryButton, Localize("Add entry"), 0, &AddButton))
+		{
+			Manager.AddEntry();
+			Manager.SetDirty();
+		}
+	}
+
+	EnsureBindManagerUiSize(s_State, Manager.Entries());
+	s_State.m_vHeaderRects.clear();
+	std::vector<CBindManager::SEntry> &Entries = Manager.Entries();
+	for(int i = 0; i < (int)Entries.size(); i++)
+	{
+		CBindManager::SEntry &Entry = Entries[i];
+
+		CUIRect Header;
+		Column.HSplitTop(26.0f, &Header, &Column);
+		s_ScrollRegion.AddRect(Header);
+		s_State.m_vHeaderRects.push_back(Header);
+
+		CUIRect Handle, Expand, Enabled, KeyRect, NameRect, DeleteRect;
+		Header.VSplitLeft(18.0f, &Handle, &Header);
+		Header.VSplitLeft(18.0f, &Expand, &Header);
+		Header.VSplitLeft(18.0f, &Enabled, &Header);
+		Header.VSplitLeft(150.0f, &KeyRect, &Header);
+		Header.VSplitLeft(4.0f, nullptr, &Header);
+		Header.VSplitRight(24.0f, &NameRect, &DeleteRect);
+
+		// Long-press drag handle.
+		if(Ui()->MouseButtonClicked(0) && s_State.m_DragIndex < 0 && Ui()->MouseInside(&Handle))
+		{
+			s_State.m_DragIndex = i;
+			s_State.m_DragStart = time_get();
+		}
+		if(s_State.m_DragIndex == i)
+		{
+			SLabelProperties Props;
+			Props.SetColor(ColorRGBA(1.0f, 0.75f, 0.2f, 1.0f));
+			Ui()->DoLabel(&Handle, "\u2630", s_FontSize, TEXTALIGN_MC, Props);
+		}
+		else
+		{
+			Ui()->DoLabel(&Handle, "\u2630", s_FontSize, TEXTALIGN_MC);
+		}
+
+		Expand.HMargin(3.0f, &Expand);
+		if(Ui()->DoButtonLogic(&s_State.m_vExpandButtons[i], 0, &Expand, BUTTONFLAG_LEFT))
+		{
+			Entry.m_Expanded = !Entry.m_Expanded;
+			Manager.SetDirty();
+		}
+		Ui()->DoLabel(&Expand, Entry.m_Expanded ? "\u25bc" : "\u25b6", s_FontSize * 0.8f, TEXTALIGN_MC);
+
+		Enabled.HMargin(4.0f, &Enabled);
+		if(DoButton_CheckBox(&Entry.m_Enabled, "", Entry.m_Enabled, &Enabled))
+		{
+			Entry.m_Enabled = !Entry.m_Enabled;
+			if(!Entry.m_Enabled)
+				Manager.CleanupEntryBinding(Entry); // task-87 (verifier B3): remove old key immediately
+			Manager.SetDirty();
+		}
+
+		const CKeyBinder::CKeyReaderResult KeyReaderResult = GameClient()->m_KeyBinder.DoKeyReader(
+			&s_State.m_vKeyReaderButtons[i], &s_State.m_vKeyClearButtons[i], &KeyRect,
+			CBindSlot(Entry.m_Key, Entry.m_ModifierMask), false);
+		if(KeyReaderResult.m_Aborted)
+		{
+			Manager.CleanupEntryBinding(Entry); // task-88 (verifier B3): old managed key must not stay bound
+			Entry.m_Key = KEY_UNKNOWN;
+			Entry.m_ModifierMask = 0;
+			Manager.SetDirty();
+		}
+		else if(KeyReaderResult.m_Bind.m_Key != Entry.m_Key || KeyReaderResult.m_Bind.m_ModifierMask != Entry.m_ModifierMask)
+		{
+			Manager.CleanupEntryBinding(Entry); // unbind old key, then use the newly chosen one
+			Entry.m_Key = KeyReaderResult.m_Bind.m_Key;
+			Entry.m_ModifierMask = KeyReaderResult.m_Bind.m_ModifierMask;
+			Manager.SetDirty();
+		}
+
+		if(!s_State.m_vNameInputs[i].IsActive())
+		{
+			str_copy(s_State.m_vNameBuffers[i].data(), Entry.m_Name.c_str(), s_State.m_vNameBuffers[i].size());
+			s_State.m_vNameInputs[i].SetBuffer(s_State.m_vNameBuffers[i].data(), s_State.m_vNameBuffers[i].size());
+		}
+		if(Ui()->DoEditBox(&s_State.m_vNameInputs[i], &NameRect, s_EditBoxFontSize))
+		{
+			Entry.m_Name = s_State.m_vNameBuffers[i].data();
+			Manager.SetDirty();
+		}
+
+		DeleteRect.HMargin(3.0f, &DeleteRect);
+		if(Ui()->DoButtonLogic(&s_State.m_vDeleteButtons[i], 0, &DeleteRect, BUTTONFLAG_LEFT))
+		{
+			Manager.CleanupEntryBinding(Entry); // task-87 (verifier B3): remove old key immediately
+			Manager.RemoveEntry(i);
+			break;
+		}
+		Ui()->DoLabel(&DeleteRect, "X", s_FontSize * 0.8f, TEXTALIGN_MC);
+
+		if(Entry.m_Expanded)
+		{
+			CUIRect InitRow;
+			Column.HSplitTop(22.0f, &InitRow, &Column);
+			s_ScrollRegion.AddRect(InitRow);
+			CUIRect InitLabel, InitEdit, InitColorButton;
+			InitRow.VSplitLeft(110.0f, &InitLabel, &InitEdit);
+			InitEdit.VSplitRight(26.0f, &InitEdit, &InitColorButton);
+			InitColorButton.HMargin(2.0f, &InitColorButton);
+			Ui()->DoLabel(&InitLabel, Localize("Init commands"), s_EditBoxFontSize, TEXTALIGN_ML);
+			DoButton_ColorPicker(&InitColorButton, &Entry.m_InitColor, false, BindManagerDefaultColorRgba(), false);
+			if(!s_State.m_vInitInputs[i].IsActive())
+			{
+				str_copy(s_State.m_vInitBuffers[i].data(), Entry.m_Init.c_str(), s_State.m_vInitBuffers[i].size());
+				s_State.m_vInitInputs[i].SetBuffer(s_State.m_vInitBuffers[i].data(), s_State.m_vInitBuffers[i].size());
+			}
+			if(Ui()->DoEditBox(&s_State.m_vInitInputs[i], &InitEdit, s_EditBoxFontSize))
+			{
+				Entry.m_Init = s_State.m_vInitBuffers[i].data();
+				Manager.SetDirty();
+			}
+			if(!Entry.m_Init.empty() && !Manager.IsCommandLineExecutable(Entry.m_Init.c_str()))
+				RenderRanbiWarning(Ui(), &Column, Localize("Init contains a command that is not executable (it is still written to init.cfg unchanged)."));
+
+			if(Entry.m_Key == KEY_UNKNOWN)
+				RenderRanbiWarning(Ui(), &Column, Localize("This entry has no key bound; it cannot be advanced by pressing a key."));
+
+			if(Entry.m_vCommands.empty())
+			{
+				Entry.m_vCommands.emplace_back();
+				Entry.m_vCommandColors.push_back(CBindManager::DEFAULT_COMMAND_COLOR);
+			}
+			const size_t NumCommands = Entry.m_vCommands.size();
+			Entry.m_vCommandColors.resize(NumCommands, CBindManager::DEFAULT_COMMAND_COLOR);
+			s_State.m_vCommandBuffers[i].resize(NumCommands);
+			s_State.m_vCommandInputs[i].resize(NumCommands);
+			if(s_State.m_vAddCommandButtons.size() <= (size_t)i)
+				s_State.m_vAddCommandButtons.resize((size_t)i + 1);
+			s_State.m_vDeleteCommandButtons[i].resize(NumCommands);
+			for(size_t CommandIdx = 0; CommandIdx < NumCommands; CommandIdx++)
+			{
+				CUIRect CommandRow;
+				Column.HSplitTop(22.0f, &CommandRow, &Column);
+				s_ScrollRegion.AddRect(CommandRow);
+				CUIRect CommandLabel, CommandEdit, CommandColorButton, DeleteCommand;
+				CommandRow.VSplitLeft(110.0f, &CommandLabel, &CommandEdit);
+				CommandEdit.VSplitRight(52.0f, &CommandEdit, &CommandColorButton);
+				CommandColorButton.VSplitLeft(26.0f, &CommandColorButton, &DeleteCommand);
+				CommandColorButton.HMargin(2.0f, &CommandColorButton);
+				DoButton_ColorPicker(&CommandColorButton, &Entry.m_vCommandColors[CommandIdx], false, BindManagerDefaultColorRgba(), false);
+				char aLabel[64];
+				str_format(aLabel, sizeof(aLabel), Localize("Command %d"), (int)CommandIdx + 1);
+				Ui()->DoLabel(&CommandLabel, aLabel, s_EditBoxFontSize, TEXTALIGN_ML);
+				if(!s_State.m_vCommandInputs[i][CommandIdx].IsActive())
+				{
+					str_copy(s_State.m_vCommandBuffers[i][CommandIdx].data(), Entry.m_vCommands[CommandIdx].c_str(), s_State.m_vCommandBuffers[i][CommandIdx].size());
+					s_State.m_vCommandInputs[i][CommandIdx].SetBuffer(s_State.m_vCommandBuffers[i][CommandIdx].data(), s_State.m_vCommandBuffers[i][CommandIdx].size());
+				}
+				if(Ui()->DoEditBox(&s_State.m_vCommandInputs[i][CommandIdx], &CommandEdit, s_EditBoxFontSize))
+				{
+					Entry.m_vCommands[CommandIdx] = s_State.m_vCommandBuffers[i][CommandIdx].data();
+					Manager.SetDirty();
+				}
+				if(Entry.m_vCommands[CommandIdx][0] != '\0' && !Manager.IsCommandLineExecutable(Entry.m_vCommands[CommandIdx].c_str()))
+					RenderRanbiWarning(Ui(), &Column, Localize("This command is not executable (it is still written to the cfg unchanged)."));
+				DeleteCommand.HMargin(3.0f, &DeleteCommand);
+				if(Ui()->DoButtonLogic(&s_State.m_vDeleteCommandButtons[i][CommandIdx], 0, &DeleteCommand, BUTTONFLAG_LEFT))
+				{
+					Entry.m_vCommands.erase(Entry.m_vCommands.begin() + CommandIdx);
+					if(CommandIdx < Entry.m_vCommandColors.size())
+						Entry.m_vCommandColors.erase(Entry.m_vCommandColors.begin() + CommandIdx);
+					Manager.SetDirty();
+					break;
+				}
+				Ui()->DoLabel(&DeleteCommand, "X", s_FontSize * 0.8f, TEXTALIGN_MC);
+			}
+			CUIRect AddCommandRow;
+			Column.HSplitTop(22.0f, &AddCommandRow, &Column);
+			s_ScrollRegion.AddRect(AddCommandRow);
+			AddCommandRow.VSplitLeft(110.0f, nullptr, &AddCommandRow);
+			if(DoButton_Menu(&s_State.m_vAddCommandButtons[i], Localize("Extend / add command"), 0, &AddCommandRow))
+			{
+				Entry.m_vCommands.emplace_back();
+				Entry.m_vCommandColors.push_back(CBindManager::DEFAULT_COMMAND_COLOR);
+				Manager.SetDirty();
+			}
+		}
+	}
+
+	// Finish long-press drag on release.
+	if(s_State.m_DragIndex >= 0 && !Ui()->MouseButton(0))
+	{
+		int Target = s_State.m_DragIndex;
+		for(size_t i = 0; i < s_State.m_vHeaderRects.size(); i++)
+		{
+			if(Ui()->MousePos().y >= s_State.m_vHeaderRects[i].y && Ui()->MousePos().y <= s_State.m_vHeaderRects[i].y + s_State.m_vHeaderRects[i].h)
+			{
+				Target = (int)i;
+				break;
+			}
+		}
+		if(Target != s_State.m_DragIndex)
+		{
+			Manager.MoveEntry(s_State.m_DragIndex, Target, true);
+			SetBindManagerStatus(s_State, false, Localize("Entry order updated"));
+		}
+		else if(time_get() - s_State.m_DragStart < time_freq() / 2)
+		{
+			// short click on the handle only starts/aborts dragging (no reorder)
+		}
+		s_State.m_DragIndex = -1;
+	}
+	else if(s_State.m_DragIndex < 0)
+	{
+		s_State.m_DragStart = 0;
+	}
 
 	EndRanbiPageScroll(s_ScrollRegion, MainView, Column);
 }

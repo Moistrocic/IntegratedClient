@@ -966,7 +966,7 @@ endif()
 
 if(TARGET_OS STREQUAL "windows")
   set(PLATFORM_CLIENT)
-  set(PLATFORM_CLIENT_LIBS opengl32.lib winmm.lib imm32.lib)
+  set(PLATFORM_CLIENT_LIBS opengl32.lib winmm.lib imm32.lib comdlg32.lib)
   list(APPEND PLATFORM_CLIENT_LIBS mmdevapi.lib) # bestclient
   set(PLATFORM_LIBS)
   list(APPEND PLATFORM_LIBS shlwapi.lib) # PathIsRelativeW
@@ -3221,6 +3221,8 @@ if(CLIENT)
     components/race_demo.h
     components/ranbi/ai_client.cpp
     components/ranbi/ai_client.h
+    components/ranbi/bind_manager.cpp
+    components/ranbi/bind_manager.h
     components/ranbi/menus_ranbi.cpp
     components/ranbi/points.cpp
     components/ranbi/points.h

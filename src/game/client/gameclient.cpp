@@ -212,6 +212,7 @@ void CGameClient::OnConsoleInit()
 					      &m_EgoFinishedMaps, // bestclient
 					      &m_LegitFinishedMaps, // bestclient
 					      &m_ShowPoints, // bestclient
+					      &m_BindManager, // ranbi
 					      &m_RanbiPoints, // ranbi
 					      &m_ClientIndicator, // bestclient
 					      &m_VoiceChat, // bestclient

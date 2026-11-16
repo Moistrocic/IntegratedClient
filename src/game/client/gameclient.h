@@ -107,6 +107,7 @@
 #include "components/players.h"
 #include "components/race_demo.h"
 #include "components/ranbi/ai_client.h" // ranbi
+#include "components/ranbi/bind_manager.h" // ranbi
 #include "components/ranbi/ranbi_aim_lines.h" // ranbi
 #include "components/ranbi/ranbi_repeat.h" // ranbi
 #include "components/ranbi/render_proxy.h" // ranbi
@@ -313,6 +314,7 @@ public:
 
 	// ranbi
 	CRenderProxy m_RenderProxy;
+	CBindManager m_BindManager; // ranbi
 	CWeapons m_Weapons;
 	CAiClient m_AiClient; // ranbi
 	CRanbiAimLines m_RanbiAimLines; // ranbi

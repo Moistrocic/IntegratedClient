@@ -89,3 +89,7 @@ MACRO_CONFIG_INT(RcLockFinishedName, rc_lock_finished_name, 0, 0, 1, CFGFLAG_CLI
 MACRO_CONFIG_STR(RcLockFinishedNameId, rc_lock_finished_name_id, 128, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Player name/ID used for the locked map completion query")
 MACRO_CONFIG_INT(RcFastPracticeGhostCoords, rc_fast_practice_ghost_coords, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "In BestClient fast practice, show the controlled practice character's position in the HUD movement info")
 MACRO_CONFIG_INT(RcFrozenTeeGray, rc_frozen_tee_gray, 100, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Frozen tee icon gray filter strength in percent (0 = original colors, 100 = fully gray)")
+
+// Bind manager
+MACRO_CONFIG_INT(RcBindManagerInit, rc_bind_manager_init, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Initialize bind manager entries (init.cfg + step1.cfg) before entering a game")
+MACRO_CONFIG_STR(RcBindManagerConfig, rc_bind_manager_config, 128, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Currently selected bind manager configuration")

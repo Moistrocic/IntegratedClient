@@ -201,6 +201,7 @@ protected:
 	void RemoveCustomAssetFromList(int Tab, const char *pName);
 	void MarkCustomAssetsDeletable(int Tab);
 	void PopupConfirmDeleteAsset();
+	void PopupConfirmDeleteBindManagerConfig(); // integratedclient: Bind Manager config delete
 
 	std::array<std::set<std::string>, NUM_ASSET_FAVORITE_TABS> m_aAssetFavorites;
 	char m_aDeleteAssetName[50] = "";
@@ -858,6 +859,7 @@ public:
 		RANBI_TAB_CHAT_SCOREBOARD,
 		RANBI_TAB_NOTIFY,
 		RANBI_TAB_WEAPONS,
+		RANBI_TAB_BIND_MANAGER, // integratedclient
 		RANBI_TAB_AI, // integratedclient
 		RANBI_TAB_COUNT,
 	};
@@ -1054,6 +1056,7 @@ private:
 	void RenderSettingsRanbiChatScoreboard(CUIRect MainView);
 	void RenderSettingsRanbiNotify(CUIRect MainView);
 	void RenderSettingsRanbiWeapons(CUIRect MainView);
+	void RenderSettingsRanbiBindManager(CUIRect MainView); // integratedclient
 	void RenderSettingsRanbiAi(CUIRect MainView); // integratedclient
 	// integratedclient
 

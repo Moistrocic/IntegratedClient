@@ -5161,6 +5161,9 @@ Links
 Integration registry
 == 
 
+Bind Manager
+== 
+
 Fixes
 == 
 
@@ -5531,6 +5534,90 @@ Knowledge base
 == 
 
 Text files in ranbi/knowledge/*.txt are used as extra context; ddnet_wiki.txt is created on first start.
+== 
+
+Operation failed (see console for details)
+== 
+
+Config deleted
+== 
+
+Initialize binds and parameters before entering a game
+== 
+
+When disabled, no Bind Manager cfg is executed when joining a server and the current binds stay unchanged.
+== 
+
+Configuration saved
+== 
+
+Configuration loaded
+== 
+
+Configuration imported
+== 
+
+Configuration exported
+== 
+
+Zip path (fallback)
+== 
+
+All folders in binds/ are listed. Selecting a config loads its manager.txt; rename changes the folder name.
+== 
+
+Rename
+== 
+
+Config renamed
+== 
+
+New config
+== 
+
+Config created
+== 
+
+Are you sure you want to delete config "%s"?
+== 
+
+Delete config
+== 
+
+Configuration selected
+== 
+
+No configs yet. Press Save to create the default config in binds/default/.
+== 
+
+Entries (manager.txt order)
+== 
+
+Long-press the \u2630 handle and drag to reorder; order is written to manager.txt immediately.
+== 
+
+Add entry
+== 
+
+Init commands
+== 
+
+Init contains a command that is not executable (it is still written to init.cfg unchanged).
+== 
+
+This entry has no key bound; it cannot be advanced by pressing a key.
+== 
+
+Command %d
+== 
+
+This command is not executable (it is still written to the cfg unchanged).
+== 
+
+Extend / add command
+== 
+
+Entry order updated
 == 
 
 [bgdraw]

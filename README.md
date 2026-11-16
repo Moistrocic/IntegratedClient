@@ -17,7 +17,7 @@
 - 移除主菜单左侧 “Try Light / 使用Light” 按钮
 - 启动页右下角显示四行版本：`DDNet` / `TClient` / `BestClient` / `IntegratedClient`
 - 启动页 `IntegratedClient` 版本右侧的 **NEW 徽标**：检测到 GitHub 最新 Release 版本更高时显示；点击打开 GitHub Release 页面（不提供下载/更新安装功能）
-- 设置新增 **RanbiClient** 顶级页签（General / Nameplates / Chat & Scoreboard / Notify / Weapons / AI）
+- 设置新增 **RanbiClient** 顶级页签（General / Nameplates / Chat & Scoreboard / Notify / Weapons / 按键管理 / AI）
 - 设置新增 **IntegratedClient** 顶级页签，展示项目信息、版本、来源客户端与仓库/整合台账链接
 - BestClient 仅移除自动更新相关按钮
 
@@ -59,6 +59,7 @@
 - **复读上一个玩家**：RanbiClient → Chat & Scoreboard 绑定快捷键，按下后复读其他玩家最近一条消息（无消息时不动作，团队消息按团队频道复读）
 - **武器辅助线**：RanbiClient → Weapons 开关；激光枪 / 霰弹枪 / 榴弹炮使用真实 CLaser / CProjectile 物理模拟轨迹，并复用原版发射后的光束 / 投射物尾迹渲染；不发射也会显示，随渲染帧更新
 - **锁定地图完成名称**：RanbiClient → General 设置；官方服务器列表的地图完成查询固定使用指定玩家名称，不受当前游戏内名称影响
+- **按键管理（Bind Manager）**：RanbiClient → 按键管理；按配置/条目管理绑键与命令循环，支持初始化命令、每条命令调色、启用开关、长按拖拽排序、Windows 原生导入导出 zip；进入服务器或手动 Load 只执行初始化命令并安装绑定，第一次按键才执行命令1
 
 ## 构建与运行
 
