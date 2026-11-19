@@ -22,6 +22,67 @@ static void EscapeParam(char *pDst, const char *pSrc, int Size)
 	str_escape(&pDst, pSrc, pDst + Size);
 }
 
+// task-98 B1: dedicated multiline string escaping. Uses \xNN for backslash/quote/newline/
+// CR/tab; the console quoted-string parser leaves \xNN untouched, so this does not require
+// changing console parsing and cannot be broken by embedded quotes/newlines. Decoding is only
+// applied to string variables with CFGFLAG_MULTILINE; old single-line values without \xNN pass
+// through unchanged (compatibility note in the task report).
+static void EscapeMultilineParam(char *pDst, int Size, const char *pSrc)
+{
+	static const char s_aHex[] = "0123456789ABCDEF";
+	if(Size <= 0)
+		return;
+	int OutLen = 0;
+	for(; *pSrc && OutLen + 4 < Size; ++pSrc)
+	{
+		const unsigned char Ch = (unsigned char)*pSrc;
+		if(Ch < 0x20 || Ch == 0x7F || Ch == '\\' || Ch == '"')
+		{
+			pDst[OutLen++] = '\\';
+			pDst[OutLen++] = 'x';
+			pDst[OutLen++] = s_aHex[Ch >> 4];
+			pDst[OutLen++] = s_aHex[Ch & 0xF];
+		}
+		else
+		{
+			pDst[OutLen++] = (char)Ch;
+		}
+	}
+	pDst[OutLen] = '\0';
+}
+
+static int HexValue(char Ch)
+{
+	if(Ch >= '0' && Ch <= '9')
+		return Ch - '0';
+	if(Ch >= 'a' && Ch <= 'f')
+		return Ch - 'a' + 10;
+	if(Ch >= 'A' && Ch <= 'F')
+		return Ch - 'A' + 10;
+	return -1;
+}
+
+static void DecodeMultilineParam(char *pDst, size_t DstSize, const char *pSrc)
+{
+	size_t OutLen = 0;
+	while(*pSrc && OutLen + 1 < DstSize)
+	{
+		if(pSrc[0] == '\\' && pSrc[1] == 'x' && pSrc[2] && pSrc[3])
+		{
+			const int High = HexValue(pSrc[2]);
+			const int Low = HexValue(pSrc[3]);
+			if(High >= 0 && Low >= 0)
+			{
+				pDst[OutLen++] = (char)((High << 4) | Low);
+				pSrc += 4;
+				continue;
+			}
+		}
+		pDst[OutLen++] = *pSrc++;
+	}
+	pDst[OutLen] = '\0';
+}
+
 void SConfigVariable::ExecuteLine(const char *pLine) const
 {
 	m_pConsole->ExecuteLine(pLine, (m_Flags & CFGFLAG_GAME) != 0 ? IConsole::CLIENT_ID_GAME : IConsole::CLIENT_ID_UNSPECIFIED);
@@ -202,7 +263,10 @@ void SStringConfigVariable::CommandCallback(IConsole::IResult *pResult, void *pU
 			return;
 
 		const char *pString = pResult->GetString(0);
-		str_copy(pData->m_pStr, pString, pData->m_MaxSize);
+		if((pData->m_Flags & CFGFLAG_MULTILINE) != 0)
+			DecodeMultilineParam(pData->m_pStr, pData->m_MaxSize, pString);
+		else
+			str_copy(pData->m_pStr, pString, pData->m_MaxSize);
 
 		if(pResult->m_ClientId != IConsole::CLIENT_ID_GAME)
 			str_copy(pData->m_pOldValue, pData->m_pStr, pData->m_MaxSize);
@@ -228,7 +292,14 @@ void SStringConfigVariable::Serialize(char *pOut, size_t Size, const char *pValu
 	str_copy(pOut, m_pScriptName, Size);
 	str_append(pOut, " \"", Size);
 	const int OutLen = str_length(pOut);
-	EscapeParam(pOut + OutLen, pValue, Size - OutLen - 1); // -1 to ensure space for final quote
+	const int Remaining = (int)Size - OutLen;
+	if(Remaining > 2)
+	{
+		if((m_Flags & CFGFLAG_MULTILINE) != 0)
+			EscapeMultilineParam(pOut + OutLen, Remaining - 1, pValue);
+		else
+			EscapeParam(pOut + OutLen, pValue, Remaining - 1); // reserve final quote + NUL
+	}
 	str_append(pOut, "\"", Size);
 }
 
@@ -241,7 +312,7 @@ void SStringConfigVariable::SetValue(const char *pValue)
 {
 	if(CheckReadOnly())
 		return;
-	char aBuf[2048];
+	char aBuf[32768]; // task-98: supports 4096-byte multiline strings (\xNN escaping)
 	Serialize(aBuf, sizeof(aBuf), pValue);
 	ExecuteLine(aBuf);
 }
@@ -414,7 +485,7 @@ bool CConfigManager::Save()
 			continue;
 		if(!m_aConfigFile[ConfigDomain])
 			continue;
-		char aLineBuf[2048];
+		char aLineBuf[32768]; // task-98: escaped multiline string config values are not truncated
 		for(const SConfigVariable *pVariable : m_vpAllVariables)
 		{
 			if(pVariable->m_ConfigDomain == ConfigDomain && (pVariable->m_Flags & CFGFLAG_SAVE) != 0 && !pVariable->IsDefault())

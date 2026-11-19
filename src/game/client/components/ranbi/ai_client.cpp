@@ -23,27 +23,56 @@
 #include <game/client/gameclient.h>
 
 #include <algorithm>
+#include <cstdarg>
 #include <cstdlib>
+#include <cstring>
+#include <string>
+#include <vector>
 
-// 默认知识库内容（总结自 DDNet 中文 wiki：https://wiki.ddnet.org/wiki/Main_Page/zh），首次启动时写入用户配置目录
-static const char s_aDefaultKnowledge[] =
-	"DDNet（DDraceNetwork）是一款免费开源的横向卷轴平台游戏，由Teeworlds的DDRace模组发展而来，核心是独特的合作玩法，支持最多64名玩家一起通关。官方服务器遍布全球，可在官网ddnet.org或Steam（搜索DDraceNetwork）免费下载。\n"
+// task-96: default required.md template (usage of the new knowledge base). Other .md files
+// are selected only by question containing the file name or by a description in this file.
+static const char s_aRequiredKnowledgeTemplate[] =
+	"# Ranbi AI 知识库（required.md）\n"
 	"\n"
-	"【入门】玩家角色叫Tee（毛球/猫球/小人）。基本操作：A/D左右移动，Space跳跃，鼠标左键使用武器，鼠标右键使用钩索，Shift打开表情菜单。默认武器为锤子（可击打解冻他人）和手枪，地图中可收集霰弹枪、榴弹枪、激光枪、武士刀。建议先完成教学服务器，再从简单（Novice）地图开始。\n"
+	"本文件是必读知识库：每次 AI 回复都会读取并注入（即使内容为空）。\n"
 	"\n"
-	"【机制】冻结区域会冻结Tee，被其他Tee锤击可解冻；常见地图元素有传送器、加速带、开关层、阻挡器、喷气背包（手枪的特殊能力）、分身Dummy（第二个角色）。常用技巧：锤子飞hf、锤击hh、榴弹飞rf、钩飞、二段跳dj、边缘跳。\n"
+	"## 其他知识文件\n"
+	"在 ranbi/knowledge/ 中放置 .md 文件；只有满足以下任一条件时才会读取：\n"
+	"1. 玩家提问中包含文件名（不含 .md，不区分大小写）；\n"
+	"2. 本文件中写了该文件的描述，且提问命中该描述。\n"
 	"\n"
-	"【模式与难度】主要模式是DDRace合作通关，另有竞速Race、阻碍Block、冻结与捕获FNG、原版Vanilla、感染Infection等。地图类型：简单Novice、中阶Moderate、高阶Brutal、疯狂Insane、传统Oldschool、古典DDmaX、单人Solo、娱乐Fun（无分数），星级越多越难（0-5星）。\n"
+	"描述格式（每行一个）：\n"
+	"- filename.md: 这个文件包含的知识描述（关键词/用途）\n"
+	"或：\n"
+	"filename.md: 描述\n"
 	"\n"
-	"【积分排名】在官方服务器完成地图即可获得积分与排名，分数=星级×倍数+初始值。默认队伍（team 0）完成得个人排名，/team加入队伍后完成得团队排名。/rank查看当前地图排名，/points查看总分，同一张地图的全球分数只算一次。\n"
-	"\n"
-	"【常用指令】/team 数字 加入队伍，/lock 锁定队伍，/invite 邀请，/save 存档，/load 密码 读档，/map 地图名 换图。和朋友玩：进空服后输入/team同一数字并/lock。\n"
-	"\n"
-	"【外观】设置-玩家标签改名称/战队/旗帜，Tee标签改皮肤外观，皮肤可到ddnet.org/skins或skins.tw下载更多。官方会定期举办锦标赛（Tournament），2人组队争夺新图最佳成绩。\n"
-	"\n"
-	"【常见问题】配置目录：Windows为%appdata%\\DDNet，Linux为~/.local/share/ddnet，macOS为~/Library/Application Support/DDNet，配置文件settings_ddnet.cfg。服务器列表刷不出来可看ddnet.org/status，或直接输IP连接，如chn0.ddnet.org:8308（端口8300是教学服）。\n"
-	"\n"
-	"【术语】b=请求返回救援，re=重开，rq=怒退，flw=跟随，r1=第一名，t0=默认队伍，hj/hh=锤击解冻；阻碍者Blocker指故意让其他玩家失败的玩家。\n";
+	"示例：\n"
+	"- hdf.md: HDF 相关功能与用法\n"
+	"没有描述、提问也未包含文件名的 .md 文件不会被读取。\n";
+
+// UTF-8-safe truncation to a maximum number of characters (system prompt defense).
+static int TruncateUtf8Chars(const char *pSrc, char *pDst, int DstSize, int MaxChars)
+{
+	int OutLen = 0;
+	int Chars = 0;
+	const char *p = pSrc;
+	while(*p && Chars < MaxChars)
+	{
+		const char *pNext = p;
+		const int Ch = str_utf8_decode(&pNext);
+		if(Ch == -1 || pNext <= p)
+			break;
+		const int CharLen = (int)(pNext - p);
+		if(OutLen + CharLen >= DstSize)
+			break;
+		memcpy(pDst + OutLen, p, (size_t)CharLen);
+		OutLen += CharLen;
+		p = pNext;
+		Chars++;
+	}
+	pDst[OutLen] = '\0';
+	return OutLen;
+}
 
 CAiClient::CAiClient()
 {
@@ -60,11 +89,16 @@ void CAiClient::OnReset()
 	m_ReplyDummy = 0;
 	m_ReplyTeam = 0;
 	m_KnowledgeHit = false;
+	m_KnowledgeRequiredHit = false;
+	m_KnowledgeOtherHitCount = 0;
 	m_aPendingSpeaker[0] = '\0';
 	m_aPendingText[0] = '\0';
 	m_Context.clear();
 	m_ReplyQueue.clear();
 	m_aLastError[0] = '\0';
+	m_IsRewriteRequest = false;
+	m_RewriteCount = 0;
+	m_aRewritePrevReply[0] = '\0';
 }
 
 void CAiClient::SetLastError(const char *pMessage)
@@ -74,24 +108,30 @@ void CAiClient::SetLastError(const char *pMessage)
 
 void CAiClient::OnInit()
 {
-	// 初始化知识库文件夹，首次启动写入默认知识库（已存在则不覆盖）
+	// task-96: only ranbi/knowledge/required.md is generated/read as the mandatory knowledge
+	// base. Old files (e.g. ddnet_wiki.txt) are left untouched but no longer generated/read.
 	Storage()->CreateFolder("ranbi", IStorage::TYPE_SAVE);
 	Storage()->CreateFolder("ranbi/knowledge", IStorage::TYPE_SAVE);
 
-	const char *pPath = "ranbi/knowledge/ddnet_wiki.txt";
-	IOHANDLE ReadHandle = Storage()->OpenFile(pPath, IOFLAG_READ, IStorage::TYPE_ALL);
-	if(ReadHandle)
-	{
-		io_close(ReadHandle);
+	const char *pRequiredPath = "ranbi/knowledge/required.md";
+	if(Storage()->FileExists(pRequiredPath, IStorage::TYPE_SAVE))
 		return;
-	}
-	IOHANDLE WriteHandle = Storage()->OpenFile(pPath, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+	IOHANDLE WriteHandle = Storage()->OpenFile(pRequiredPath, IOFLAG_WRITE, IStorage::TYPE_SAVE);
 	if(!WriteHandle)
 		return;
-	const int KnowledgeLen = str_length(s_aDefaultKnowledge);
-	if(io_write(WriteHandle, s_aDefaultKnowledge, KnowledgeLen) != (unsigned)KnowledgeLen)
-		Storage()->RemoveFile(pPath, IStorage::TYPE_SAVE);
+	const int TemplateLen = str_length(s_aRequiredKnowledgeTemplate);
+	if(io_write(WriteHandle, s_aRequiredKnowledgeTemplate, TemplateLen) != (unsigned)TemplateLen)
+		Storage()->RemoveFile(pRequiredPath, IStorage::TYPE_SAVE);
 	io_close(WriteHandle);
+}
+
+// task-102 B4: JSON-escape into a dynamically sized string so long context/user/rewrite content
+// cannot be silently truncated by fixed buffers. EscapeJson's worst case is 6x (control chars).
+static std::string EscapeJsonString(const std::string &Text)
+{
+	std::vector<char> Buffer(Text.size() * 6 + 2);
+	EscapeJson(Buffer.data(), (int)Buffer.size(), Text.c_str());
+	return std::string(Buffer.data());
 }
 
 static bool IsWordChar(char c)
@@ -151,6 +191,16 @@ void CAiClient::TruncateReply(char *pText, int Size)
 	((char *)p)[0] = '\0';
 }
 
+static bool IsOnlyWhitespace(const std::string &Text)
+{
+	for(const char Ch : Text)
+	{
+		if(Ch != ' ' && Ch != '\t' && Ch != '\n' && Ch != '\r')
+			return false;
+	}
+	return true;
+}
+
 // UTF-8 字符数（不含终止符）
 static int Utf8CharCount(const char *pText)
 {
@@ -181,17 +231,8 @@ void CAiClient::SplitSentences(const char *pText, std::vector<std::string> &Sent
 		if(Ch == 0x3002 || Ch == '.')
 		{
 			std::string Sentence(pStart, pNext);
-			if(!Sentence.empty())
-			{
-				bool OnlySpace = true;
-				for(char c : Sentence)
-				{
-					if(c != ' ' && c != '\t' && c != '\n' && c != '\r')
-						OnlySpace = false;
-				}
-				if(!OnlySpace)
-					Sentences.push_back(Sentence);
-			}
+			if(!Sentence.empty() && !IsOnlyWhitespace(Sentence))
+				Sentences.push_back(Sentence);
 			pStart = pNext;
 		}
 		p = pNext;
@@ -199,73 +240,154 @@ void CAiClient::SplitSentences(const char *pText, std::vector<std::string> &Sent
 	if(pStart != p)
 	{
 		std::string Tail(pStart, p);
-		if(!Tail.empty())
+		// task-98 B3: whitespace-only tail must not be queued (suffix must not attach to it).
+		if(!Tail.empty() && !IsOnlyWhitespace(Tail))
 			Sentences.push_back(Tail);
 	}
 }
 
-// rc_ai_min_sentence_length：客户端合并——积累的句子字符数小于最小长度时与下一句合并（合并后不超过最大长度）；不足最小长度的剩余句子也照常发送
-static void MergeSentences(const std::vector<std::string> &Sentences, std::vector<std::string> &Merged)
+// task-100: split one overlong sentence into UTF-8 character chunks of at most MaxChars.
+static void SplitUtf8Chunks(const std::string &Text, int MaxChars, std::vector<std::string> &Chunks)
 {
-	const int MinLen = g_Config.m_RcAiMinSentenceLength;
-	const int MaxLen = g_Config.m_RcAiMaxSentenceLength;
-	std::string Accum;
+	Chunks.clear();
+	if(MaxChars < 1)
+		MaxChars = 1;
+	std::string Current;
+	int Count = 0;
+	const char *p = Text.c_str();
+	while(*p)
+	{
+		const char *pNext = p;
+		const int Ch = str_utf8_decode(&pNext);
+		if(Ch == -1 || pNext <= p)
+			break;
+		if(Count >= MaxChars)
+		{
+			Chunks.push_back(Current);
+			Current.clear();
+			Count = 0;
+		}
+		Current.append(p, (size_t)(pNext - p));
+		Count++;
+		p = pNext;
+	}
+	if(!Current.empty())
+		Chunks.push_back(Current);
+}
+
+// task-100: pack sentences greedily into at most 3 messages; each message contains at most
+// rc_ai_max_sentence_length UTF-8 characters. Overlong single sentences are split. Extra
+// chunks beyond the 3-message limit are dropped.
+static void BuildReplyMessages(const std::vector<std::string> &Sentences, std::vector<std::string> &Messages)
+{
+	constexpr size_t MAX_MESSAGES = 3;
+	int MaxChars = g_Config.m_RcAiMaxSentenceLength;
+	if(MaxChars < 1)
+		MaxChars = 1;
+	Messages.clear();
+	std::string Current;
+	auto Flush = [&]() {
+		if(!Current.empty() && Messages.size() < MAX_MESSAGES)
+			Messages.push_back(Current);
+		Current.clear();
+	};
 	for(const std::string &Sentence : Sentences)
 	{
-		if(Accum.empty())
+		if(Messages.size() >= MAX_MESSAGES)
+			break;
+		if(Sentence.empty() || IsOnlyWhitespace(Sentence))
+			continue;
+		const int SentenceChars = Utf8CharCount(Sentence.c_str());
+		if(SentenceChars <= MaxChars)
 		{
-			Accum = Sentence;
-			if(Utf8CharCount(Accum.c_str()) >= MinLen)
+			if(Current.empty())
+				Current = Sentence;
+			else if(Utf8CharCount(Current.c_str()) + SentenceChars <= MaxChars)
+				Current += Sentence;
+			else
 			{
-				Merged.push_back(Accum);
-				Accum.clear();
-			}
-		}
-		else if(Utf8CharCount(Accum.c_str()) + Utf8CharCount(Sentence.c_str()) <= MaxLen)
-		{
-			Accum += Sentence;
-			if(Utf8CharCount(Accum.c_str()) >= MinLen)
-			{
-				Merged.push_back(Accum);
-				Accum.clear();
+				Flush();
+				Current = Sentence;
 			}
 		}
 		else
 		{
-			// 合并将超过最大长度：先发送积累部分（即使不足最小长度），再处理当前句
-			Merged.push_back(Accum);
-			Accum = Sentence;
-			if(Utf8CharCount(Accum.c_str()) >= MinLen)
+			Flush();
+			std::vector<std::string> Chunks;
+			SplitUtf8Chunks(Sentence, MaxChars, Chunks);
+			for(std::string &Chunk : Chunks)
 			{
-				Merged.push_back(Accum);
-				Accum.clear();
+				if(Messages.size() >= MAX_MESSAGES)
+					break;
+				Messages.push_back(std::move(Chunk));
 			}
 		}
 	}
-	if(!Accum.empty())
-		Merged.push_back(Accum);
+	Flush();
 }
 
-// 知识库文件列表回调：收集 .txt 文件名（去重由 set 完成）
+// task-57: true when the reply needs a rewrite: any sentence exceeds the per-message char limit,
+// or sentence-packed blocks exceed the 3-message limit.
+static bool ReplyExceedsLimits(const std::vector<std::string> &Sentences, int MaxChars)
+{
+	if(MaxChars < 1)
+		MaxChars = 1;
+	int Blocks = 0;
+	std::string Current;
+	for(const std::string &Sentence : Sentences)
+	{
+		if(Sentence.empty() || IsOnlyWhitespace(Sentence))
+			continue;
+		const int SentenceChars = Utf8CharCount(Sentence.c_str());
+		if(SentenceChars > MaxChars)
+			return true;
+		if(Current.empty())
+			Current = Sentence;
+		else if(Utf8CharCount(Current.c_str()) + SentenceChars <= MaxChars)
+			Current += Sentence;
+		else
+		{
+			Blocks++;
+			Current = Sentence;
+		}
+	}
+	if(!Current.empty())
+		Blocks++;
+	return Blocks > 3;
+}
+
+// task-96: knowledge list callback collects .md files only (required.md is handled separately).
 static int KnowledgeListCallback(const char *pName, int IsDir, int Type, void *pUser)
 {
 	(void)Type;
 	const int Len = str_length(pName);
-	if(IsDir || Len < 4 || str_comp(pName + Len - 4, ".txt") != 0)
+	if(IsDir || Len < 4 || str_comp(pName + Len - 3, ".md") != 0)
 		return 0;
 	auto *pEntries = static_cast<std::set<std::string> *>(pUser);
 	pEntries->emplace(pName);
 	return 0;
 }
 
-// 命中规则：提问包含文件名（去 .txt，不区分大小写）、提问中的字母数字单词在内容中独立出现，或提问任一连续4字符片段出现在内容中
+static void BindAiLog(const char *pFormat, ...)
+{
+	if(!g_Config.m_Debug)
+		return;
+	char aBody[512];
+	va_list Args;
+	va_start(Args, pFormat);
+	str_format_v(aBody, sizeof(aBody), pFormat, Args);
+	va_end(Args);
+	dbg_msg("ranbi_ai", "%s", aBody);
+}
+
+// task-96: selection helper (file name in question, or description keyword/fragment match).
 static bool KnowledgeHit(const char *pQuestion, const char *pFileName, const char *pContent)
 {
 	char aName[128];
 	str_copy(aName, pFileName, sizeof(aName));
-	const int NameLen = str_length(aName);
-	if(NameLen > 4)
-		aName[NameLen - 4] = '\0';
+	const char *pDot = strrchr(aName, '.');
+	if(pDot)
+		*(char *)pDot = '\0';
 	if(str_find_nocase(pQuestion, aName))
 		return true;
 
@@ -325,49 +447,152 @@ static bool KnowledgeHit(const char *pQuestion, const char *pFileName, const cha
 	return false;
 }
 
-// 枚举并筛选知识库，注入文本追加到 aKbBuf（返回追加长度）
+// task-96: inject required.md every reply, then only .md files selected by the question
+// (file name) or by their description in required.md. No full content scans of unselected files.
+// Keeps the original 4KB single-file and caller-provided total buffer limits.
 int CAiClient::LoadKnowledge(const char *pQuestion, char *aKbBuf, int KbBufSize)
 {
-	std::set<std::string> aFiles;
-	Storage()->ListDirectory(IStorage::TYPE_ALL, "ranbi/knowledge", KnowledgeListCallback, &aFiles);
-
+	if(KbBufSize <= 0)
+		return 0;
+	aKbBuf[0] = '\0';
 	int TotalLen = 0;
+	m_KnowledgeHit = false;
+	m_KnowledgeRequiredHit = false;
+	m_KnowledgeOtherHitCount = 0;
+
+	auto ReadLimited = [&](const char *pPath, int MaxBytes, bool AllowTruncate, std::string &Out) -> bool {
+		Out.clear();
+		IOHANDLE File = Storage()->OpenFile(pPath, IOFLAG_READ, IStorage::TYPE_SAVE);
+		if(!File)
+			return false;
+		const int64_t FileSize = io_length(File);
+		if(FileSize < 0)
+		{
+			io_close(File);
+			return false;
+		}
+		if(FileSize > MaxBytes && !AllowTruncate)
+		{
+			io_close(File);
+			return false;
+		}
+		const int ReadSize = (int)std::min<int64_t>(FileSize, MaxBytes);
+		Out.resize((size_t)ReadSize);
+		unsigned Read = 0;
+		if(ReadSize > 0)
+			Read = io_read(File, Out.data(), (unsigned)ReadSize);
+		io_close(File);
+		Out.resize(Read);
+		return true;
+	};
+
+	auto AppendKnowledge = [&](const char *pName, const std::string &Content) -> bool {
+		if(TotalLen >= KbBufSize - 1)
+			return false;
+		const int HeaderLen = str_format(aKbBuf + TotalLen, KbBufSize - TotalLen, "\n[知识库: %s]\n", pName);
+		if(HeaderLen < 0 || HeaderLen >= KbBufSize - TotalLen)
+			return false;
+		TotalLen += HeaderLen;
+		const int CopyLen = std::min((int)Content.size(), KbBufSize - TotalLen - 1);
+		if(CopyLen > 0)
+		{
+			memcpy(aKbBuf + TotalLen, Content.data(), (size_t)CopyLen);
+			TotalLen += CopyLen;
+			aKbBuf[TotalLen] = '\0';
+		}
+		return true;
+	};
+
+	// 1) required.md is mandatory every reply; inject even if empty.
+	std::string RequiredContent;
+	if(ReadLimited("ranbi/knowledge/required.md", 4096, true, RequiredContent))
+	{
+		if(AppendKnowledge("required.md", RequiredContent))
+		{
+			m_KnowledgeRequiredHit = true;
+			m_KnowledgeHit = true;
+		}
+	}
+	else
+	{
+		BindAiLog("[知识库] required.md 读取失败或不存在");
+	}
+
+	// 2) parse descriptions for other files from required.md: "[-] filename.md: description"
+	std::vector<std::pair<std::string, std::string>> vDescriptions;
+	{
+		size_t Pos = 0;
+		while(Pos < RequiredContent.size())
+		{
+			size_t End = RequiredContent.find('\n', Pos);
+			if(End == std::string::npos)
+				End = RequiredContent.size();
+			std::string Line = RequiredContent.substr(Pos, End - Pos);
+			Pos = End + 1;
+			if(!Line.empty() && Line.back() == '\r')
+				Line.pop_back();
+			const size_t MdPos = Line.find(".md");
+			if(MdPos == std::string::npos)
+				continue;
+			const size_t Colon = Line.find(':', MdPos + 3);
+			if(Colon == std::string::npos)
+				continue;
+			size_t NameStart = MdPos;
+			while(NameStart > 0 && Line[NameStart - 1] != ' ' && Line[NameStart - 1] != '\t' && Line[NameStart - 1] != '-' && Line[NameStart - 1] != '*' && Line[NameStart - 1] != '#')
+				NameStart--;
+			std::string Name = Line.substr(NameStart, MdPos + 3 - NameStart);
+			std::string Description = Line.substr(Colon + 1);
+			const size_t DescStart = Description.find_first_not_of(" \t");
+			if(DescStart == std::string::npos)
+				continue;
+			Description.erase(0, DescStart);
+			if(!Name.empty() && !Description.empty())
+				vDescriptions.emplace_back(std::move(Name), std::move(Description));
+		}
+	}
+
+	// 3) other .md files: only when the question contains the file name or matches its description.
+	std::set<std::string> aFiles;
+	Storage()->ListDirectory(IStorage::TYPE_SAVE, "ranbi/knowledge", KnowledgeListCallback, &aFiles);
 	for(const std::string &FileName : aFiles)
 	{
-		if(TotalLen >= KbBufSize)
+		if(str_comp_nocase(FileName.c_str(), "required.md") == 0)
+			continue;
+		if(TotalLen >= KbBufSize - 1)
 			break;
+		char aStem[128];
+		str_copy(aStem, FileName.c_str(), sizeof(aStem));
+		const char *pDot = strrchr(aStem, '.');
+		if(pDot)
+			*(char *)pDot = '\0';
+
+		bool Selected = str_find_nocase(pQuestion, aStem) != nullptr;
+		if(!Selected)
+		{
+			for(const auto &[Name, Description] : vDescriptions)
+			{
+				if(str_comp_nocase(Name.c_str(), FileName.c_str()) != 0)
+					continue;
+				Selected = KnowledgeHit(pQuestion, FileName.c_str(), Description.c_str());
+				break;
+			}
+		}
+		if(!Selected)
+			continue;
+
 		char aPath[512];
 		str_format(aPath, sizeof(aPath), "ranbi/knowledge/%s", FileName.c_str());
-		// 单文件上限 4KB，超限跳过（避免主线程读取大文件卡顿）
-		IOHANDLE File = Storage()->OpenFile(aPath, IOFLAG_READ, IStorage::TYPE_ALL);
-		if(!File)
-			continue;
-		const int64_t FileSize = io_length(File);
-		io_close(File);
-		if(FileSize > 4096)
-			continue;
-		char *pContent = Storage()->ReadFileStr(aPath, IStorage::TYPE_ALL);
-		if(!pContent)
-			continue;
-		if(!KnowledgeHit(pQuestion, FileName.c_str(), pContent))
+		std::string Content;
+		if(!ReadLimited(aPath, 4096, false, Content))
 		{
-			free(pContent);
+			BindAiLog("[知识库] 跳过（读取失败或超过4KB）: %s", FileName.c_str());
 			continue;
 		}
-		const int ContentLen = str_length(pContent);
-		const int UseLen = std::min(ContentLen, 4096);
-		const int HeaderLen = str_format(aKbBuf + TotalLen, KbBufSize - TotalLen, "\n[知识库: %s]\n", FileName.c_str());
-		if(HeaderLen < 0 || HeaderLen >= KbBufSize - TotalLen)
-		{
-			free(pContent);
+		if(!AppendKnowledge(FileName.c_str(), Content))
 			break;
-		}
-		TotalLen += HeaderLen;
-		const int CopyLen = std::min(UseLen, KbBufSize - TotalLen - 1);
-		str_copy(aKbBuf + TotalLen, pContent, CopyLen + 1);
-		TotalLen += CopyLen;
+		m_KnowledgeOtherHitCount++;
 		m_KnowledgeHit = true;
-		free(pContent);
+		BindAiLog("[知识库] 按需读取: %s", FileName.c_str());
 	}
 	return TotalLen;
 }
@@ -391,16 +616,25 @@ void CAiClient::SendChatMessage(int Dummy, int Team, const char *pMessage)
 	Client()->SendPackMsg(Dummy, &Msg, MSGFLAG_VITAL);
 }
 
-void CAiClient::SendRequest(const char *pText, const char *pSpeaker, int Dummy, int Team)
+void CAiClient::SendRequest(const char *pText, const char *pSpeaker, int Dummy, int Team, const char *pPrevReply)
 {
 	// rc_ai_model / rc_ai_base_url / rc_ai_token
 	char aModel[512];
 	EscapeJson(aModel, sizeof(aModel), g_Config.m_RcAiModel);
 
-	// rc_ai_system_prompt
+	// rc_ai_system_prompt (defensive UTF-8 truncation to at most 1024 characters; the config
+	// buffer was expanded from 512 to 4096 bytes for up to 1024 Chinese characters).
+	// task-102 B1: when the configured prompt is empty, the fallback must use the same rules as
+	// the normal system prompt (max 3 messages, each max N chars, period-terminated sentences).
 	char aSystem[9000];
-	const char *pPrompt = g_Config.m_RcAiSystemPrompt[0] != '\0' ? g_Config.m_RcAiSystemPrompt : "你是DDNet这款游戏的玩家，你需要回复其他玩家跟你的谈话，且谈话可能为空，可能仅是打招呼。每次回复长度保证在80汉字或128字母内，过长的回复会被截断";
-	str_copy(aSystem, pPrompt, sizeof(aSystem));
+	char aPrompt[4096];
+	char aDefaultPrompt[512];
+	str_format(aDefaultPrompt, sizeof(aDefaultPrompt),
+		"你是DDNet这款游戏的玩家，你需要回复其他玩家跟你的谈话，且谈话可能为空，可能仅是打招呼。每次回复最多分成3条消息，每条消息不超过%d个字符（UTF-8字符），每句话以句号（。或.）结尾，过长的回复会被截断。",
+		std::max(1, g_Config.m_RcAiMaxSentenceLength));
+	const char *pPrompt = g_Config.m_RcAiSystemPrompt[0] != '\0' ? g_Config.m_RcAiSystemPrompt : aDefaultPrompt;
+	TruncateUtf8Chars(pPrompt, aPrompt, sizeof(aPrompt), 1024);
+	str_copy(aSystem, aPrompt, sizeof(aSystem));
 	int SystemLen = str_length(aSystem);
 
 	// 注入身份信息：告知自己的名字与消息格式，避免回复时用错称呼
@@ -426,9 +660,9 @@ void CAiClient::SendRequest(const char *pText, const char *pSpeaker, int Dummy, 
 		"%s", "\n其他玩家提到你的名字就是在跟你说话。不知道的知识或名词名称先查询知识库，如果知识库没有则回答不知道。");
 	if(RuleLen >= 0 && RuleLen < (int)sizeof(aIdentity) - IdentityLen)
 		IdentityLen += RuleLen;
-	// rc_ai_max_sentence_length：告知 AI 单句话长度上限与结尾要求
+	// rc_ai_max_sentence_length：现在表示“每条消息最大字符数”，每次最多发送3条消息
 	const int SentenceRuleLen = str_format(aIdentity + IdentityLen, (int)sizeof(aIdentity) - IdentityLen,
-		"\n每次回复请分成多句话，每句话不超过%d个汉字，每句话必须以句号（。或.）结尾。", g_Config.m_RcAiMaxSentenceLength);
+		"\n每次回复最多分成3条消息，每条消息不超过%d个字符（UTF-8字符），每句话以句号（。或.）结尾。", g_Config.m_RcAiMaxSentenceLength);
 	if(SentenceRuleLen >= 0 && SentenceRuleLen < (int)sizeof(aIdentity) - IdentityLen)
 		IdentityLen += SentenceRuleLen;
 	// 语言跟随：对方用什么语言说话就用什么语言回复，对方可能在一条消息中切换多种语言
@@ -466,9 +700,10 @@ void CAiClient::SendRequest(const char *pText, const char *pSpeaker, int Dummy, 
 			SystemLen += MotdLen;
 	}
 
-	char aSystemEsc[36000];
-	EscapeJson(aSystemEsc, sizeof(aSystemEsc), aSystem);
-
+	// task-102 B4: build the JSON body with explicit capacity checks. Optional context messages
+	// are skipped when the body would grow too large; required user/rewrite messages and the
+	// closing "]} "must never be truncated (otherwise we abort before sending any HTTP request).
+	// A generous hard cap keeps memory bounded even with large context/replies.
 	const int UrlLen = str_length(g_Config.m_RcAiBaseUrl);
 	char aUrl[512];
 	if(UrlLen > 0 && g_Config.m_RcAiBaseUrl[UrlLen - 1] == '/')
@@ -479,39 +714,108 @@ void CAiClient::SendRequest(const char *pText, const char *pSpeaker, int Dummy, 
 	char aToken[512];
 	str_format(aToken, sizeof(aToken), "Bearer %s", g_Config.m_RcAiToken);
 
-	char aBody[65536];
-	int BodyLen = str_format(aBody, sizeof(aBody),
-		"{\"model\":\"%s\",\"temperature\":%.1f,\"messages\":[{\"role\":\"system\",\"content\":\"%s\"}",
-		aModel, g_Config.m_RcAiTemperature / 10.0f, aSystemEsc);
+	constexpr size_t MAX_BODY_BYTES = 256 * 1024;
+	std::string aBody;
+	aBody.reserve(8192);
+	aBody += "{\"model\":\"";
+	aBody += EscapeJsonString(aModel);
+	aBody += "\",\"temperature\":";
+	{
+		char aTemperature[32];
+		const int TemperatureLen = str_format(aTemperature, sizeof(aTemperature), "%.1f", g_Config.m_RcAiTemperature / 10.0f);
+		if(TemperatureLen < 0 || TemperatureLen >= (int)sizeof(aTemperature))
+		{
+			SetLastError("AI request temperature formatting failed");
+			return;
+		}
+		aBody += aTemperature;
+	}
+	aBody += ",\"messages\":[{\"role\":\"system\",\"content\":\"";
+	aBody += EscapeJsonString(aSystem);
+	aBody += "\"}";
+
+	// task-102 B4: build the required tail first (current user + rewrite assistant/feedback +
+	// closing "]}"). Optional context messages are only appended when they fit while leaving
+	// room for the tail, so a large context is truncated rather than producing broken JSON.
+	std::string aTail;
+	{
+		char aCurMsg[300];
+		const int CurLen = str_format(aCurMsg, sizeof(aCurMsg), "%s: %s", pSpeaker, pText);
+		if(CurLen < 0 || CurLen >= (int)sizeof(aCurMsg))
+		{
+			SetLastError("AI request current message formatting failed");
+			return;
+		}
+		aTail += ",{\"role\":\"user\",\"content\":\"";
+		aTail += EscapeJsonString(aCurMsg);
+		aTail += "\"}";
+	}
+	if(pPrevReply && pPrevReply[0] != '\0')
+	{
+		// task-57: feedback rewrite request. Only HTTP; no chat, no m_Context pollution.
+		aTail += ",{\"role\":\"assistant\",\"content\":\"";
+		aTail += EscapeJsonString(pPrevReply);
+		aTail += "\"}";
+		const int MaxChars = std::max(1, g_Config.m_RcAiMaxSentenceLength);
+		char aFeedback[1024];
+		const int FeedbackLen = str_format(aFeedback, sizeof(aFeedback),
+			"你上一轮的回复超过了限制：最多只能发送3条消息，每条消息最多%d个字符（UTF-8字符）。请重新生成回复，最多3条消息，每条不超过%d个字符，不要解释。",
+			MaxChars, MaxChars);
+		if(FeedbackLen < 0 || FeedbackLen >= (int)sizeof(aFeedback))
+		{
+			SetLastError("AI rewrite feedback formatting failed");
+			return;
+		}
+		aTail += ",{\"role\":\"user\",\"content\":\"";
+		aTail += EscapeJsonString(aFeedback);
+		aTail += "\"}";
+	}
+	aTail += "]}";
+	if(aTail.size() + 1024 > MAX_BODY_BYTES)
+	{
+		SetLastError("AI request required messages are too large");
+		dbg_msg("ranbi_ai", "[AI失败] 请求必需内容超过上限，已取消发送");
+		return;
+	}
+
+	auto TryAppendContext = [&](const std::string &Piece) {
+		if(aBody.size() + Piece.size() + aTail.size() > MAX_BODY_BYTES)
+			return;
+		aBody += Piece;
+	};
 
 	for(const CContextEntry &Entry : m_Context)
 	{
-		if(BodyLen + 2000 >= (int)sizeof(aBody))
-			break;
 		if(Entry.m_IsReply)
 		{
-			char aEsc[4096];
-			EscapeJson(aEsc, sizeof(aEsc), Entry.m_aText);
-			BodyLen += str_format(aBody + BodyLen, sizeof(aBody) - BodyLen, ",{\"role\":\"assistant\",\"content\":\"%s\"}", aEsc);
+			std::string Piece = ",{\"role\":\"assistant\",\"content\":\"";
+			Piece += EscapeJsonString(Entry.m_aText);
+			Piece += "\"}";
+			TryAppendContext(Piece);
 		}
 		else
 		{
-			char aMsg[300];
-			str_format(aMsg, sizeof(aMsg), "%s: %s", Entry.m_aSpeaker, Entry.m_aText);
-			char aEsc[1536];
-			EscapeJson(aEsc, sizeof(aEsc), aMsg);
-			BodyLen += str_format(aBody + BodyLen, sizeof(aBody) - BodyLen, ",{\"role\":\"user\",\"content\":\"%s\"}", aEsc);
+			char aMsg[2304];
+			const int MsgLen = str_format(aMsg, sizeof(aMsg), "%s: %s", Entry.m_aSpeaker, Entry.m_aText);
+			if(MsgLen < 0 || MsgLen >= (int)sizeof(aMsg))
+				continue; // oversized context entry: skip, keep JSON valid
+			std::string Piece = ",{\"role\":\"user\",\"content\":\"";
+			Piece += EscapeJsonString(aMsg);
+			Piece += "\"}";
+			TryAppendContext(Piece);
 		}
 	}
 
-	char aCurMsg[300];
-	str_format(aCurMsg, sizeof(aCurMsg), "%s: %s", pSpeaker, pText);
-	char aCurEsc[4096];
-	EscapeJson(aCurEsc, sizeof(aCurEsc), aCurMsg);
-	BodyLen += str_format(aBody + BodyLen, sizeof(aBody) - BodyLen, ",{\"role\":\"user\",\"content\":\"%s\"}]}", aCurEsc);
+	if(aBody.size() + aTail.size() > MAX_BODY_BYTES)
+	{
+		SetLastError("AI request is too large (JSON body limit)");
+		dbg_msg("ranbi_ai", "[AI失败] 请求体超过上限，已取消发送");
+		return;
+	}
+	aBody += aTail;
 
 	m_aLastError[0] = '\0';
-	m_pRequest = HttpPostJson(aUrl, aBody);
+	m_pRequest = HttpPostJson(aUrl, aBody.c_str());
 	m_pRequest->HeaderString("Authorization", aToken);
 	m_pRequest->Timeout(CTimeout{10000, 60000, 500, 5});
 	m_pRequest->FailOnErrorStatus(false);
@@ -522,8 +826,97 @@ void CAiClient::SendRequest(const char *pText, const char *pSpeaker, int Dummy, 
 	m_aNextReplyTime[Dummy] = time_get() + time_freq() * g_Config.m_RcAiReplyInterval;
 }
 
+void CAiClient::FinalizeReply(const char *pReply)
+{
+	char aReply[2048];
+	if(pReply)
+		str_copy(aReply, pReply, sizeof(aReply));
+	else
+		aReply[0] = '\0';
+	TruncateReply(aReply, sizeof(aReply));
+
+	if(g_Config.m_RcAiContextCount > 0)
+	{
+		CContextEntry UserEntry;
+		str_copy(UserEntry.m_aSpeaker, m_aPendingSpeaker, sizeof(UserEntry.m_aSpeaker));
+		str_copy(UserEntry.m_aText, m_aPendingText, sizeof(UserEntry.m_aText));
+		UserEntry.m_IsReply = false;
+		m_Context.push_back(UserEntry);
+
+		CContextEntry ReplyEntry;
+		ReplyEntry.m_aSpeaker[0] = '\0';
+		// task-100: context stores the full final reply, never the suffix (suffix is outgoing only).
+		str_copy(ReplyEntry.m_aText, aReply, sizeof(ReplyEntry.m_aText));
+		ReplyEntry.m_IsReply = true;
+		m_Context.push_back(ReplyEntry);
+
+		while((int)m_Context.size() > g_Config.m_RcAiContextCount * 2)
+			m_Context.erase(m_Context.begin());
+	}
+
+	m_aLastError[0] = '\0';
+	dbg_msg("ranbi_ai", "[AI] 说话人: %s | 回复给: %s | 回复: %s | 知识库: %s (required=%d others=%d) | rewrite=%d | tokens=0",
+		m_aPendingSpeaker, m_ReplyDummy == 0 ? "本体" : "分身", aReply, m_KnowledgeHit ? "是" : "否",
+		m_KnowledgeRequiredHit ? 1 : 0, m_KnowledgeOtherHitCount, m_RewriteCount);
+
+	// ranbi: never send a reply if auto reply was disabled while the request was in flight
+	if(!g_Config.m_RcAiAutoReply)
+	{
+		dbg_msg("ranbi_ai", "[AI] auto reply disabled, dropping reply");
+		m_IsRewriteRequest = false;
+		m_RewriteCount = 0;
+		m_aRewritePrevReply[0] = '\0';
+		return;
+	}
+
+	const int MaxChars = std::max(1, g_Config.m_RcAiMaxSentenceLength);
+	std::vector<std::string> Sentences;
+	SplitSentences(aReply, Sentences);
+	if(ReplyExceedsLimits(Sentences, MaxChars))
+		dbg_msg("ranbi_ai", "[AI] 重写后仍超长已截断");
+
+	// task-100: at most 3 outgoing messages, each AI content <= MaxChars UTF-8 characters.
+	m_ReplyQueue.clear();
+	BuildReplyMessages(Sentences, m_ReplyQueue);
+	m_ReplyQueue.erase(std::remove_if(m_ReplyQueue.begin(), m_ReplyQueue.end(), [](const std::string &Sentence) {
+		return IsOnlyWhitespace(Sentence);
+	}),
+		m_ReplyQueue.end());
+	// task-96/task-57: suffix is appended to EVERY outgoing message, never to m_Context.
+	if(g_Config.m_RcAiReplySuffixEnabled && g_Config.m_RcAiReplySuffix[0] != '\0')
+	{
+		for(std::string &Message : m_ReplyQueue)
+			Message += g_Config.m_RcAiReplySuffix;
+	}
+	if(!m_ReplyQueue.empty())
+	{
+		char aMessage[4096];
+		str_format(aMessage, sizeof(aMessage), "%s: %s", m_aPendingSpeaker, m_ReplyQueue[0].c_str());
+		SendChatMessage(m_ReplyDummy, m_ReplyTeam, aMessage);
+		m_ReplyQueue.erase(m_ReplyQueue.begin());
+		m_aNextReplyTime[m_ReplyDummy] = time_get() + time_freq() * g_Config.m_RcAiReplyInterval;
+	}
+
+	m_IsRewriteRequest = false;
+	m_RewriteCount = 0;
+	m_aRewritePrevReply[0] = '\0';
+}
+
 void CAiClient::HandleResponse()
 {
+	// task-57: if a feedback-rewrite request fails (HTTP/JSON), fall back to the previous reply
+	// instead of losing the answer; this is never sent as a separate chat message.
+	auto HandleRewriteFailure = [&]() -> bool {
+		if(!m_IsRewriteRequest)
+			return false;
+		dbg_msg("ranbi_ai", "[AI] 重写请求失败，使用上一轮回复");
+		char aPrevReply[2048];
+		str_copy(aPrevReply, m_aRewritePrevReply, sizeof(aPrevReply));
+		m_pRequest = nullptr;
+		FinalizeReply(aPrevReply);
+		return true;
+	};
+
 	char aError[256];
 	if(m_pRequest->State() != EHttpState::DONE)
 	{
@@ -531,6 +924,8 @@ void CAiClient::HandleResponse()
 		SetLastError(aError);
 		dbg_msg("ranbi_ai", "[AI失败] 请求异常 state=%d", (int)m_pRequest->State());
 		m_pRequest = nullptr;
+		if(HandleRewriteFailure())
+			return;
 		return;
 	}
 	if(m_pRequest->StatusCode() < 200 || m_pRequest->StatusCode() >= 300)
@@ -539,6 +934,8 @@ void CAiClient::HandleResponse()
 		SetLastError(aError);
 		dbg_msg("ranbi_ai", "[AI失败] HTTP状态码 %d", m_pRequest->StatusCode());
 		m_pRequest = nullptr;
+		if(HandleRewriteFailure())
+			return;
 		return;
 	}
 	json_value *pObj = m_pRequest->ResultJson();
@@ -547,6 +944,8 @@ void CAiClient::HandleResponse()
 		SetLastError("Response is not valid JSON");
 		dbg_msg("ranbi_ai", "[AI失败] 响应JSON解析失败");
 		m_pRequest = nullptr;
+		if(HandleRewriteFailure())
+			return;
 		return;
 	}
 	const json_value *pChoices = json_object_get(pObj, "choices");
@@ -560,6 +959,8 @@ void CAiClient::HandleResponse()
 		dbg_msg("ranbi_ai", "[AI失败] 响应中无 content 字段");
 		json_value_free(pObj);
 		m_pRequest = nullptr;
+		if(HandleRewriteFailure())
+			return;
 		return;
 	}
 
@@ -567,67 +968,40 @@ void CAiClient::HandleResponse()
 	str_copy(aReply, pReply, sizeof(aReply));
 	TruncateReply(aReply, sizeof(aReply));
 
-	const json_value *pUsage = json_object_get(pObj, "usage");
-	const json_value *pTokens = pUsage ? json_object_get(pUsage, "completion_tokens") : nullptr;
-	const int Tokens = pTokens && pTokens->type == json_integer ? (int)json_int_get(pTokens) : 0;
+	// task-100: detect replies that exceed "at most 3 messages / each max chars".
+	const int MaxChars = std::max(1, g_Config.m_RcAiMaxSentenceLength);
+	std::vector<std::string> Sentences;
+	SplitSentences(aReply, Sentences);
+	const bool ExceedsLimits = ReplyExceedsLimits(Sentences, MaxChars);
 
-	int Length = 0;
-	for(const char *p = aReply; *p;)
-	{
-		const char *pNext = p;
-		const int Ch = str_utf8_decode(&pNext);
-		Length += (Ch >= 0x4E00 && Ch <= 0x9FFF) ? 16 : 10;
-		p = pNext;
-	}
-
-	if(g_Config.m_RcAiContextCount > 0)
-	{
-		CContextEntry UserEntry;
-		str_copy(UserEntry.m_aSpeaker, m_aPendingSpeaker, sizeof(UserEntry.m_aSpeaker));
-		str_copy(UserEntry.m_aText, m_aPendingText, sizeof(UserEntry.m_aText));
-		UserEntry.m_IsReply = false;
-		m_Context.push_back(UserEntry);
-
-		CContextEntry ReplyEntry;
-		ReplyEntry.m_aSpeaker[0] = '\0';
-		str_copy(ReplyEntry.m_aText, aReply, sizeof(ReplyEntry.m_aText));
-		ReplyEntry.m_IsReply = true;
-		m_Context.push_back(ReplyEntry);
-
-		while((int)m_Context.size() > g_Config.m_RcAiContextCount * 2)
-			m_Context.erase(m_Context.begin());
-	}
-
-	dbg_msg("ranbi_ai", "[AI] 说话人: %s | 回复给: %s | 回复: %s | 知识库: %s | 长度: %d/1024 | tokens: %d",
-		m_aPendingSpeaker, m_ReplyDummy == 0 ? "本体" : "分身", aReply, m_KnowledgeHit ? "是" : "否", Length / 10, Tokens);
-
-	m_aLastError[0] = '\0';
-
-	// ranbi: never send a reply if auto reply was disabled while the request was in flight
+	// auto reply may have been disabled while the request was in flight: never send/continue.
 	if(!g_Config.m_RcAiAutoReply)
 	{
 		dbg_msg("ranbi_ai", "[AI] auto reply disabled, dropping reply");
+		m_IsRewriteRequest = false;
+		m_RewriteCount = 0;
+		m_aRewritePrevReply[0] = '\0';
 		json_value_free(pObj);
 		m_pRequest = nullptr;
 		return;
 	}
 
-	// rc_ai_max_sentence_length / rc_ai_min_sentence_length：拆句合并后入队，第一句立即发送，其余按发送间隔分批发送
-	m_ReplyQueue.clear();
+	// task-57: bounded feedback rewrite loop (max 2 rewrites); HTTP only, never chat.
+	if(ExceedsLimits && m_RewriteCount < 2)
 	{
-		std::vector<std::string> Sentences;
-		SplitSentences(aReply, Sentences);
-		MergeSentences(Sentences, m_ReplyQueue);
+		str_copy(m_aRewritePrevReply, aReply, sizeof(m_aRewritePrevReply));
+		m_RewriteCount++;
+		m_IsRewriteRequest = true;
+		dbg_msg("ranbi_ai", "[AI] 回复超限，发送第%d次重写请求", m_RewriteCount);
+		json_value_free(pObj);
+		m_pRequest = nullptr;
+		SendRequest(m_aPendingText, m_aPendingSpeaker, m_ReplyDummy, m_ReplyTeam, m_aRewritePrevReply);
+		return;
 	}
-	if(!m_ReplyQueue.empty())
-	{
-		char aMessage[4096];
-		str_format(aMessage, sizeof(aMessage), "%s: %s", m_aPendingSpeaker, m_ReplyQueue[0].c_str());
-		SendChatMessage(m_ReplyDummy, m_ReplyTeam, aMessage);
-		m_ReplyQueue.erase(m_ReplyQueue.begin());
-		m_aNextReplyTime[m_ReplyDummy] = time_get() + time_freq() * g_Config.m_RcAiReplyInterval;
-	}
+	if(m_IsRewriteRequest)
+		dbg_msg("ranbi_ai", "[AI] 重写%s", ExceedsLimits ? "后仍超长" : "成功");
 
+	FinalizeReply(aReply);
 	json_value_free(pObj);
 	m_pRequest = nullptr;
 }
@@ -658,6 +1032,9 @@ void CAiClient::OnMessage(int MsgType, void *pRawMsg)
 
 	str_copy(m_aPendingSpeaker, GameClient()->m_aClients[pMsg->m_ClientId].m_aName, sizeof(m_aPendingSpeaker));
 	str_copy(m_aPendingText, pMsg->m_pMessage, sizeof(m_aPendingText));
+	m_IsRewriteRequest = false;
+	m_RewriteCount = 0;
+	m_aRewritePrevReply[0] = '\0';
 	SendRequest(m_aPendingText, m_aPendingSpeaker, Dummy, pMsg->m_Team < 0 ? 0 : pMsg->m_Team);
 }
 

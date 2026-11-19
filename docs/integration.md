@@ -71,6 +71,8 @@
 - **Fast Practice 发送层 fire 修复（task-46/48）**：开关练习不再残留真实 fire 攻击 — `3d30063`。
 
 - **按键管理 / Bind Manager（task-36~50）**：RanbiClient GUI 新增按键管理页；配置/条目、初始化命令、命令循环、每条命令调色、启用开关、拖拽排序、配置新建/删除/重命名、Windows 原生 zip 导入导出；进服/手动 Load 只执行初始化并安装绑定，第一次按键执行命令1；单命令直接 bind，多命令 exec 循环。
+
+- **AI 页增强（task-51~70）**：回复末尾追加内容开关（每条消息）、最多 3 条/每条最大字符、超限反馈 AI 重写、`ranbi/knowledge/required.md` 必读与按需 `.md`、系统提示词 1024 字符/多行持久化、删除最小句长设置。
 - 来源分析报告：`_work/ranbi-inventory/report.md`（本地工作区，778 行）。
 - 各批次移植报告：`_work/ranbi/batch*/report.md`（本地工作区）。
 

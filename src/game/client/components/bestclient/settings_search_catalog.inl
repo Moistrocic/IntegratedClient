@@ -354,8 +354,7 @@
 	// ranbi: AI (batch8; inserted here instead of the file tail so queued patches don't conflict)
 	{"Auto AI reply", SETTINGS_NAV_LEAF_RC_AI, "Auto reply", &g_Config.m_RcAiAutoReply, nullptr},
 	{"AI reply interval", SETTINGS_NAV_LEAF_RC_AI, "Auto reply", &g_Config.m_RcAiReplyInterval, &g_Config.m_RcAiAutoReply},
-	{"AI max sentence length", SETTINGS_NAV_LEAF_RC_AI, "Auto reply", &g_Config.m_RcAiMaxSentenceLength, &g_Config.m_RcAiAutoReply},
-	{"AI min sentence length", SETTINGS_NAV_LEAF_RC_AI, "Auto reply", &g_Config.m_RcAiMinSentenceLength, &g_Config.m_RcAiAutoReply},
+	{"AI max message length", SETTINGS_NAV_LEAF_RC_AI, "Auto reply", &g_Config.m_RcAiMaxSentenceLength, &g_Config.m_RcAiAutoReply},
 	{"AI temperature", SETTINGS_NAV_LEAF_RC_AI, "Auto reply", &g_Config.m_RcAiTemperature, &g_Config.m_RcAiAutoReply},
 	{"AI context count", SETTINGS_NAV_LEAF_RC_AI, "Auto reply", &g_Config.m_RcAiContextCount, &g_Config.m_RcAiAutoReply},
 	{"AI base URL", SETTINGS_NAV_LEAF_RC_AI, "API", &g_Config.m_RcAiBaseUrl, nullptr},

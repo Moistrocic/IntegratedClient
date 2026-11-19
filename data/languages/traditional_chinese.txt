@@ -2733,6 +2733,24 @@ Extend / add command
 Entry order updated
 == 條目順序已更新
 
+Reply suffix
+== 回覆後綴
+
+ranbi/knowledge/required.md is read for every reply and is created on first start.
+== 每次回覆都會讀取 ranbi/knowledge/required.md，該檔案會在首次啟動時建立。
+
+Other .md files in ranbi/knowledge are only read on demand: when a question contains the file name or matches a description listed in required.md.
+== ranbi/knowledge 中的其他 .md 檔案只在需要時讀取：提問包含檔案名稱，或符合 required.md 中列出的描述時。
+
+Max message length (characters)
+== 最大訊息長度（字元數）
+
+Append reply suffix
+== 附加回覆後綴
+
+When enabled, non-empty content is appended to every AI message. When disabled, nothing is appended and the text is kept.
+== 開啟時，非空內容會附加到每則 AI 訊息末尾；關閉時不附加任何內容，文字仍會保留。
+
 BETA
 == 
 
@@ -5605,12 +5623,6 @@ Replies only when another player mentions your name. Keep it off to keep normal 
 Reply interval (seconds)
 == 
 
-Max sentence length (characters)
-== 
-
-Min sentence length (characters)
-== 
-
 Temperature (x0.1)
 == 
 
@@ -5630,9 +5642,6 @@ Request failures are logged to the console (ranbi_ai).
 == 
 
 Knowledge base
-== 
-
-Text files in ranbi/knowledge/*.txt are used as extra context; ddnet_wiki.txt is created on first start.
 == 
 
 [bgdraw]

@@ -5515,16 +5515,22 @@ Replies only when another player mentions your name. Keep it off to keep normal 
 Reply interval (seconds)
 == 
 
-Max sentence length (characters)
-== 
-
-Min sentence length (characters)
+Max message length (characters)
 == 
 
 Temperature (x0.1)
 == 
 
 Context count
+== 
+
+Append reply suffix
+== 
+
+Reply suffix
+== 
+
+When enabled, non-empty content is appended to every AI message. When disabled, nothing is appended and the text is kept.
 == 
 
 Auto reply is enabled but Base URL, Model or API token is empty; requests will fail.
@@ -5542,7 +5548,10 @@ Request failures are logged to the console (ranbi_ai).
 Knowledge base
 == 
 
-Text files in ranbi/knowledge/*.txt are used as extra context; ddnet_wiki.txt is created on first start.
+ranbi/knowledge/required.md is read for every reply and is created on first start.
+== 
+
+Other .md files in ranbi/knowledge are only read on demand: when a question contains the file name or matches a description listed in required.md.
 == 
 
 Operation failed (see console for details)

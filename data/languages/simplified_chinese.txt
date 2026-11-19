@@ -3000,12 +3000,6 @@ Replies only when another player mentions your name. Keep it off to keep normal 
 Reply interval (seconds)
 == 回复间隔（秒）
 
-Max sentence length (characters)
-== 最大句子长度（字符）
-
-Min sentence length (characters)
-== 最小句子长度（字符）
-
 Temperature (x0.1)
 == 温度（×0.1）
 
@@ -3026,9 +3020,6 @@ Request failures are logged to the console (ranbi_ai).
 
 Knowledge base
 == 知识库
-
-Text files in ranbi/knowledge/*.txt are used as extra context; ddnet_wiki.txt is created on first start.
-== ranbi/knowledge/*.txt 中的文本文件会作为额外上下文；ddnet_wiki.txt 会在首次启动时创建。
 
 Endpoint
 == 端点
@@ -3230,6 +3221,24 @@ Extend / add command
 
 Entry order updated
 == 条目顺序已更新
+
+Reply suffix
+== 回复后缀
+
+ranbi/knowledge/required.md is read for every reply and is created on first start.
+== 每次回复都会读取 ranbi/knowledge/required.md，该文件会在首次启动时创建。
+
+Other .md files in ranbi/knowledge are only read on demand: when a question contains the file name or matches a description listed in required.md.
+== ranbi/knowledge 中的其他 .md 文件只在需要时读取：提问包含文件名，或命中 required.md 中列出的描述时。
+
+Max message length (characters)
+== 最大消息长度（字符数）
+
+Append reply suffix
+== 追加回复后缀
+
+When enabled, non-empty content is appended to every AI message. When disabled, nothing is appended and the text is kept.
+== 开启时，非空内容会追加到每条 AI 消息末尾；关闭时不追加任何内容，文本仍会保留。
 
 BETA
 == 

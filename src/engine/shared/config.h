@@ -114,6 +114,9 @@ enum
 	CFGFLAG_COLALPHA = 1 << 12,
 	CFGFLAG_INSENSITIVE = 1 << 13,
 	CMDFLAG_PRACTICE = 1 << 14,
+	// task-98: string config variables that may contain newlines; serialized with \xNN
+	// escapes so a multiline value stays a single readable cfg line (no teehistorian usage).
+	CFGFLAG_MULTILINE = 1 << 15,
 };
 
 #ifdef CONF_DEBUG

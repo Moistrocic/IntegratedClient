@@ -11,8 +11,12 @@
 #include <base/time.h>
 
 #include <engine/graphics.h>
+#include <engine/input.h>
+#include <engine/keys.h>
 #include <engine/shared/config.h>
+#include <engine/textrender.h>
 
+#include <game/client/components/bestclient/ui_theme/style.h>
 #include <game/client/components/key_binder.h>
 #include <game/client/components/menus.h>
 #include <game/client/components/ranbi/weapons.h>
@@ -24,6 +28,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -698,8 +703,40 @@ static void RenderRanbiAiWarning(CUi *pUi, CUIRect *pColumn, const char *pText)
 	pUi->DoLabel(&Label, pText, s_FontSize * 0.85f, TEXTALIGN_ML, Props);
 }
 
+// ranbi (task-69): the system prompt config may still contain line breaks from the retired
+// multiline input. The single-line edit box must not render them as line breaks, so the display
+// text replaces every '\n' and '\r' byte with a space. The replacement keeps the byte length and
+// all byte offsets unchanged (also for "\r\n", which becomes two spaces), so cursor and selection
+// offsets stay valid; the actual buffer and the saved config value are not modified.
+// ranbi (task-69): system prompt single-line display callback begin
+static std::string s_SystemPromptDisplayText;
+static const char *RanbiSystemPromptDisplayText(char *pText, size_t NumChars)
+{
+	(void)NumChars;
+	s_SystemPromptDisplayText.assign(pText, str_length(pText));
+	for(char &Character : s_SystemPromptDisplayText)
+	{
+		if(Character == '\n' || Character == '\r')
+			Character = ' ';
+	}
+	return s_SystemPromptDisplayText.c_str();
+}
+// ranbi (task-69): system prompt single-line display callback end
+
 void CMenus::RenderSettingsRanbiAi(CUIRect MainView)
 {
+	// ranbi: static inputs keep their cursor/selection state across frames.
+	static CLineInput s_SystemPromptInput(g_Config.m_RcAiSystemPrompt, sizeof(g_Config.m_RcAiSystemPrompt));
+	static bool s_SystemPromptDisplayInitialized = false;
+	if(!s_SystemPromptDisplayInitialized)
+	{
+		// ranbi (task-69): display legacy multiline content as a single line without changing the
+		// stored value; byte offsets are kept identical by the 1:1 replacement.
+		s_SystemPromptInput.SetDisplayTextCallback(RanbiSystemPromptDisplayText);
+		s_SystemPromptDisplayInitialized = true;
+	}
+	static CLineInput s_ReplySuffixInput(g_Config.m_RcAiReplySuffix, sizeof(g_Config.m_RcAiReplySuffix));
+
 	static CScrollRegion s_ScrollRegion;
 	BeginRanbiPageScroll(s_ScrollRegion, MainView);
 
@@ -717,7 +754,6 @@ void CMenus::RenderSettingsRanbiAi(CUIRect MainView)
 		static CLineInput s_BaseUrlInput(g_Config.m_RcAiBaseUrl, sizeof(g_Config.m_RcAiBaseUrl));
 		static CLineInput s_ModelInput(g_Config.m_RcAiModel, sizeof(g_Config.m_RcAiModel));
 		static CLineInput s_TokenInput(g_Config.m_RcAiToken, sizeof(g_Config.m_RcAiToken));
-		static CLineInput s_SystemPromptInput(g_Config.m_RcAiSystemPrompt, sizeof(g_Config.m_RcAiSystemPrompt));
 		static bool s_TokenInputInitialized = false;
 		if(!s_TokenInputInitialized)
 		{
@@ -757,13 +793,22 @@ void CMenus::RenderSettingsRanbiAi(CUIRect MainView)
 	Column.HSplitTop(s_LineSize, &Slider, &Column);
 	Ui()->DoScrollbarOption(&g_Config.m_RcAiReplyInterval, &g_Config.m_RcAiReplyInterval, &Slider, Localize("Reply interval (seconds)"), 1, 60);
 	Column.HSplitTop(s_LineSize, &Slider, &Column);
-	Ui()->DoScrollbarOption(&g_Config.m_RcAiMaxSentenceLength, &g_Config.m_RcAiMaxSentenceLength, &Slider, Localize("Max sentence length (characters)"), 1, 100);
-	Column.HSplitTop(s_LineSize, &Slider, &Column);
-	Ui()->DoScrollbarOption(&g_Config.m_RcAiMinSentenceLength, &g_Config.m_RcAiMinSentenceLength, &Slider, Localize("Min sentence length (characters)"), 1, 100);
+	Ui()->DoScrollbarOption(&g_Config.m_RcAiMaxSentenceLength, &g_Config.m_RcAiMaxSentenceLength, &Slider, Localize("Max message length (characters)"), 1, 100);
 	Column.HSplitTop(s_LineSize, &Slider, &Column);
 	Ui()->DoScrollbarOption(&g_Config.m_RcAiTemperature, &g_Config.m_RcAiTemperature, &Slider, Localize("Temperature (x0.1)"), 0, 20);
 	Column.HSplitTop(s_LineSize, &Slider, &Column);
 	Ui()->DoScrollbarOption(&g_Config.m_RcAiContextCount, &g_Config.m_RcAiContextCount, &Slider, Localize("Context count"), 0, 20);
+
+	// ranbi (task-97/task-65): optional text appended to the end of each AI reply before it is
+	// sent; the enabled checkbox only controls appending, the entered text is always kept.
+	Column.HSplitTop(s_MarginSmall, nullptr, &Column);
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcAiReplySuffixEnabled, Localize("Append reply suffix"), &g_Config.m_RcAiReplySuffixEnabled, &Column, s_LineSize);
+	CUIRect ReplySuffixLabel, ReplySuffixBox;
+	Column.HSplitTop(s_LineSize, &ReplySuffixLabel, &Column);
+	Ui()->DoLabel(&ReplySuffixLabel, Localize("Reply suffix"), s_FontSize, TEXTALIGN_ML);
+	Column.HSplitTop(s_LineSize + s_MarginExtraSmall, &ReplySuffixBox, &Column);
+	Ui()->DoEditBox(&s_ReplySuffixInput, &ReplySuffixBox, s_EditBoxFontSize);
+	RenderRanbiHint(Ui(), &Column, Localize("When enabled, non-empty content is appended to every AI message. When disabled, nothing is appended and the text is kept."));
 
 	if(g_Config.m_RcAiAutoReply && (g_Config.m_RcAiBaseUrl[0] == '\0' || g_Config.m_RcAiModel[0] == '\0' || g_Config.m_RcAiToken[0] == '\0'))
 		RenderRanbiAiWarning(Ui(), &Column, Localize("Auto reply is enabled but Base URL, Model or API token is empty; requests will fail."));
@@ -786,7 +831,8 @@ void CMenus::RenderSettingsRanbiAi(CUIRect MainView)
 
 	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
 	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Knowledge base"));
-	RenderRanbiHint(Ui(), &Column, Localize("Text files in ranbi/knowledge/*.txt are used as extra context; ddnet_wiki.txt is created on first start."));
+	RenderRanbiHint(Ui(), &Column, Localize("ranbi/knowledge/required.md is read for every reply and is created on first start."));
+	RenderRanbiHint(Ui(), &Column, Localize("Other .md files in ranbi/knowledge are only read on demand: when a question contains the file name or matches a description listed in required.md."));
 
 	EndRanbiPageScroll(s_ScrollRegion, MainView, Column);
 }

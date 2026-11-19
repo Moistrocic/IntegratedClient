@@ -76,11 +76,12 @@ MACRO_CONFIG_INT(RcAiAutoReply, rc_ai_auto_reply, 0, 0, 1, CFGFLAG_CLIENT | CFGF
 
 MACRO_CONFIG_INT(RcAiReplyInterval, rc_ai_reply_interval, 2, 1, 60, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
 MACRO_CONFIG_INT(RcAiMaxSentenceLength, rc_ai_max_sentence_length, 20, 1, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
-MACRO_CONFIG_INT(RcAiMinSentenceLength, rc_ai_min_sentence_length, 5, 1, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
 MACRO_CONFIG_INT(RcAiTemperature, rc_ai_temperature, 10, 0, 20, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
 MACRO_CONFIG_INT(RcAiContextCount, rc_ai_context_count, 5, 0, 20, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
 
-MACRO_CONFIG_STR(RcAiSystemPrompt, rc_ai_system_prompt, 512, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_STR(RcAiSystemPrompt, rc_ai_system_prompt, 4096, "", CFGFLAG_CLIENT | CFGFLAG_SAVE | CFGFLAG_MULTILINE, "")
+MACRO_CONFIG_STR(RcAiReplySuffix, rc_ai_reply_suffix, 2048, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcAiReplySuffixEnabled, rc_ai_reply_suffix_enabled, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
 
 // integratedclient new features
 MACRO_CONFIG_INT(RcWeaponAimLines, rc_weapon_aim_lines, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show predicted aim lines for laser, shotgun and grenade")
