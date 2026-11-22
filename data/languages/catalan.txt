@@ -1786,10 +1786,13 @@ Unable to delete the folder '%s'. Make sure it's empty first.
 Dummy is not allowed on this server
 == 
 
-Stop practice
+Fast practice
 == 
 
-Fast practice
+Ranbi fast practice is under development
+== 
+
+Stop practice
 == 
 
 Edit touch controls
@@ -5222,6 +5225,12 @@ Requires 'Indicate map finish' in the server browser filters; the lock has no ef
 == 
 
 Map finishes refresh automatically about one second after changing this setting.
+== 
+
+Replace BestClient fast practice button
+== 
+
+When enabled, the BestClient Fast practice button is replaced by a Ranbi placeholder button that only shows a development notice.
 == 
 
 Use practice ghost coordinates

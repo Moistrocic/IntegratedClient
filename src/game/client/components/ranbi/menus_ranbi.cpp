@@ -209,6 +209,9 @@ void CMenus::RenderSettingsRanbiGeneral(CUIRect MainView)
 
 	Column.HSplitTop(s_MarginBetweenSections, nullptr, &Column);
 	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Fast practice"));
+	// ranbi (task-82): replace the BestClient fast practice button with a Ranbi placeholder button.
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcFastPracticeReplace, Localize("Replace BestClient fast practice button"), &g_Config.m_RcFastPracticeReplace, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("When enabled, the BestClient Fast practice button is replaced by a Ranbi placeholder button that only shows a development notice."));
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcFastPracticeGhostCoords, Localize("Use practice ghost coordinates"), &g_Config.m_RcFastPracticeGhostCoords, &Column, s_LineSize);
 	RenderRanbiHint(Ui(), &Column, Localize("In BC fast practice, show the controlled practice character's position instead of the frozen body."));
 

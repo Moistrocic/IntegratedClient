@@ -2731,10 +2731,13 @@ Could not open the demo in a second client
 Open the selected demo in a second client
 == 
 
-Stop practice
+Fast practice
 == 
 
-Fast practice
+Ranbi fast practice is under development
+== 
+
+Stop practice
 == 
 
 [Direct touch input]
@@ -5228,6 +5231,12 @@ Requires 'Indicate map finish' in the server browser filters; the lock has no ef
 == 
 
 Map finishes refresh automatically about one second after changing this setting.
+== 
+
+Replace BestClient fast practice button
+== 
+
+When enabled, the BestClient Fast practice button is replaced by a Ranbi placeholder button that only shows a development notice.
 == 
 
 Use practice ghost coordinates

@@ -3246,6 +3246,15 @@ Shows a ' Y' marker after the tee coordinates only when the X position also matc
 Per-command dropdown 'Stop' means: execute the current command only, do not jump to another command, and keep the key binding unchanged.
 == 每条命令的下拉“Stop”表示：只执行当前命令，不跳转到其他命令，并保持按键绑定不变。
 
+Ranbi fast practice is under development
+== Ranbi 快速练习功能开发中
+
+Replace BestClient fast practice button
+== 替换 BestClient 快速练习按钮
+
+When enabled, the BestClient Fast practice button is replaced by a Ranbi placeholder button that only shows a development notice.
+== 开启时，BestClient 的快速练习按钮将被 Ranbi 占位按钮替换，点击仅提示功能开发中。
+
 BETA
 == 
 

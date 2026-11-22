@@ -253,10 +253,22 @@ void CMenus::RenderGame(CUIRect MainView)
 					ButtonBar.VSplitLeft(ButtonSpacing, nullptr, &ButtonBar);
 
 				static CButtonContainer s_FastPracticeButton;
+				static CButtonContainer s_RanbiFastPracticePlaceholderButton;
 				const bool UseCompactLabel = CompactPractice || PracticeButtonWidth <= CompactPracticeButtonWidth;
-				const char *pFastPracticeLabel = UseCompactLabel ? "fp" : (GameClient()->m_FastPractice.Enabled() ? Localize("Stop practice") : Localize("Fast practice"));
-				if(DoButton_Menu(&s_FastPracticeButton, pFastPracticeLabel, GameClient()->m_FastPractice.Enabled() ? 1 : 0, &Button))
-					Console()->ExecuteLine("fast_practice_toggle", IConsole::CLIENT_ID_UNSPECIFIED);
+				// ranbi (task-82): replace the BestClient fast practice button with a Ranbi placeholder.
+				// The button keeps the exact same width/compact label logic; it is not an active state.
+				if(g_Config.m_RcFastPracticeReplace)
+				{
+					const char *pPlaceholderLabel = UseCompactLabel ? "fp" : Localize("Fast practice");
+					if(DoButton_Menu(&s_RanbiFastPracticePlaceholderButton, pPlaceholderLabel, 0, &Button))
+						GameClient()->Echo(Localize("Ranbi fast practice is under development"));
+				}
+				else
+				{
+					const char *pFastPracticeLabel = UseCompactLabel ? "fp" : (GameClient()->m_FastPractice.Enabled() ? Localize("Stop practice") : Localize("Fast practice"));
+					if(DoButton_Menu(&s_FastPracticeButton, pFastPracticeLabel, GameClient()->m_FastPractice.Enabled() ? 1 : 0, &Button))
+						Console()->ExecuteLine("fast_practice_toggle", IConsole::CLIENT_ID_UNSPECIFIED);
+				}
 			}
 		}
 		// bestclient
