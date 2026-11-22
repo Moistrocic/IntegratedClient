@@ -36,10 +36,6 @@ public:
 	int64_t m_LastSendTime;
 	CNetObj_PlayerInput m_aInputData[NUM_DUMMIES];
 	CNetObj_PlayerInput m_aLastData[NUM_DUMMIES];
-	// bestclient task-69: fire ring value of the last input that was actually sent per
-	// connection (m_aLastData holds the physical ring, which FastPractice may override before
-	// sending, so it is not a reliable base for the toggle fire guard).
-	int m_aLastSentFire[NUM_DUMMIES] = {};
 	int m_aInputDirectionLeft[NUM_DUMMIES];
 	int m_aInputDirectionRight[NUM_DUMMIES];
 	int m_aShowHookColl[NUM_DUMMIES];
@@ -63,14 +59,6 @@ public:
 	void ClampMousePos();
 	void ResetInput(int Dummy);
 	bool CheckNewInput();
-
-	// bestclient task-69/task-70/task-71: fire guard helpers for the Fast Practice toggle / UI
-	// freeze. ResetDummyHammerCounter must only be true at the toggle boundary: the UI-freeze
-	// path runs every tick and resetting m_DummyFire there would make cl_dummy_hammer fire on
-	// every send. UsePracticeFireRing must be true for the UI freeze while Fast Practice is
-	// active so the forced ring stays adjacent to the practice participant's own fire ring.
-	void RanbiClearBufferedFire(const char *pTag, bool Log, bool ResetDummyHammerCounter, bool UsePracticeFireRing);
-	void RanbiArmFireGuard();
 
 	// bestclient
 	void InputDebounce(int Dummy, int Input);

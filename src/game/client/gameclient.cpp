@@ -700,14 +700,6 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 			return 0;
 		}
 
-		// task-69: dummy connection diagnostics. The dummy input is sent from
-		// m_DummyInput/m_HammerInput, which the task-46 SnapInput fire guard did not cover.
-		if(g_Config.m_Debug)
-			log_info("fast_practice", "[fp-send] dummy OnSnapInput fire=%d(%s) hammer_fire=%d force=%d",
-				m_DummyInput.m_Fire & INPUT_STATE_MASK,
-				(m_DummyInput.m_Fire & 1) ? "pressed/odd" : "released/even",
-				m_HammerInput.m_Fire & INPUT_STATE_MASK, Force ? 1 : 0);
-
 		mem_copy(pData, &m_DummyInput, sizeof(m_DummyInput));
 		return sizeof(m_DummyInput);
 	}
@@ -734,12 +726,6 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 		m_HammerInput.m_TargetX = (int)Dir.x;
 		m_HammerInput.m_TargetY = (int)Dir.y;
 
-		// task-69: dummy auto-hammer diagnostics (see CGameClient::OnSnapInput dummy path).
-		if(g_Config.m_Debug)
-			log_info("fast_practice", "[fp-send] dummy hammer OnSnapInput fire=%d(%s) dummy_fire=%u",
-				m_HammerInput.m_Fire & INPUT_STATE_MASK,
-				(m_HammerInput.m_Fire & 1) ? "pressed/odd" : "released/even", m_DummyFire);
-
 		mem_copy(pData, &m_HammerInput, sizeof(m_HammerInput));
 		return sizeof(m_HammerInput);
 	}
@@ -749,12 +735,6 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 void CGameClient::PrepareInputForSend(int *pData, int Size, bool Dummy)
 {
 	m_FastPractice.PrepareInputForSend(pData, Size, Dummy);
-	// task-69: remember the fire value that is actually sent for each connection. This is the
-	// only reliable base for the Fast Practice toggle fire guard: the practice overlay rewrites
-	// the outgoing fire (m_aServerLockedFire) while CControls::m_aLastData keeps the physical
-	// ring, so deriving the guard release from m_aLastData could produce a real 0 <-> 2 press.
-	if(pData && Size >= (int)sizeof(CNetObj_PlayerInput))
-		m_Controls.m_aLastSentFire[g_Config.m_ClDummy ^ (int)Dummy] = ((const CNetObj_PlayerInput *)pData)->m_Fire & INPUT_STATE_MASK;
 }
 // bestclient
 
@@ -5062,8 +5042,6 @@ void CGameClient::UpdateRenderedCharacters()
 	const bool HasFastInputOthers = FastInputTicksOthers > 0;
 	// bestclient
 	const bool PracticeActive = m_FastPractice.Active();
-	// task-24: only the locally spectating participant is rendered as the real server entity;
-	// the other participant keeps the normal practice-world rendering/control.
 	const int PracticeControlledId = PracticeActive ? m_FastPractice.ControlledPracticeId() : -1;
 	const int PracticePartnerId = PracticeActive ? m_FastPractice.PartnerPracticeId() : -1;
 	// bestclient
@@ -5083,7 +5061,7 @@ void CGameClient::UpdateRenderedCharacters()
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
 		// bestclient
-		const bool IsPracticeParticipant = PracticeActive && m_FastPractice.IsPracticeParticipant(i) && !m_FastPractice.IsPracticeParticipantSpectating(i);
+		const bool IsPracticeParticipant = PracticeActive && m_FastPractice.IsPracticeParticipant(i);
 		if(!m_Snap.m_aCharacters[i].m_Active && !IsPracticeParticipant)
 			continue;
 		if(m_Snap.m_aCharacters[i].m_Active)
@@ -5106,7 +5084,7 @@ void CGameClient::UpdateRenderedCharacters()
 		// bestclient
 		CCharacter *pChar = IsPracticeParticipant ? m_FastPractice.PracticeWorld().GetCharacterById(i) : m_PredictedWorld.GetCharacterById(i);
 
-		if(i == ((PracticeActive && !m_FastPractice.IsPracticeParticipantSpectating(i)) ? PracticeControlledId : m_Snap.m_LocalClientId))
+		if(i == (PracticeActive ? PracticeControlledId : m_Snap.m_LocalClientId))
 			Client()->m_IsLocalFrozen = pChar && pChar->m_FreezeTime > 0;
 
 		if(IsPracticeParticipant && pChar)

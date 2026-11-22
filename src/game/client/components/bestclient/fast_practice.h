@@ -13,7 +13,6 @@
 #include <game/mapitems.h>
 
 #include <array>
-#include <cstdint>
 #include <deque>
 #include <string>
 #include <vector>
@@ -34,7 +33,6 @@ public:
 	bool Enabled() const { return m_Enabled; }
 	bool Active() const { return m_Enabled && m_Ready; }
 	bool CanEnable() const;
-	bool DebugLogActive() const;
 	void Toggle();
 	void Enable();
 	void Disable();
@@ -43,19 +41,6 @@ public:
 	void ResetPracticeToAnchor();
 
 	void PrepareInputForSend(int *pData, int Size, bool Dummy);
-	// task-71: fire ring state for the UI freeze (menu/chat/console). Returns the even release
-	// state adjacent to the practice participant's current LatestInput fire, so forcing it while
-	// a UI is open cannot create a CountInput press in the practice world. Falls back to
-	// CControls::m_aLastSentFire when practice is disabled or the participant is missing.
-	int UiFreezeFireState(int Conn);
-	// task-24: per-participant local practice spectate. /spec only affects the participant of
-	// the current active connection; switching cl_dummy only switches which participant is
-	// controlled and never changes either participant's spectate state or position.
-	bool IsPracticeParticipantSpectating(int ClientId) const;
-	bool ActivePracticeSpectating() const;
-	// task-28: local spectator selection (follow a player / freeview) while the practice fake
-	// spectate is active; called by CSpectator::Spectate so no server message is sent.
-	bool HandleLocalSpectateSelection(int SpectatorId);
 	void BuildNeutralInput(CNetObj_PlayerInput &OutInput, bool Dummy, bool UseFrozenTarget = true) const;
 	void SyncFromPrediction();
 	bool ForcePredictWeapons() const;
@@ -164,49 +149,6 @@ private:
 	bool m_Ready = false;
 	bool m_NeedsRebuild = false;
 	bool m_RequireDummy = false;
-	// task-72: true while the practice simulation must be suspended (pause, /spec, free view,
-	// local spectator, game paused). On enter/leave the buffered fire rings are safely released
-	// and the practice input history is reset so no transition can count a fire press.
-	bool m_Blocked = false;
-	// task-24: per-participant local practice spectate state (slot 0 = m_EnableLocalClientId,
-	// slot 1 = m_EnableDummyClientId). Each participant independently queues/enters/leaves the
-	// local spectate; switching cl_dummy only selects which participant is controlled.
-	bool m_aParticipantSpectate[2] = {false, false};
-	bool m_aParticipantSpectatePending[2] = {false, false};
-	bool m_aParticipantSpectateSavedValid[2] = {false, false};
-	vec2 m_aParticipantSpectateSavedPos[2] = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f)};
-	// task-26: solo state of the participant before it entered the local spectate; while
-	// spectating the participant is forced solo inside the practice world so the other
-	// participant can neither collide with, hook nor hammer it (native /spec has no tee).
-	bool m_aParticipantSpectateSavedSolo[2] = {false, false};
-	// task-28: camera/intent is immediate on /spec, the no-collision physics state is applied only
-	// after the practice character is grounded and standing still (native CPlayer::CanSpec).
-	bool m_aParticipantSpectateFrozen[2] = {false, false};
-	// task-28: locally selected spectator target per participant (-1 = freeview). Persists across
-	// snapshots and cl_dummy switches so the fake spec does not force freeview every frame.
-	int m_aParticipantSpectateSpectatorId[2] = {-1, -1};
-	// task-29: /pause must not freeze the practice world mid-air: keep simulating (neutral
-	// inputs, no control) until the practice characters are grounded/standing still, then freeze;
-	// save their positions so a long pause (which rebuilds the world) can restore them.
-	bool m_PauseGrounding = false;
-	bool m_PauseFrozen = false;
-	bool m_RestorePausePositionPending = false;
-	bool m_aPauseSavedPosValid[2] = {false, false};
-	vec2 m_aPauseSavedPos[2] = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f)};
-	int m_aParticipantSpectateSpecCharId[2] = {-1, -1};
-	vec2 m_aParticipantSpectateSpecCharPos[2] = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f)};
-	// Saved real server camera state so the fake freeview can be applied only while the active
-	// participant is spectating and restored on the same snapshot it stops.
-	bool m_SavedSpecActive = false;
-	int m_SavedSpecSpectatorId = 0;
-	bool m_SavedSpecUsePosition = false;
-	vec2 m_SavedSpecPosition = vec2(0.0f, 0.0f);
-	bool m_SavedSpecHasCameraInfo = false;
-	float m_SavedSpecZoom = 1.0f;
-	int m_SavedSpecDeadzone = 0;
-	int m_SavedSpecFollowFactor = 0;
-	bool m_HasSavedServerSpecInfo = false;
-	bool m_FakeSpectateActive = false;
 	int m_EnableLocalClientId = -1;
 	int m_EnableDummyClientId = -1;
 	bool m_HasDummyAnchor = false;
@@ -281,51 +223,6 @@ private:
 	void UpdateFreezeSkinDebounce();
 	void RenderGhost(const SGhostData &Ghost, float Alpha) const;
 	void ReleaseBufferedInputState();
-	void SyncToggleFireState();
-	// task-72: paused / spectating / free view state handling (hold fire rings safely)
-	bool IsInteractionBlocked() const;
-	void UpdateInteractionBlockedState();
-	void HoldBlockedFireState();
-	// task-74/24: server spectator detection + local practice spectate helpers
-	bool IsServerSpectating() const;
-	// task-24: per-participant spectate state machine
-	int ParticipantSlotForClientId(int ClientId) const;
-	int ParticipantClientIdForSlot(int Slot) const;
-	int ActiveParticipantSlot() const;
-	bool AnyParticipantSpectating() const;
-	void SetParticipantSpectate(int Slot, bool Enable);
-	void FreezeParticipantSpectate(int Slot);
-	void ClearAllParticipantSpectateState(bool RestoreCamera = true);
-	// task-74/75: fake freeview camera (only mirrors the active participant's spectate state)
-	void ApplyPracticeSpectateSpecInfo();
-	void RestorePracticeSpectateSpecInfo();
-	void CaptureServerSpecInfoFromSnapshot();
-	void ApplyActiveSpectateCamera();
-	// task-77: native feedback (death/spawn particles + sounds, x_spec spec-char circle)
-	void RefreshParticipantSpecChar(int Slot);
-	void ClearParticipantSpecChar(int Slot);
-	void RefreshAllParticipantSpecChars();
-	void ClearAllParticipantSpecChars();
-	// task-24: per-participant freeze/neutral while only part of the world is spectating
-	void FreezeSpectatingParticipant(int Slot);
-	void FreezeSpectatingParticipants();
-	void SyncFireAfterSpectateEdge();
-	// task-29: pause grounding / position restore + robust input resync after spectate/pause edges
-	bool IsLocalPlayerPauseState() const;
-	bool ArePracticeParticipantsGrounded();
-	void FreezePracticeWorldForPause();
-	void RestorePausePracticePositions();
-	void ResyncPracticeInputAfterTransition();
-	// task-32: debug-only transition trace for the asymmetric spectate/pause attack reports
-	void LogSpectateAttackDebug(const char *pEvent);
-	// task-78: native /spec only switches when the tee is grounded and standing still
-	// (server CPlayer::CanSpec: IsGrounded() && m_Pos == m_PrevPos).
-	bool IsParticipantSpectateEntryReady(int Slot);
-	void UpdatePracticeSpectatePending();
-	void BeginDebugLog();
-	void LogAttackState(const char *pStage);
-	int64_t m_DebugLogUntil = 0;
-	int m_aLastTrackedFire[MAX_CLIENTS] = {};
 	void CaptureServerLockedTargets();
 	void CaptureFrozenTargets();
 	void ResetStoredInputs();

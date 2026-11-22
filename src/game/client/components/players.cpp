@@ -831,7 +831,7 @@ void CPlayers::RenderPlayer(
 	bool WantOtherDir = (Player.m_Direction == -1 && Vel.x > 0) || (Player.m_Direction == 1 && Vel.x < 0);
 	bool Inactive = ClientId >= 0 && (GameClient()->m_aClients[ClientId].m_Afk || GameClient()->m_aClients[ClientId].m_Paused);
 	// bestclient
-	if(Inactive && GameClient()->m_FastPractice.Active() && !GameClient()->m_FastPractice.IsPracticeParticipantSpectating(ClientId) && GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))
+	if(Inactive && GameClient()->m_FastPractice.Active() && GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))
 		Inactive = false;
 	// bestclient
 
@@ -1138,9 +1138,7 @@ void CPlayers::RenderPlayer(
 	}
 
 	// bestclient
-	// task-75 R1: in local practice spectate the real server tee must be rendered exactly like a
-	// normal player; do not apply practice-ghost visual overrides (emote/effects) to it.
-	if(ClientId >= 0 && GameClient()->m_FastPractice.Active() && !GameClient()->m_FastPractice.IsPracticeParticipantSpectating(ClientId) && GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))
+	if(ClientId >= 0 && GameClient()->m_FastPractice.Active() && GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))
 	{
 		const CGameClient::CClientData &CD = GameClient()->m_aClients[ClientId];
 		if(CD.m_Predicted.m_DeepFrozen)
@@ -1150,7 +1148,7 @@ void CPlayers::RenderPlayer(
 		else if(GameClient()->m_Snap.m_aCharacters[ClientId].m_Active)
 			Player.m_Emote = GameClient()->m_Snap.m_aCharacters[ClientId].m_Cur.m_Emote;
 	}
-	const bool IsPracticeParticipant = ClientId >= 0 && GameClient()->m_FastPractice.Active() && !GameClient()->m_FastPractice.IsPracticeParticipantSpectating(ClientId) && GameClient()->m_FastPractice.IsPracticeParticipant(ClientId);
+	const bool IsPracticeParticipant = ClientId >= 0 && GameClient()->m_FastPractice.Active() && GameClient()->m_FastPractice.IsPracticeParticipant(ClientId);
 	// bestclient
 	// render the "shadow" tee
 	if(!IsPracticeParticipant && !RenderGhost && (g_Config.m_ClUnpredictedShadow == 3 || (Local && g_Config.m_ClUnpredictedShadow == 1) || (!Local && g_Config.m_ClUnpredictedShadow == 2)))
@@ -1220,7 +1218,7 @@ void CPlayers::RenderPlayer(
 	}
 
 	if(g_Config.m_ClAfkEmote && GameClient()->m_aClients[ClientId].m_Afk && ClientId != GameClient()->m_aLocalIds[!g_Config.m_ClDummy] &&
-		!(GameClient()->m_FastPractice.Active() && !GameClient()->m_FastPractice.IsPracticeParticipantSpectating(ClientId) && GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))) // bestclient
+		!(GameClient()->m_FastPractice.Active() && GameClient()->m_FastPractice.IsPracticeParticipant(ClientId))) // bestclient
 	{
 		int CurEmoticon = (SPRITE_ZZZ - SPRITE_OOP);
 		int QuadOffset = QuadOffsetToEmoticon + CurEmoticon;
@@ -1318,9 +1316,7 @@ void CPlayers::OnRender()
 
 		bool Frozen = false;
 		// bestclient
-		// task-75 R1: practice-spectate renders the real server tee with normal visuals; the
-		// practice ghost's frozen/invincible effects must not leak onto it.
-		const bool PracticeParticipant = GameClient()->m_FastPractice.Active() && !GameClient()->m_FastPractice.IsPracticeParticipantSpectating(i) && GameClient()->m_FastPractice.IsPracticeParticipant(i);
+		const bool PracticeParticipant = GameClient()->m_FastPractice.Active() && GameClient()->m_FastPractice.IsPracticeParticipant(i);
 		if(PracticeParticipant)
 		{
 			if(GameClient()->m_aClients[i].m_Predicted.m_LiveFrozen)

@@ -633,19 +633,14 @@ void CHud::RenderTextInfo()
 		int PlayerId = GameClient()->m_Snap.m_LocalClientId;
 		if(GameClient()->m_Snap.m_SpecInfo.m_Active)
 			PlayerId = GameClient()->m_Snap.m_SpecInfo.m_SpectatorId;
-		// task-75 R2: freeview/invalid spectator ids (SPEC_FREEVIEW = -1, SPEC_FOLLOW = -2, ...)
-		// must never index m_aCharacters/m_aClients; fall back to the local player if valid.
-		if(PlayerId < 0 || PlayerId >= MAX_CLIENTS)
-			PlayerId = GameClient()->m_Snap.m_LocalClientId;
-		const bool ValidPlayerId = PlayerId >= 0 && PlayerId < MAX_CLIENTS;
 
-		if(g_Config.m_ClShowhudDDRace && ValidPlayerId && GameClient()->m_Snap.m_aCharacters[PlayerId].m_HasExtendedData && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
+		if(g_Config.m_ClShowhudDDRace && GameClient()->m_Snap.m_aCharacters[PlayerId].m_HasExtendedData && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
 			OffsetY += 50.0f;
 		else if(g_Config.m_ClShowhudHealthAmmo && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
 			OffsetY += 27.0f;
 
 		vec2 Pos;
-		if(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW || !ValidPlayerId)
+		if(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW)
 			Pos = vec2(GameClient()->m_Controls.m_aMousePos[g_Config.m_ClDummy].x, GameClient()->m_Controls.m_aMousePos[g_Config.m_ClDummy].y);
 		else
 			Pos = GameClient()->m_aClients[PlayerId].m_RenderPos;
@@ -656,7 +651,7 @@ void CHud::RenderTextInfo()
 		OffsetY += TextHeight;
 		str_format(aBuf, sizeof(aBuf), "Y: %.2f", Pos.y / 32.0f);
 		TextRender()->Text(4, OffsetY, FontSize, aBuf, -1.0f);
-		if(ValidPlayerId && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
+		if(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId != SPEC_FREEVIEW)
 		{
 			OffsetY += TextHeight;
 			str_format(aBuf, sizeof(aBuf), "Angle: %d", GameClient()->m_aClients[PlayerId].m_RenderCur.m_Angle);
@@ -672,11 +667,7 @@ void CHud::RenderTextInfo()
 			TextRender()->Text(4.0f, OffsetY, FontSize, aBuf, -1.0f);
 		}
 	}
-	// task-29: the local practice spectate must respect the spectator cursor settings:
-	// cl_spec_cursor ("Show spectator cursor") gates the whole fake spec cursor, and
-	// tc_cursor_in_spec is the TClient freeview gun cursor. Native spectating is unchanged.
-	if(g_Config.m_TcRenderCursorSpec && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW &&
-		(!GameClient()->m_FastPractice.ActivePracticeSpectating() || g_Config.m_ClSpecCursor))
+	if(g_Config.m_TcRenderCursorSpec && GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SPEC_FREEVIEW)
 	{
 		int CurWeapon = 1;
 		Graphics()->SetColor(1.f, 1.f, 1.f, g_Config.m_TcRenderCursorSpecAlpha / 100.0f);
@@ -754,9 +745,7 @@ void CHud::RenderCursor()
 	CScreenRect ScreenRect = Graphics()->MapScreenToWorld(Center.x, Center.y, 100.0f, 100.0f, 100.0f, 0, 0, Graphics()->ScreenAspect(), 1.0f);
 	Graphics()->MapScreen(ScreenRect);
 
-	// task-29: while the local practice spectate is active the local-character cursor must not be
-	// drawn; fall through to the native spectator cursor path, which honours cl_spec_cursor.
-	if(Client()->State() != IClient::STATE_DEMOPLAYBACK && GameClient()->m_Snap.m_pLocalCharacter && !GameClient()->m_FastPractice.ActivePracticeSpectating())
+	if(Client()->State() != IClient::STATE_DEMOPLAYBACK && GameClient()->m_Snap.m_pLocalCharacter)
 	{
 		// Render local cursor
 		CurWeapon = std::max(0, GameClient()->m_aClients[GameClient()->m_Snap.m_LocalClientId].m_Predicted.m_ActiveWeapon);

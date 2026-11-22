@@ -493,10 +493,7 @@ void CSpectator::OnRender()
 					if(GameClient()->m_MultiViewTeam == DDTeam)
 					{
 						GameClient()->m_aMultiViewId[m_SelectedSpectatorId] = !GameClient()->m_aMultiViewId[m_SelectedSpectatorId];
-						// task-75 R3: m_Snap.m_SpecInfo.m_SpectatorId can be SPEC_FREEVIEW (-1) with
-						// the local practice spectate; never index m_aMultiViewId with it.
-						const int CurSpectatorId = GameClient()->m_Snap.m_SpecInfo.m_SpectatorId;
-						if(CurSpectatorId < 0 || CurSpectatorId >= MAX_CLIENTS || !GameClient()->m_aMultiViewId[CurSpectatorId])
+						if(!GameClient()->m_aMultiViewId[GameClient()->m_Snap.m_SpecInfo.m_SpectatorId])
 						{
 							int NewClientId = GameClient()->FindFirstMultiViewId();
 							if(NewClientId < MAX_CLIENTS && NewClientId >= 0)
@@ -651,9 +648,6 @@ void CSpectator::Spectate(int SpectatorId)
 			GameClient()->m_Menus.DemoSeekTick(IDemoPlayer::TICK_CURRENT);
 		return;
 	}
-
-	if(GameClient()->m_FastPractice.HandleLocalSpectateSelection(SpectatorId))
-		return;
 
 	if(GameClient()->m_Snap.m_SpecInfo.m_SpectatorId == SpectatorId)
 		return;
