@@ -78,12 +78,22 @@ public:
 	bool m_ShowHammerFlyStatus = false;
 	bool m_ShowDummyResetStatus = false;
 	ColorRGBA m_TeeCoordMatchedColor = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
+	bool m_ShowTeeCoordY = false;
+	ColorRGBA m_TeeCoordYMatchedColor = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
 	// ranbi
 };
 
 // Part Types
 
 static constexpr float DEFAULT_PADDING = 5.0f;
+
+// ranbi task-113: Y marker requires the X position to match (existing diff < 0.02 tiles)
+// and |Y difference| to be within 0.01 tiles of 1.94 (user-requested tolerance).
+static bool IsTeeCoordYEqual(float Delta)
+{
+	constexpr float EPSILON = 0.01f;
+	return std::fabs(Delta - 1.94f) <= EPSILON;
+}
 
 class CNamePlatePart
 {
@@ -1069,6 +1079,40 @@ public:
 		ClearWidths();
 	}
 };
+// ranbi task-110: " Y" letter marker after the tee X coordinate. Green = Y range match,
+// red = mismatch; hidden unless bc_show_tee_coords and rc_nameplates_show_position_y_range.
+class CNamePlatePartTeeCoordY : public CNamePlatePartText
+{
+private:
+	float m_FontSize = -INFINITY;
+	ColorRGBA m_PartColor = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
+
+protected:
+	bool UpdateNeeded(CGameClient &This, const CNamePlateData &Data) override
+	{
+		m_Visible = Data.m_ShowTeeCoords && Data.m_ShowTeeCoordY;
+		if(!m_Visible)
+			return false;
+		const ColorRGBA NewColor = Data.m_TeeCoordYMatchedColor;
+		const bool Changed = m_PartColor != NewColor || m_FontSize != Data.m_FontSizeTeeCoords;
+		m_PartColor = NewColor;
+		m_Color = NewColor;
+		return Changed;
+	}
+
+	void UpdateText(CGameClient &This, const CNamePlateData &Data) override
+	{
+		m_FontSize = Data.m_FontSizeTeeCoords;
+		CTextCursor Cursor;
+		Cursor.m_FontSize = m_FontSize;
+		This.TextRender()->CreateOrAppendTextContainer(m_TextContainerIndex, &Cursor, " Y");
+	}
+
+public:
+	CNamePlatePartTeeCoordY(CGameClient &This) :
+		CNamePlatePartText(This) {}
+};
+
 // bestclient
 
 class CNamePlatePartBClientVersion : public CNamePlatePartText
@@ -1274,6 +1318,7 @@ private:
 			AddPart<CNamePlatePartNewLine>(This);
 			// bestclient
 			AddPart<CNamePlatePartTeeCoord>(This);
+			AddPart<CNamePlatePartTeeCoordY>(This); // ranbi
 			AddPart<CNamePlatePartNewLine>(This);
 			AddPart<CNamePlatePartBClientVersion>(This);
 			AddPart<CNamePlatePartNewLine>(This);
@@ -1670,6 +1715,55 @@ void CNamePlates::RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *p
 			Matched = absolute(Data.m_TeeCoordX100 - ViewX100) < 2;
 		}
 		Data.m_TeeCoordMatchedColor = Matched ? color_cast<ColorRGBA>(ColorHSLA(g_Config.m_RcNameplatesShowPositionXMatchedColor).WithAlpha(Data.m_Color.a)) : ColorRGBA(1.0f, 0.0f, 0.0f, Data.m_Color.a);
+	}
+
+	// ranbi: m_RcNameplatesShowPositionYRange -- append a " Y" marker after X:00.00.
+	// task-112: green requires BOTH X match (existing X diff < 0.02 tiles) and |Y difference|
+	// equal to 1.94 tiles (epsilon); otherwise red. The X highlight switch only affects the X
+	// color, not this prerequisite.
+	Data.m_ShowTeeCoordY = g_Config.m_BcShowTeeCoords && g_Config.m_RcNameplatesShowPositionYRange;
+	Data.m_TeeCoordYMatchedColor = ColorRGBA(1.0f, 1.0f, 1.0f, Data.m_Color.a);
+	if(Data.m_ShowTeeCoordY)
+	{
+		if(ViewClientId < 0 || ViewClientId >= MAX_CLIENTS)
+		{
+			// No valid view player: hide the Y marker instead of showing a misleading red one.
+			Data.m_ShowTeeCoordY = false;
+		}
+		else
+		{
+			bool Matched = false;
+			const int ViewX100 = round_to_int(GameClient()->m_aClients[ViewClientId].m_RenderPos.x / 32.0f * 100.0f);
+			const float ViewY = GameClient()->m_aClients[ViewClientId].m_RenderPos.y / 32.0f;
+			if(pPlayerInfo->m_ClientId == ViewClientId)
+			{
+				// Own nameplate: green if any other active player matches both X and Y.
+				for(int i = 0; i < MAX_CLIENTS; i++)
+				{
+					if(i == ViewClientId || !GameClient()->m_Snap.m_aCharacters[i].m_Active)
+						continue;
+					const int OtherX100 = round_to_int(GameClient()->m_aClients[i].m_RenderPos.x / 32.0f * 100.0f);
+					if(absolute(OtherX100 - ViewX100) >= 2)
+						continue;
+					const float OtherY = GameClient()->m_aClients[i].m_RenderPos.y / 32.0f;
+					if(IsTeeCoordYEqual(std::fabs(OtherY - ViewY)))
+					{
+						Matched = true;
+						break;
+					}
+				}
+			}
+			else
+			{
+				const int TargetX100 = Data.m_TeeCoordX100;
+				if(absolute(TargetX100 - ViewX100) < 2)
+				{
+					const float TargetY = GameClient()->m_aClients[pPlayerInfo->m_ClientId].m_RenderPos.y / 32.0f;
+					Matched = IsTeeCoordYEqual(std::fabs(TargetY - ViewY));
+				}
+			}
+			Data.m_TeeCoordYMatchedColor = Matched ? ColorRGBA(0.0f, 1.0f, 0.0f, Data.m_Color.a) : ColorRGBA(1.0f, 0.0f, 0.0f, Data.m_Color.a);
+		}
 	}
 
 	// ranbi: m_RcNameplatesRangeHidden* -- hide selected parts within radius/angle around the view player

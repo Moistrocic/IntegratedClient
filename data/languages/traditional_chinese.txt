@@ -2751,6 +2751,15 @@ Append reply suffix
 When enabled, non-empty content is appended to every AI message. When disabled, nothing is appended and the text is kept.
 == 開啟時，非空內容會附加到每則 AI 訊息末尾；關閉時不附加任何內容，文字仍會保留。
 
+Highlight players with matching position Y (requires X match)
+== 高亮位置 Y 匹配的玩家（需 X 座標匹配）
+
+Shows a ' Y' marker after the tee coordinates only when the X position also matches (diff < 0.02 tiles) and the Y difference to the viewed player is within 0.01 tiles of 1.94 (green = matching, red = not matching). Requires BestClient 'Show tee coordinates' (bc_show_tee_coords).
+== 僅當 X 座標也匹配（差值 < 0.02 格）且與視角玩家的 Y 差在 1.94±0.01 格內時，在座標後顯示「 Y」標記（綠色=匹配，紅色=不匹配）。需要開啟 BestClient 的「顯示座標」（bc_show_tee_coords）。
+
+Per-command dropdown 'Stop' means: execute the current command only, do not jump to another command, and keep the key binding unchanged.
+== 每條命令的下拉「Stop」表示：只執行目前命令，不跳轉到其他命令，並保持按鍵綁定不變。
+
 BETA
 == 
 
@@ -5444,9 +5453,6 @@ Highlight players with matching position X
 == 
 
 Matched color
-== 
-
-Colors the tee coordinate part and requires BestClient 'Show tee coordinates' (bc_show_tee_coords).
 == 
 
 Skip duplicate messages in chat history

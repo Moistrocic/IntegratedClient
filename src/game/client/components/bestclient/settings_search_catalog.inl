@@ -1,4 +1,4 @@
-	{"Jelly Tee", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals", &g_Config.m_BcJellyTee, nullptr},
+{"Jelly Tee", SETTINGS_NAV_LEAF_BC_VISUALS, "Visuals", &g_Config.m_BcJellyTee, nullptr},
 	{"Jelly Others", SETTINGS_NAV_LEAF_BC_VISUALS, "Jelly Tee", &g_Config.m_BcJellyTeeOthers, &g_Config.m_BcJellyTee},
 	{"Jelly strength", SETTINGS_NAV_LEAF_BC_VISUALS, "Jelly Tee", &g_Config.m_BcJellyTeeStrength, &g_Config.m_BcJellyTee},
 	{"Jelly duration", SETTINGS_NAV_LEAF_BC_VISUALS, "Jelly Tee", &g_Config.m_BcJellyTeeDuration, &g_Config.m_BcJellyTee},
@@ -344,6 +344,7 @@
 	{"Range hidden angle end", SETTINGS_NAV_LEAF_RC_NAMEPLATES, "Range hidden", &g_Config.m_RcNameplatesRangeHiddenAngleEnd, &g_Config.m_RcNameplatesRangeHidden},
 	{"Highlight players with matching position X", SETTINGS_NAV_LEAF_RC_NAMEPLATES, "Matched position", &g_Config.m_RcNameplatesShowPositionXMatched, &g_Config.m_BcShowTeeCoords},
 	{"Matched color", SETTINGS_NAV_LEAF_RC_NAMEPLATES, "Matched position", &g_Config.m_RcNameplatesShowPositionXMatchedColor, &g_Config.m_RcNameplatesShowPositionXMatched},
+	{"Highlight players with matching position Y (requires X match)", SETTINGS_NAV_LEAF_RC_NAMEPLATES, "Matched position", &g_Config.m_RcNameplatesShowPositionYRange, &g_Config.m_BcShowTeeCoords},
 
 	{"Show weapon angle markers", SETTINGS_NAV_LEAF_RC_WEAPONS, "Weapon angle display", &g_Config.m_RcShowWeaponsAngle, nullptr},
 	{"Weapon angle inner radius", SETTINGS_NAV_LEAF_RC_WEAPONS, "Weapon angle display", &g_Config.m_RcWeaponsAngleInnerRadius, &g_Config.m_RcShowWeaponsAngle},

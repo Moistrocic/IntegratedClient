@@ -677,7 +677,8 @@ bool CBindManager::ReadManagerMetadata(const std::string &Config)
 				continue;
 			if(str_comp(Tokens[0].c_str(), "version") == 0 && Tokens.size() >= 2)
 			{
-				Version = str_toint(Tokens[1].c_str()) >= 2 ? 2 : 1;
+				const int FileVersion = str_toint(Tokens[1].c_str());
+				Version = FileVersion >= 3 ? 3 : (FileVersion >= 2 ? 2 : 1);
 				break;
 			}
 		}
@@ -712,7 +713,20 @@ bool CBindManager::ReadManagerMetadata(const std::string &Config)
 		Entry.m_Enabled = str_toint(Tokens[4].c_str()) != 0;
 		if(!ValidateEntryBinding(Entry))
 			SetLastError("条目 '%s' 的键位/修饰键非法，已清除绑定", Entry.m_Name.c_str());
-		if(Version >= 2)
+		if(Version >= 3)
+		{
+			if(Tokens.size() < 9)
+				continue;
+			Entry.m_InitColor = ParseManagerColor(Tokens[5], DEFAULT_COMMAND_COLOR);
+			Entry.m_Init = Tokens[6];
+			for(size_t i = 7; i + 2 < Tokens.size(); i += 3)
+			{
+				Entry.m_vCommandColors.push_back(ParseManagerColor(Tokens[i], DEFAULT_COMMAND_COLOR));
+				Entry.m_vNextCommand.push_back(str_toint(Tokens[i + 1].c_str()));
+				Entry.m_vCommands.push_back(Tokens[i + 2]);
+			}
+		}
+		else if(Version == 2)
 		{
 			if(Tokens.size() < 7)
 				continue;
@@ -720,8 +734,7 @@ bool CBindManager::ReadManagerMetadata(const std::string &Config)
 			Entry.m_Init = Tokens[6];
 			for(size_t i = 7; i + 1 < Tokens.size(); i += 2)
 			{
-				const unsigned int Color = ParseManagerColor(Tokens[i], DEFAULT_COMMAND_COLOR);
-				Entry.m_vCommandColors.push_back(Color);
+				Entry.m_vCommandColors.push_back(ParseManagerColor(Tokens[i], DEFAULT_COMMAND_COLOR));
 				Entry.m_vCommands.push_back(Tokens[i + 1]);
 			}
 		}
@@ -735,6 +748,7 @@ bool CBindManager::ReadManagerMetadata(const std::string &Config)
 		if(Entry.m_vCommands.empty())
 			Entry.m_vCommands.emplace_back();
 		Entry.m_vCommandColors.resize(Entry.m_vCommands.size(), DEFAULT_COMMAND_COLOR);
+		NormalizeCommandNextTargets(Entry); // v1/v2 entries get automatic next defaults
 		m_vEntries.push_back(std::move(Entry));
 	}
 	return true;
@@ -901,9 +915,10 @@ bool CBindManager::SaveMetadataOnly()
 
 bool CBindManager::WriteManagerMetadata(const std::string &Config)
 {
-	// task-93: version 2 adds init/command message colors. Old version 1 files stay readable.
-	// entry "<name>" <key> <modifier> <enabled> <initColor> "<init>" <cmd1Color> "<cmd1>" ...
-	std::string Text = "version 2\n";
+	// task-93: version 2 adds colors; task-71: version 3 adds per-command next targets.
+	// entry "<name>" <key> <modifier> <enabled> <initColor> "<init>" (<cmdColor> <next> "<cmd>")*
+	// next: -2 = automatic next effective command, -1 = Stop, >=0 = explicit command row index.
+	std::string Text = "version 3\n";
 	for(const SEntry &Entry : m_vEntries)
 	{
 		Text += "entry ";
@@ -921,8 +936,11 @@ bool CBindManager::WriteManagerMetadata(const std::string &Config)
 		for(size_t i = 0; i < Entry.m_vCommands.size(); i++)
 		{
 			const unsigned int Color = i < Entry.m_vCommandColors.size() ? Entry.m_vCommandColors[i] : DEFAULT_COMMAND_COLOR;
+			const int Next = i < Entry.m_vNextCommand.size() ? Entry.m_vNextCommand[i] : NEXT_COMMAND_DEFAULT;
 			Text += ' ';
 			Text += std::to_string(Color);
+			Text += ' ';
+			Text += std::to_string(Next);
 			Text += ' ';
 			AppendQuoted(Text, Entry.m_vCommands[i]);
 		}
@@ -940,6 +958,50 @@ size_t CBindManager::EffectiveCommandCount(const SEntry &Entry)
 			Count++;
 	}
 	return Count;
+}
+
+bool CBindManager::IsEffectiveCommandRow(const SEntry &Entry, int Row)
+{
+	return Row >= 0 && Row < (int)Entry.m_vCommands.size() && !TrimSpaces(Entry.m_vCommands[Row]).empty();
+}
+
+int CBindManager::DefaultNextCommandRow(const SEntry &Entry, int Row)
+{
+	if(Entry.m_vCommands.empty())
+		return NEXT_COMMAND_STOP;
+	// next effective command, wrapping back to the first effective one
+	for(int Offset = 1; Offset <= (int)Entry.m_vCommands.size(); Offset++)
+	{
+		const int Candidate = (Row + Offset) % (int)Entry.m_vCommands.size();
+		if(IsEffectiveCommandRow(Entry, Candidate))
+			return Candidate;
+	}
+	return NEXT_COMMAND_STOP;
+}
+
+int CBindManager::ResolveNextCommandRow(const SEntry &Entry, int Row)
+{
+	if(Row < 0 || Row >= (int)Entry.m_vCommands.size())
+		return NEXT_COMMAND_STOP;
+	const int Stored = Row < (int)Entry.m_vNextCommand.size() ? Entry.m_vNextCommand[Row] : NEXT_COMMAND_DEFAULT;
+	if(Stored == NEXT_COMMAND_STOP)
+		return NEXT_COMMAND_STOP;
+	if(Stored >= 0 && Stored < (int)Entry.m_vCommands.size() && IsEffectiveCommandRow(Entry, Stored))
+		return Stored;
+	return DefaultNextCommandRow(Entry, Row); // automatic next
+}
+
+void CBindManager::NormalizeCommandNextTargets(SEntry &Entry)
+{
+	Entry.m_vNextCommand.resize(Entry.m_vCommands.size(), NEXT_COMMAND_DEFAULT);
+	for(size_t i = 0; i < Entry.m_vNextCommand.size(); i++)
+	{
+		const int Target = Entry.m_vNextCommand[i];
+		if(Target == NEXT_COMMAND_DEFAULT || Target == NEXT_COMMAND_STOP)
+			continue;
+		if(Target < 0 || Target >= (int)Entry.m_vCommands.size() || !IsEffectiveCommandRow(Entry, Target))
+			Entry.m_vNextCommand[i] = NEXT_COMMAND_DEFAULT;
+	}
 }
 
 bool CBindManager::IsValidBinding(int Key, int ModifierMask) const
@@ -1019,7 +1081,9 @@ std::string CBindManager::BuildBindLine(const std::string &Config, const SEntry 
 		return BuildBindCommand(Config, Entry, "step1.cfg");
 
 	// Single command: bind it directly with the same color prefix/suffix used by step files.
-	const std::string Inner = "cl_message_client_color " + std::to_string(CommandColor) + "; " + Command + "; cl_message_client_color " + std::to_string(DEFAULT_COMMAND_COLOR);
+	// task-115: Stop means "do not jump / keep the current binding"; single-command Stop is
+	// therefore still a normal direct bind and does not append an unbind.
+	std::string Inner = "cl_message_client_color " + std::to_string(CommandColor) + "; " + Command + "; cl_message_client_color " + std::to_string(DEFAULT_COMMAND_COLOR);
 	char aEscaped[BIND_MANAGER_PATH_LENGTH * 2];
 	char *pDst = aEscaped;
 	str_escape(&pDst, Inner.c_str(), aEscaped + sizeof(aEscaped));
@@ -1056,12 +1120,16 @@ bool CBindManager::WriteEntryCfgFiles(const std::string &Config, const SEntry &E
 	// become loop steps; task-95: a single effective command is bound directly, no step files.
 	std::vector<std::string> vCommands;
 	std::vector<unsigned int> vCommandColors;
+	std::vector<int> vNextRows; // effective row index to jump to, or NEXT_COMMAND_STOP
+	std::vector<int> vEffectiveRowToIndex(Entry.m_vCommands.size(), -1);
 	for(size_t i = 0; i < Entry.m_vCommands.size(); i++)
 	{
 		if(TrimSpaces(Entry.m_vCommands[i]).empty())
 			continue;
+		vEffectiveRowToIndex[i] = (int)vCommands.size();
 		vCommands.push_back(Entry.m_vCommands[i]);
 		vCommandColors.push_back(i < Entry.m_vCommandColors.size() ? Entry.m_vCommandColors[i] : DEFAULT_COMMAND_COLOR);
+		vNextRows.push_back(ResolveNextCommandRow(Entry, (int)i));
 	}
 	const size_t NumCommands = vCommands.size();
 	const std::string BindLine = BuildBindLine(Config, Entry);
@@ -1086,10 +1154,22 @@ bool CBindManager::WriteEntryCfgFiles(const std::string &Config, const SEntry &E
 			Text += vCommands[Step] + "\n";
 			Text += "cl_message_client_color " + std::to_string(DEFAULT_COMMAND_COLOR) + "\n";
 		}
-		const size_t NextStep = (Step + 1) % NumCommands;
-		char aNextFile[64];
-		str_format(aNextFile, sizeof(aNextFile), "step%zu.cfg", NextStep + 1);
-		const std::string NextBind = BuildBindCommand(Config, Entry, aNextFile);
+		const int NextRow = Step < vNextRows.size() ? vNextRows[Step] : NEXT_COMMAND_STOP;
+		char aNextFile[64] = "";
+		std::string NextBind;
+		if(NextRow == NEXT_COMMAND_STOP)
+		{
+			// task-115: Stop executes the command only; no bind/unbind is generated, so the
+			// key stays bound to this step and the next press repeats the current command.
+			str_copy(aNextFile, "stop", sizeof(aNextFile));
+		}
+		else
+		{
+			const int NextIndex = NextRow >= 0 && NextRow < (int)vEffectiveRowToIndex.size() ? vEffectiveRowToIndex[NextRow] : -1;
+			const size_t NextStep = NextIndex >= 0 ? (size_t)NextIndex : 0;
+			str_format(aNextFile, sizeof(aNextFile), "step%zu.cfg", NextStep + 1);
+			NextBind = BuildBindCommand(Config, Entry, aNextFile);
+		}
 		if(!NextBind.empty())
 			Text += NextBind + "\n";
 		char aStepFile[64];
@@ -1378,6 +1458,7 @@ bool CBindManager::SaveCurrentToDisk()
 		if(Entry.m_vCommands.empty())
 			Entry.m_vCommands.emplace_back();
 		Entry.m_vCommandColors.resize(Entry.m_vCommands.size(), DEFAULT_COMMAND_COLOR);
+		NormalizeCommandNextTargets(Entry);
 		ValidateEntryBinding(Entry);
 	}
 
@@ -1522,6 +1603,7 @@ void CBindManager::AddEntry()
 	Entry.m_Name = Name;
 	Entry.m_vCommands.emplace_back();
 	Entry.m_vCommandColors.push_back(DEFAULT_COMMAND_COLOR);
+	Entry.m_vNextCommand.push_back(NEXT_COMMAND_DEFAULT);
 	m_vEntries.push_back(std::move(Entry));
 	m_Dirty = true;
 }

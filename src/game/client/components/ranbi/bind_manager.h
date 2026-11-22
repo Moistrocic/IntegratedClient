@@ -29,6 +29,11 @@ class CBindManager : public CComponent
 public:
 	// task-93: default message color (same value used by cl_message_client_color / task).
 	static constexpr unsigned int DEFAULT_COMMAND_COLOR = 14417855U;
+	// task-71: per-command next target. -2 = automatic next effective command (default),
+	// -1 = Stop (execute the command only; keep the current binding / do not jump),
+	// >=0 = explicit command row index.
+	static constexpr int NEXT_COMMAND_DEFAULT = -2;
+	static constexpr int NEXT_COMMAND_STOP = -1;
 
 	struct SEntry
 	{
@@ -43,6 +48,8 @@ public:
 		// cl_message_client_color); version 1 manager.txt entries default to DEFAULT_COMMAND_COLOR.
 		unsigned int m_InitColor = DEFAULT_COMMAND_COLOR;
 		std::vector<unsigned int> m_vCommandColors;
+		// task-71: next target per command row (NEXT_COMMAND_DEFAULT/STOP or row index).
+		std::vector<int> m_vNextCommand;
 	};
 
 	int Sizeof() const override { return sizeof(*this); }
@@ -73,6 +80,11 @@ public:
 
 	// task-87 (verifier B2/B3/B4): binding/key sanitation + applied-key cleanup helpers.
 	static size_t EffectiveCommandCount(const SEntry &Entry);
+	// task-71: next-command helpers (GUI + cfg generation share the same normalization).
+	static void NormalizeCommandNextTargets(SEntry &Entry);
+	static int ResolveNextCommandRow(const SEntry &Entry, int Row);
+	static int DefaultNextCommandRow(const SEntry &Entry, int Row);
+	static bool IsEffectiveCommandRow(const SEntry &Entry, int Row);
 	bool IsValidBinding(int Key, int ModifierMask) const;
 	bool ValidateEntryBinding(SEntry &Entry);
 	void UnbindKey(int Key, int ModifierMask);

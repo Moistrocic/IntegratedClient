@@ -7,6 +7,7 @@
 // entries and the Info page are owned by the integrated client framework.
 
 #include <base/color.h>
+#include <base/dbg.h>
 #include <base/str.h>
 #include <base/time.h>
 
@@ -29,6 +30,7 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -301,7 +303,8 @@ void CMenus::RenderSettingsRanbiNameplates(CUIRect MainView)
 		static CButtonContainer s_MatchedColorPicker;
 		DoLine_ColorPicker(&s_MatchedColorPicker, s_ColorPickerLineSize, s_ColorPickerLabelSize, s_ColorPickerLineSpacing, &Column, Localize("Matched color"), &g_Config.m_RcNameplatesShowPositionXMatchedColor, ColorRGBA(1.0f, 0.0f, 0.0f), false);
 	}
-	RenderRanbiHint(Ui(), &Column, Localize("Colors the tee coordinate part and requires BestClient 'Show tee coordinates' (bc_show_tee_coords)."));
+	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcNameplatesShowPositionYRange, Localize("Highlight players with matching position Y (requires X match)"), &g_Config.m_RcNameplatesShowPositionYRange, &Column, s_LineSize);
+	RenderRanbiHint(Ui(), &Column, Localize("Shows a ' Y' marker after the tee coordinates only when the X position also matches (diff < 0.02 tiles) and the Y difference to the viewed player is within 0.01 tiles of 1.94 (green = matching, red = not matching). Requires BestClient 'Show tee coordinates' (bc_show_tee_coords)."));
 
 	EndRanbiPageScroll(s_ScrollRegion, MainView, Column);
 }
@@ -839,6 +842,20 @@ void CMenus::RenderSettingsRanbiAi(CUIRect MainView)
 
 namespace
 {
+	struct SNextCommandDropdown
+	{
+		static constexpr int MAX_OPTIONS = 256;
+		CUi::SDropDownState m_State;
+		// task-114: PopupSelection dereferences m_pScrollRegion; all other dropdowns set it
+		// before DoDropDown. Keep it inside the stable append-only map node for popup lifetime.
+		CScrollRegion m_ScrollRegion;
+		std::array<std::array<char, 32>, MAX_OPTIONS> m_aLabels = {};
+		std::array<const char *, MAX_OPTIONS> m_apLabels = {};
+		int m_NumOptions = 0;
+		int m_BuiltCommands = -1;
+		int m_LastLoggedPopupSelection = -1;
+	};
+
 	struct SBindManagerUiState
 	{
 		std::vector<CButtonContainer> m_vConfigButtons;
@@ -847,6 +864,10 @@ namespace
 		std::vector<CButtonContainer> m_vDeleteButtons;
 		std::vector<CButtonContainer> m_vAddCommandButtons;
 		std::vector<std::vector<CButtonContainer>> m_vDeleteCommandButtons;
+		// task-113: append-only map keyed by (entry name, command row). Nodes are never erased,
+		// so the SDropDownState and fixed label arrays keep stable addresses for the whole popup
+		// lifetime even when commands/entries are added, deleted, reordered or the page switches.
+		std::map<std::pair<std::string, int>, SNextCommandDropdown> m_mNextCommandDropdowns;
 		std::vector<CButtonContainer> m_vKeyReaderButtons;
 		std::vector<CButtonContainer> m_vKeyClearButtons;
 		std::vector<CLineInput> m_vNameInputs;
@@ -890,6 +911,8 @@ namespace
 			State.m_vCommandBuffers[i].resize(NumCommands);
 			State.m_vCommandInputs[i].resize(NumCommands);
 			State.m_vDeleteCommandButtons[i].resize(NumCommands);
+			// task-113: dropdown objects are allocated on first use in the append-only map;
+			// never create/resize/destroy them here (a popup may still reference them).
 		}
 	}
 
@@ -988,6 +1011,7 @@ void CMenus::RenderSettingsRanbiBindManager(CUIRect MainView)
 	RenderRanbiSectionHeadline(Ui(), &Column, Localize("Bind Manager"));
 	DoButton_CheckBoxAutoVMarginAndSet(&g_Config.m_RcBindManagerInit, Localize("Initialize binds and parameters before entering a game"), &g_Config.m_RcBindManagerInit, &Column, s_LineSize);
 	RenderRanbiHint(Ui(), &Column, Localize("When disabled, no Bind Manager cfg is executed when joining a server and the current binds stay unchanged."));
+	RenderRanbiHint(Ui(), &Column, Localize("Per-command dropdown 'Stop' means: execute the current command only, do not jump to another command, and keep the key binding unchanged."));
 
 	if(s_State.m_aStatus[0] != '\0')
 	{
@@ -1331,7 +1355,12 @@ void CMenus::RenderSettingsRanbiBindManager(CUIRect MainView)
 				Entry.m_vCommandColors.push_back(CBindManager::DEFAULT_COMMAND_COLOR);
 			}
 			const size_t NumCommands = Entry.m_vCommands.size();
+			// task-71: always keep at least one command row so the row loop below is valid.
+			if(Entry.m_vCommands.empty())
+				Entry.m_vCommands.emplace_back();
 			Entry.m_vCommandColors.resize(NumCommands, CBindManager::DEFAULT_COMMAND_COLOR);
+			Entry.m_vNextCommand.resize(NumCommands, CBindManager::NEXT_COMMAND_DEFAULT);
+			CBindManager::NormalizeCommandNextTargets(Entry);
 			s_State.m_vCommandBuffers[i].resize(NumCommands);
 			s_State.m_vCommandInputs[i].resize(NumCommands);
 			if(s_State.m_vAddCommandButtons.size() <= (size_t)i)
@@ -1342,11 +1371,60 @@ void CMenus::RenderSettingsRanbiBindManager(CUIRect MainView)
 				CUIRect CommandRow;
 				Column.HSplitTop(22.0f, &CommandRow, &Column);
 				s_ScrollRegion.AddRect(CommandRow);
-				CUIRect CommandLabel, CommandEdit, CommandColorButton, DeleteCommand;
+				CUIRect CommandLabel, CommandEdit, CommandNextDropDown, CommandColorButton, DeleteCommand;
 				CommandRow.VSplitLeft(110.0f, &CommandLabel, &CommandEdit);
-				CommandEdit.VSplitRight(52.0f, &CommandEdit, &CommandColorButton);
-				CommandColorButton.VSplitLeft(26.0f, &CommandColorButton, &DeleteCommand);
+				CommandEdit.VSplitRight(24.0f, &CommandEdit, &DeleteCommand);
+				CommandEdit.VSplitRight(4.0f, &CommandEdit, nullptr);
+				CommandEdit.VSplitRight(26.0f, &CommandEdit, &CommandColorButton);
+				CommandEdit.VSplitRight(4.0f, &CommandEdit, nullptr);
+				CommandEdit.VSplitRight(142.0f, &CommandEdit, &CommandNextDropDown);
+				CommandNextDropDown.VMargin(2.0f, &CommandNextDropDown);
 				CommandColorButton.HMargin(2.0f, &CommandColorButton);
+
+				// task-71/task-112: selected next target (default shows the automatic next
+				// command). Labels and SDropDownState live in a stable heap object; only the
+				// fixed-size label arrays are rewritten when the command count changes.
+				{
+					// Append-only stable object for this (entry, command row) pair.
+					SNextCommandDropdown &Dropdown = s_State.m_mNextCommandDropdowns[std::make_pair(Entry.m_Name, (int)CommandIdx)];
+					const int StopOption = std::min((int)NumCommands, SNextCommandDropdown::MAX_OPTIONS - 1);
+					const bool JustRebuilt = Dropdown.m_BuiltCommands != (int)NumCommands;
+					if(JustRebuilt)
+					{
+						Dropdown.m_NumOptions = StopOption + 1;
+						for(int NextIdx = 0; NextIdx < StopOption; NextIdx++)
+						{
+							str_format(Dropdown.m_aLabels[NextIdx].data(), Dropdown.m_aLabels[NextIdx].size(), Localize("Command %d"), NextIdx + 1);
+							Dropdown.m_apLabels[NextIdx] = Dropdown.m_aLabels[NextIdx].data();
+						}
+						str_copy(Dropdown.m_aLabels[StopOption].data(), Localize("Stop"), Dropdown.m_aLabels[StopOption].size());
+						Dropdown.m_apLabels[StopOption] = Dropdown.m_aLabels[StopOption].data();
+						Dropdown.m_BuiltCommands = (int)NumCommands;
+					}
+					const int Resolved = CBindManager::ResolveNextCommandRow(Entry, (int)CommandIdx);
+					int CurSelection = Resolved == CBindManager::NEXT_COMMAND_STOP ? StopOption : std::clamp(Resolved, 0, StopOption - 1);
+					CurSelection = std::clamp(CurSelection, 0, Dropdown.m_NumOptions - 1);
+					// task-114: PopupSelection requires a valid scroll region; map node is stable.
+					Dropdown.m_State.m_SelectionPopupContext.m_pScrollRegion = &Dropdown.m_ScrollRegion;
+					dbg_assert(Dropdown.m_NumOptions > 0 && Dropdown.m_NumOptions <= SNextCommandDropdown::MAX_OPTIONS, "bind manager dropdown option count out of range");
+					dbg_assert(Dropdown.m_apLabels[0] != nullptr, "bind manager dropdown label storage is null");
+					// Diagnostics only on rebuild / popup selection change (no per-frame spam).
+					if(g_Config.m_Debug && (JustRebuilt || Dropdown.m_State.m_SelectionPopupContext.m_SelectionIndex != Dropdown.m_LastLoggedPopupSelection))
+					{
+						dbg_msg("ranbi_bindmgr", "[dropdown] entry='%s' cmd=%d commands=%d options=%d cur=%d popup=%d pStrs=%p state=%p scroll=%p",
+							Entry.m_Name.c_str(), (int)CommandIdx, (int)NumCommands, Dropdown.m_NumOptions, CurSelection,
+							Dropdown.m_State.m_SelectionPopupContext.m_SelectionIndex, (const void *)Dropdown.m_apLabels.data(), (void *)&Dropdown.m_State, (void *)&Dropdown.m_ScrollRegion);
+						Dropdown.m_LastLoggedPopupSelection = Dropdown.m_State.m_SelectionPopupContext.m_SelectionIndex;
+					}
+					int NewSelection = Ui()->DoDropDown(&CommandNextDropDown, CurSelection, Dropdown.m_apLabels.data(), Dropdown.m_NumOptions, Dropdown.m_State);
+					if(NewSelection < 0 || NewSelection >= Dropdown.m_NumOptions)
+						NewSelection = CurSelection;
+					if(NewSelection != CurSelection)
+					{
+						Entry.m_vNextCommand[CommandIdx] = NewSelection == StopOption ? CBindManager::NEXT_COMMAND_STOP : NewSelection;
+						Manager.SetDirty();
+					}
+				}
 				DoButton_ColorPicker(&CommandColorButton, &Entry.m_vCommandColors[CommandIdx], false, BindManagerDefaultColorRgba(), false);
 				char aLabel[64];
 				str_format(aLabel, sizeof(aLabel), Localize("Command %d"), (int)CommandIdx + 1);
@@ -1369,6 +1447,24 @@ void CMenus::RenderSettingsRanbiBindManager(CUIRect MainView)
 					Entry.m_vCommands.erase(Entry.m_vCommands.begin() + CommandIdx);
 					if(CommandIdx < Entry.m_vCommandColors.size())
 						Entry.m_vCommandColors.erase(Entry.m_vCommandColors.begin() + CommandIdx);
+					if(CommandIdx < Entry.m_vNextCommand.size())
+						Entry.m_vNextCommand.erase(Entry.m_vNextCommand.begin() + CommandIdx);
+					// task-71: rows after the deleted one shift left; targets to the deleted row
+					// fall back to the automatic next command.
+					for(int &Next : Entry.m_vNextCommand)
+					{
+						if(Next == (int)CommandIdx)
+							Next = CBindManager::NEXT_COMMAND_DEFAULT;
+						else if(Next > (int)CommandIdx)
+							Next--;
+					}
+					if(Entry.m_vCommands.empty())
+					{
+						Entry.m_vCommands.emplace_back();
+						Entry.m_vCommandColors.push_back(CBindManager::DEFAULT_COMMAND_COLOR);
+						Entry.m_vNextCommand.push_back(CBindManager::NEXT_COMMAND_DEFAULT);
+					}
+					CBindManager::NormalizeCommandNextTargets(Entry);
 					Manager.SetDirty();
 					break;
 				}
@@ -1382,6 +1478,8 @@ void CMenus::RenderSettingsRanbiBindManager(CUIRect MainView)
 			{
 				Entry.m_vCommands.emplace_back();
 				Entry.m_vCommandColors.push_back(CBindManager::DEFAULT_COMMAND_COLOR);
+				Entry.m_vNextCommand.push_back(CBindManager::NEXT_COMMAND_DEFAULT);
+				CBindManager::NormalizeCommandNextTargets(Entry);
 				Manager.SetDirty();
 			}
 		}

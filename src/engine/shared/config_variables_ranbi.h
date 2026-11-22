@@ -27,6 +27,7 @@ MACRO_CONFIG_INT(RcScoreboardCopyName, rc_scoreboard_copy_name, 0, 0, 1, CFGFLAG
 MACRO_CONFIG_INT(RcNameplatesShowPoints, rc_nameplates_show_points, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
 MACRO_CONFIG_INT(RcNameplatesShowPositionX, rc_nameplates_show_position_x, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
 MACRO_CONFIG_INT(RcNameplatesShowPositionXMatched, rc_nameplates_show_position_x_matched, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
+MACRO_CONFIG_INT(RcNameplatesShowPositionYRange, rc_nameplates_show_position_y_range, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
 MACRO_CONFIG_COL(RcNameplatesShowPositionXMatchedColor, rc_nameplates_show_position_x_matched_color, 0, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
 MACRO_CONFIG_INT(RcNameplatesShowFinished, rc_nameplates_show_finished, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")
 MACRO_CONFIG_INT(RcNameplatesShowFinishedSize, rc_nameplates_show_finished_size, 18, 0, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "")

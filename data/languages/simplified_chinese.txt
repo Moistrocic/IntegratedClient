@@ -2793,9 +2793,6 @@ Highlight players with matching position X
 Matched color
 == 匹配颜色
 
-Colors the tee coordinate part and requires BestClient 'Show tee coordinates' (bc_show_tee_coords).
-== 为坐标显示上色，需要开启 BestClient 的“显示坐标”（bc_show_tee_coords）。
-
 Gun
 == 手枪
 
@@ -3239,6 +3236,15 @@ Append reply suffix
 
 When enabled, non-empty content is appended to every AI message. When disabled, nothing is appended and the text is kept.
 == 开启时，非空内容会追加到每条 AI 消息末尾；关闭时不追加任何内容，文本仍会保留。
+
+Highlight players with matching position Y (requires X match)
+== 高亮位置 Y 匹配的玩家（需 X 坐标匹配）
+
+Shows a ' Y' marker after the tee coordinates only when the X position also matches (diff < 0.02 tiles) and the Y difference to the viewed player is within 0.01 tiles of 1.94 (green = matching, red = not matching). Requires BestClient 'Show tee coordinates' (bc_show_tee_coords).
+== 仅当 X 坐标也匹配（差值 < 0.02 格）且与视角玩家的 Y 差在 1.94±0.01 格内时，在坐标后显示“ Y”标记（绿色=匹配，红色=不匹配）。需要开启 BestClient 的“显示坐标”（bc_show_tee_coords）。
+
+Per-command dropdown 'Stop' means: execute the current command only, do not jump to another command, and keep the key binding unchanged.
+== 每条命令的下拉“Stop”表示：只执行当前命令，不跳转到其他命令，并保持按键绑定不变。
 
 BETA
 == 

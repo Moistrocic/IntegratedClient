@@ -5344,7 +5344,10 @@ Highlight players with matching position X
 Matched color
 == 
 
-Colors the tee coordinate part and requires BestClient 'Show tee coordinates' (bc_show_tee_coords).
+Highlight players with matching position Y (requires X match)
+== 
+
+Shows a ' Y' marker after the tee coordinates only when the X position also matches (diff < 0.02 tiles) and the Y difference to the viewed player is within 0.01 tiles of 1.94 (green = matching, red = not matching). Requires BestClient 'Show tee coordinates' (bc_show_tee_coords).
 == 
 
 Skip duplicate messages in chat history
@@ -5570,6 +5573,9 @@ Initialize binds and parameters before entering a game
 == 
 
 When disabled, no Bind Manager cfg is executed when joining a server and the current binds stay unchanged.
+== 
+
+Per-command dropdown 'Stop' means: execute the current command only, do not jump to another command, and keep the key binding unchanged.
 == 
 
 Configuration saved
