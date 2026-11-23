@@ -46,13 +46,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - name: linux
-          os: ubuntu-24.04
-          cmake-args: -G Ninja -DCMAKE_BUILD_TYPE=Release -DPREFER_BUNDLED_LIBS=ON -DDISCORD_DYNAMIC=ON -DVULKAN=ON
-          cmake-init-env: CXXFLAGS="-Werror -Wno-unused-function"
-          package-file: "*-linux_x86_64.tar.xz"
-          artifact-name: release-linux
-          asset-name: IntegratedClient-linux.tar.xz
+        # IntegratedClient currently publishes Windows only. Linux/macOS release builds are
+        # disabled until their packaging and auto-update paths are maintained again.
         - name: windows
           os: windows-latest
           cmake-args: -A x64 -DTOOLS=OFF -DDOWNLOAD_GTEST=OFF -DVULKAN=ON
@@ -60,14 +55,6 @@ jobs:
           package-file: "*-win64.zip"
           artifact-name: release-windows
           asset-name: IntegratedClient-windows.zip
-        - name: macos
-          os: macOS-latest
-          # Universal PCH builds split architectures and reject the shared ARM compiler flags.
-          cmake-args: -G Ninja -DCMAKE_BUILD_TYPE=Release -DPREFER_BUNDLED_LIBS=ON -DPRECOMPILE_HEADERS=OFF -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_SYSTEM_IGNORE_PATH=/usr/lib -DCMAKE_FIND_FRAMEWORK=LAST
-          cmake-init-env: CXXFLAGS=
-          package-file: "*-macos.dmg"
-          artifact-name: release-macos
-          asset-name: IntegratedClient-macos.dmg
 
     steps:
     - uses: actions/checkout@v4
@@ -219,9 +206,7 @@ jobs:
         draft: true
         generate_release_notes: true
         files: |
-          artifacts/${{ env.CLIENT_NAME }}-linux.tar.xz
           artifacts/${{ env.CLIENT_NAME }}-windows.zip
-          artifacts/${{ env.CLIENT_NAME }}-macos.dmg
 
     - name: Create or update release manually
       if: github.event_name == 'workflow_dispatch'
@@ -232,9 +217,7 @@ jobs:
         body: ${{ github.event.inputs.body }}
         draft: true
         files: |
-          artifacts/${{ env.CLIENT_NAME }}-linux.tar.xz
           artifacts/${{ env.CLIENT_NAME }}-windows.zip
-          artifacts/${{ env.CLIENT_NAME }}-macos.dmg
 
     # IntegratedClient auto-update deployment template.
     # Required repository secrets (never commit credentials):
