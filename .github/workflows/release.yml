@@ -185,6 +185,14 @@ jobs:
       - build-cmake
     runs-on: ubuntu-latest
     steps:
+    # Checkout before downloading artifacts: actions/checkout cleans the workspace, which
+    # would delete artifacts/ if done later (the deploy step needs the downloaded zip).
+    - name: Checkout version metadata for updater deploy
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag_name || github.ref }}
+        sparse-checkout: src/game/version.h
+
     - name: Download release packages
       uses: actions/download-artifact@v4
       with:
@@ -228,13 +236,6 @@ jobs:
     #   UPDATE_SSH_PATH     optional remote directory, defaults to
     #                       /var/www/update.moiservice.top/IntegratedClient
     # The updater checks https://update.moiservice.top/IntegratedClient/update.json.
-    - name: Checkout version metadata for updater deploy
-      if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || github.event_name == 'workflow_dispatch'
-      uses: actions/checkout@v4
-      with:
-        ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag_name || github.ref }}
-        sparse-checkout: src/game/version.h
-
     - name: Upload update assets and update.json to static server
       if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || github.event_name == 'workflow_dispatch'
       shell: bash
