@@ -119,14 +119,12 @@ jobs:
       shell: bash
       run: |
         OFFICIAL_HEADER="$GITHUB_WORKSPACE/versioninfo.h"
-        if [ -z "$OFFICIAL_CODE" ]; then
-          echo "secrets.BESTCLIENT_OFFICIAL_CODE is required for official release builds" >&2
-          exit 1
-        fi
+        # IntegratedClient does not require a BestClient official code. Keep the header
+        # generation so upstream-version builds stay compatible when the secret is absent.
         python3 - <<'PY'
         import os
         from pathlib import Path
-        code = os.environ["OFFICIAL_CODE"]
+        code = os.environ.get("OFFICIAL_CODE", "")
         if any(ch in code for ch in ('\0', '\n', '\r', '"', '\\')):
             raise SystemExit("BESTCLIENT_OFFICIAL_CODE must not contain quotes, backslashes, or newlines")
         path = Path(os.environ["GITHUB_WORKSPACE"]) / "versioninfo.h"
