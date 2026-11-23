@@ -428,7 +428,7 @@ void CUpdater::ParseFallbackTask()
 				mem_copy(aFirstLine, aText, Len);
 				aFirstLine[Len] = '\0';
 				NormalizeVersion(aFirstLine, aVersion, sizeof(aVersion));
-				str_format(aName, sizeof(aName), "IntegratedClient-windows.zip");
+				str_copy(aName, "IntegratedClient-windows.zip", sizeof(aName));
 				str_format(aUrl, sizeof(aUrl), "%sIntegratedClient-windows.zip", FALLBACK_BASE_URL);
 				m_ArchiveExpectedSize = 0;
 				Parsed = true;
