@@ -135,9 +135,16 @@ jobs:
           cmake --build build-release --config Release --target integratedclient-updater
         fi
 
-    # Sign when secrets are present. Without a cert the build still ships unsigned —
-    # Defender may false-positive until WINDOWS_CERT_BASE64 / WINDOWS_CERT_PASSWORD are set.
-    - name: Sign Windows binaries
+    - name: Package release build
+      run: |
+        cmake --build build-release --config Release --target package_default
+        mkdir artifacts
+        mv build-release/${{ matrix.package-file }} artifacts/${{ matrix.asset-name }}
+
+    # Sign after packaging: signing the build outputs before CPack can be overwritten by
+    # the packaging build step. Extract the package, sign both shipped executables and
+    # recreate the zip so the uploaded asset is actually signed.
+    - name: Sign Windows release package
       if: contains(matrix.os, 'windows') && env.WINDOWS_CERT_BASE64 != ''
       env:
         WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
@@ -151,27 +158,24 @@ jobs:
         $SignTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" |
           Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
         if(-not $SignTool) { throw "signtool.exe not found" }
-        # Multi-config MSVC builds put binaries under a per-config subdirectory, so locate
-        # them instead of hardcoding the layout. The updater is shipped in the same zip and
-        # must be signed too, otherwise Windows SmartScreen/Defender treat the update package
-        # as unsigned even though the main client is signed.
+
+        $PackagePath = Join-Path "artifacts" "${{ matrix.asset-name }}"
+        $ExtractPath = Join-Path $env:RUNNER_TEMP "release-package"
+        Remove-Item $ExtractPath -Recurse -Force -ErrorAction SilentlyContinue
+        Expand-Archive -Path $PackagePath -DestinationPath $ExtractPath -Force
         $Targets = @("DDNet.exe", "integratedclient-updater.exe") | ForEach-Object {
-          Get-ChildItem -Path build-release -Filter $_ -Recurse -File |
+          Get-ChildItem -Path $ExtractPath -Filter $_ -Recurse -File |
             Select-Object -First 1 -ExpandProperty FullName
         } | Where-Object { $_ }
-        if($Targets.Count -ne 2) { throw "expected 2 binaries to sign, found $($Targets.Count)" }
+        if($Targets.Count -ne 2) { throw "expected 2 binaries in release package to sign, found $($Targets.Count)" }
         foreach($Target in $Targets) {
           & $SignTool sign /f $CertPath /p $env:WINDOWS_CERT_PASSWORD `
             /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /v $Target
           if($LASTEXITCODE -ne 0) { throw "signing failed for $Target" }
         }
         Remove-Item $CertPath -Force
-
-    - name: Package release build
-      run: |
-        cmake --build build-release --config Release --target package_default
-        mkdir artifacts
-        mv build-release/${{ matrix.package-file }} artifacts/${{ matrix.asset-name }}
+        Remove-Item $PackagePath -Force
+        Compress-Archive -Path (Join-Path $ExtractPath '*') -DestinationPath $PackagePath -CompressionLevel Optimal
 
     - name: Upload release package
       uses: actions/upload-artifact@v4
