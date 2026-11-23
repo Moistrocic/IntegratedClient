@@ -221,6 +221,8 @@ void CGameClient::OnConsoleInit()
 					      &m_Weapons, // ranbi
 					      &m_AiClient, // ranbi
 					      &m_RanbiRepeat, // ranbi
+					      &m_RanbiFastPractice, // ranbi
+					      &m_RanbiPracticeGuest, // ranbi
 					      &m_BestClient, // bestclient
 					      &m_BcConfigPresets, // bestclient
 					      &m_Translate, // bestclient

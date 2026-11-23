@@ -6,6 +6,7 @@
 #include "eventhandler.h"
 #include "gameworld.h"
 #include "playermapping.h"
+#include "ranbi_practice_sync.h"
 #include "teehistorian.h"
 
 #include <base/types.h>
@@ -218,6 +219,17 @@ public:
 	~CGameContext() override;
 
 	void Clear();
+	void RanbiPracticeSyncTick();
+
+	CRanbiPracticeSyncData m_RanbiPracticeSyncData;
+	bool m_RanbiPracticeSyncLoaded = false;
+	bool m_aRanbiPracticeSyncAssigned[MAX_CLIENTS] = {};
+	bool m_aRanbiPracticeSyncTeamFailed[MAX_CLIENTS] = {};
+	int m_aRanbiPracticeSyncRole[MAX_CLIENTS] = {};
+	CCharacter *m_apRanbiPracticeSyncChar[MAX_CLIENTS] = {};
+	int m_RanbiPracticeSyncNextRole = 0;
+	int m_RanbiPracticeSyncNextRetryTick = 0;
+	bool m_RanbiPracticeSyncPathLogged = false;
 
 	CEventHandler m_Events;
 	CPlayer *m_apPlayers[MAX_CLIENTS];

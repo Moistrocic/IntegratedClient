@@ -36,6 +36,12 @@ enum class EShellExecuteWindowState
 	FOREGROUND,
 
 	/**
+	 * The process window is shown in the foreground without being activated.
+	 * It is visible and renders normally but does not steal focus.
+	 */
+	FOREGROUND_NOACTIVATE,
+
+	/**
 	 * The process window is opened in the background without focus.
 	 */
 	BACKGROUND,

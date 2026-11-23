@@ -56,6 +56,9 @@ PROCESS process_execute(const char *file, EShellExecuteWindowState window_state,
 	case EShellExecuteWindowState::FOREGROUND:
 		info.nShow = SW_SHOW;
 		break;
+	case EShellExecuteWindowState::FOREGROUND_NOACTIVATE:
+		info.nShow = SW_SHOWNOACTIVATE;
+		break;
 	case EShellExecuteWindowState::BACKGROUND:
 		info.nShow = SW_SHOWMINNOACTIVE;
 		break;

@@ -72,6 +72,8 @@
 #include "components/bestclient/ui_animations.h" // bestclient
 #include "components/bestclient/voice/voice.h" // bestclient
 #include "components/ranbi/points.h" // ranbi
+#include "components/ranbi/practice_guest.h" // ranbi
+#include "components/ranbi/practice_server.h" // ranbi
 // bestclient
 #include "components/bestclient/translate.h" // bestclient
 // bestclient
@@ -319,6 +321,8 @@ public:
 	CAiClient m_AiClient; // ranbi
 	CRanbiAimLines m_RanbiAimLines; // ranbi
 	CRanbiRepeat m_RanbiRepeat; // ranbi
+	CRanbiFastPractice m_RanbiFastPractice; // ranbi
+	CRanbiPracticeGuest m_RanbiPracticeGuest; // ranbi
 	// ranbi
 
 	CPlayers m_Players;

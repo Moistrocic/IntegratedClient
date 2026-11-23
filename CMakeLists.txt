@@ -3226,6 +3226,10 @@ if(CLIENT)
     components/ranbi/menus_ranbi.cpp
     components/ranbi/points.cpp
     components/ranbi/points.h
+    components/ranbi/practice_server.cpp
+    components/ranbi/practice_server.h
+    components/ranbi/practice_guest.cpp
+    components/ranbi/practice_guest.h
     components/ranbi/ranbi_aim_lines.cpp
     components/ranbi/ranbi_aim_lines.h
     components/ranbi/ranbi_repeat.cpp
@@ -3759,6 +3763,8 @@ if(SERVER)
     player.h
     playermapping.cpp
     playermapping.h
+    ranbi_practice_sync.cpp
+    ranbi_practice_sync.h
     save.cpp
     save.h
     score.cpp

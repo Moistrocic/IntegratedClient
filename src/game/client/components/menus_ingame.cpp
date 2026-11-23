@@ -255,13 +255,25 @@ void CMenus::RenderGame(CUIRect MainView)
 				static CButtonContainer s_FastPracticeButton;
 				static CButtonContainer s_RanbiFastPracticePlaceholderButton;
 				const bool UseCompactLabel = CompactPractice || PracticeButtonWidth <= CompactPracticeButtonWidth;
-				// ranbi (task-82): replace the BestClient fast practice button with a Ranbi placeholder.
-				// The button keeps the exact same width/compact label logic; it is not an active state.
+				// ranbi: A toggles the local server/guest; the guest B button quits B.
 				if(g_Config.m_RcFastPracticeReplace)
 				{
-					const char *pPlaceholderLabel = UseCompactLabel ? "fp" : Localize("Fast practice");
-					if(DoButton_Menu(&s_RanbiFastPracticePlaceholderButton, pPlaceholderLabel, 0, &Button))
-						GameClient()->Echo(Localize("Ranbi fast practice is under development"));
+					if(g_Config.m_RcRanbiPracticeGuest)
+					{
+						const char *pGuestLabel = UseCompactLabel ? "fp" : Localize("Stop practice");
+						if(DoButton_Menu(&s_RanbiFastPracticePlaceholderButton, pGuestLabel, 1, &Button))
+						{
+							g_Config.m_RcRanbiPracticeGuest = 0;
+							g_Config.m_RcRanbiFastPractice = 0;
+							Client()->Quit();
+						}
+					}
+					else
+					{
+						const char *pPracticeLabel = UseCompactLabel ? "fp" : (g_Config.m_RcRanbiFastPractice ? Localize("Stop practice") : Localize("Fast practice"));
+						if(DoButton_Menu(&s_RanbiFastPracticePlaceholderButton, pPracticeLabel, g_Config.m_RcRanbiFastPractice ? 1 : 0, &Button))
+							g_Config.m_RcRanbiFastPractice = g_Config.m_RcRanbiFastPractice ? 0 : 1;
+					}
 				}
 				else
 				{
