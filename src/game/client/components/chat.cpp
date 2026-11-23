@@ -2098,11 +2098,28 @@ void CChat::EnsureCoherentWidth() const
 
 // ----- send functions -----
 
+static bool IsGuestRelayedChat(const char *pLine)
+{
+	if(pLine[0] != '/')
+		return true;
+	return !str_comp(pLine, "/w") || !str_comp(pLine, "/whisper") || !str_comp(pLine, "/c") ||
+	       str_startswith(pLine, "/w ") || str_startswith(pLine, "/whisper ") || str_startswith(pLine, "/c ");
+}
+
 void CChat::SendChat(int Team, const char *pLine)
 {
 	// don't send empty messages
-	if(*str_utf8_skip_whitespaces(pLine) == '\0')
+	const char *pTrimmed = str_utf8_skip_whitespaces(pLine);
+	if(*pTrimmed == '\0')
 		return;
+
+	if(g_Config.m_RcRanbiPracticeGuest != 0 && IsGuestRelayedChat(pTrimmed))
+	{
+		// B normal text / whisper commands -> A file IPC -> original server.
+		// Other slash commands stay on the local practice server.
+		GameClient()->m_RanbiPracticeGuest.SendLineToHost(pTrimmed);
+		return;
+	}
 
 	// bestclient
 	if(GameClient()->m_FastPractice.ConsumePracticeChatCommand(Team, pLine))

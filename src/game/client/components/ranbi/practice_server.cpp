@@ -261,6 +261,7 @@ void CRanbiFastPractice::CleanupStalePidFiles()
 void CRanbiFastPractice::StopServer(bool Shutdown)
 {
 	StopClientB();
+	CleanupChatFiles();
 #if !defined(CONF_PLATFORM_ANDROID)
 	if(m_Process != INVALID_PROCESS && (!m_KillFailed || Shutdown))
 	{
@@ -692,6 +693,87 @@ void CRanbiFastPractice::CleanupGuestSyncFile()
 	}
 }
 
+void CRanbiFastPractice::InitChatFiles()
+{
+	CleanupChatFiles();
+	char aName[160];
+	str_format(aName, sizeof(aName), "ranbi_practice_chat_%d_a2b.txt", process_id());
+	Storage()->GetCompletePath(IStorage::TYPE_SAVE, aName, m_aChatA2B, sizeof(m_aChatA2B));
+	str_format(aName, sizeof(aName), "ranbi_practice_chat_%d_b2a.txt", process_id());
+	Storage()->GetCompletePath(IStorage::TYPE_SAVE, aName, m_aChatB2A, sizeof(m_aChatB2A));
+	if(m_aChatA2B[0] != '\0')
+	{
+		IOHANDLE File = Storage()->OpenFile(m_aChatA2B, IOFLAG_WRITE, IStorage::TYPE_ABSOLUTE);
+		if(File)
+			io_close(File);
+	}
+	if(m_aChatB2A[0] != '\0')
+	{
+		IOHANDLE File = Storage()->OpenFile(m_aChatB2A, IOFLAG_WRITE, IStorage::TYPE_ABSOLUTE);
+		if(File)
+			io_close(File);
+	}
+	dbg_msg("ranbi_practice", "chat IPC files: a2b='%s' b2a='%s'", m_aChatA2B, m_aChatB2A);
+}
+
+void CRanbiFastPractice::CleanupChatFiles()
+{
+	if(m_aChatA2B[0] != '\0')
+	{
+		Storage()->RemoveFile(m_aChatA2B, IStorage::TYPE_ABSOLUTE);
+		m_aChatA2B[0] = '\0';
+	}
+	if(m_aChatB2A[0] != '\0')
+	{
+		Storage()->RemoveFile(m_aChatB2A, IStorage::TYPE_ABSOLUTE);
+		m_aChatB2A[0] = '\0';
+	}
+}
+
+void CRanbiFastPractice::RelayChatLine(int ClientId, const char *pLine)
+{
+	if(pLine == nullptr || pLine[0] == '\0' || m_aChatA2B[0] == '\0')
+		return;
+	if(g_Config.m_RcRanbiFastPractice == 0 || g_Config.m_RcRanbiPracticeGuest != 0 || !IsServerRunning())
+		return;
+	char aLine[1024];
+	if(ClientId >= 0 && ClientId < MAX_CLIENTS && GameClient()->m_aClients[ClientId].m_aName[0] != '\0')
+		str_format(aLine, sizeof(aLine), "[%s] %s", GameClient()->m_aClients[ClientId].m_aName, pLine);
+	else
+		str_format(aLine, sizeof(aLine), "[Server] %s", pLine);
+	IOHANDLE File = Storage()->OpenFile(m_aChatA2B, IOFLAG_APPEND, IStorage::TYPE_ABSOLUTE);
+	if(!File)
+		return;
+	io_write(File, aLine, str_length(aLine));
+	io_write(File, "\n", 1);
+	io_close(File);
+}
+
+void CRanbiFastPractice::PollHostChat()
+{
+	if(m_aChatB2A[0] == '\0')
+		return;
+	const auto Now = time_get_nanoseconds();
+	if(Now < m_NextChatPoll)
+		return;
+	m_NextChatPoll = Now + std::chrono::milliseconds(200);
+	char *pData = const_cast<char *>(Storage()->ReadFileStr(m_aChatB2A, IStorage::TYPE_ABSOLUTE));
+	if(pData == nullptr)
+		return;
+	char *pCursor = pData;
+	while(pCursor != nullptr && *pCursor != '\0')
+	{
+		char *pEnd = const_cast<char *>(str_find(pCursor, "\n"));
+		if(pEnd != nullptr)
+			*pEnd = '\0';
+		if(*pCursor != '\0')
+			GameClient()->m_Chat.SendChat(0, pCursor);
+		pCursor = pEnd != nullptr ? pEnd + 1 : nullptr;
+	}
+	free(pData);
+	Storage()->RemoveFile(m_aChatB2A, IStorage::TYPE_ABSOLUTE);
+}
+
 bool CRanbiFastPractice::ClientBAlive() const
 {
 #if !defined(CONF_PLATFORM_ANDROID)
@@ -737,6 +819,7 @@ void CRanbiFastPractice::StartClientB()
 	if(m_ClientBStarted || m_Port <= 0)
 		return;
 	m_ClientBStarted = true;
+	InitChatFiles();
 
 	char aBinaryPath[IO_MAX_PATH_LENGTH];
 	Storage()->GetBinaryPath(PLAT_CLIENT_EXEC, aBinaryPath, sizeof(aBinaryPath));
@@ -767,6 +850,9 @@ void CRanbiFastPractice::StartClientB()
 	vArguments.emplace_back("cl_input_fifo \"\"");
 	vArguments.emplace_back("bc_discord_rpc 0");
 	vArguments.emplace_back(aConnect);
+	char aChatPid[64];
+	str_format(aChatPid, sizeof(aChatPid), "rc_ranbi_practice_guest_chat_pid %d", process_id());
+	vArguments.emplace_back(aChatPid);
 
 	std::vector<const char *> vpArguments;
 	vpArguments.reserve(vArguments.size());
@@ -882,6 +968,7 @@ void CRanbiFastPractice::OnUpdate()
 	ReapExitedProcess();
 	ReapClientB();
 	RetryPendingCleanup();
+	PollHostChat();
 
 	if(g_Config.m_RcRanbiPracticeGuest != 0)
 	{

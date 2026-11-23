@@ -37,6 +37,8 @@ public:
 	const char *LastError() const { return m_aLastError; }
 	const SHA256_DIGEST &MapSha256() const { return m_MapSha; }
 
+	void RelayChatLine(int ClientId, const char *pLine);
+
 private:
 	void TryStartServer();
 	void CaptureGuestStartData();
@@ -44,6 +46,9 @@ private:
 	void CleanupGuestSyncFile();
 	void StartClientB();
 	void StopClientB();
+	void InitChatFiles();
+	void CleanupChatFiles();
+	void PollHostChat();
 	void ReapClientB();
 	bool ClientBAlive() const;
 	bool PrepareMapCopy();
@@ -82,6 +87,9 @@ private:
 	bool m_GuestHasDummy = false;
 	bool m_ClientBStarted = false;
 	bool m_StoppingClientB = false;
+	char m_aChatA2B[IO_MAX_PATH_LENGTH] = "";
+	char m_aChatB2A[IO_MAX_PATH_LENGTH] = "";
+	std::chrono::nanoseconds m_NextChatPoll{0};
 	char m_aGuestBodyState[768] = "";
 	char m_aGuestDummyState[768] = "";
 	char m_aGuestSyncFile[IO_MAX_PATH_LENGTH] = "";

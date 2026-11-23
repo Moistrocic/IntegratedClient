@@ -1460,6 +1460,13 @@ void CGameClient::OnMessage(int MsgId, CUnpacker *pUnpacker, int Conn, bool Dumm
 	for(auto &pComponent : m_vpAll)
 		pComponent->OnMessage(MsgId, pRawMsg);
 
+	if(MsgId == NETMSGTYPE_SV_CHAT && g_Config.m_RcRanbiPracticeGuest == 0)
+	{
+		// A receives original-server chat (including system messages) and mirrors it to B.
+		CNetMsg_Sv_Chat *pChatMsg = (CNetMsg_Sv_Chat *)pRawMsg;
+		m_RanbiFastPractice.RelayChatLine(pChatMsg->m_ClientId, pChatMsg->m_pMessage);
+	}
+
 	if(MsgId == NETMSGTYPE_SV_READYTOENTER)
 	{
 		Client()->EnterGame(Conn);

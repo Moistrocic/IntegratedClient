@@ -1,12 +1,74 @@
 #include "practice_guest.h"
 
 #include <base/dbg.h>
+#include <base/io.h>
 #include <base/time.h>
 
 #include <engine/client.h>
 #include <engine/shared/config.h>
 
+#include <game/client/components/chat.h>
 #include <game/client/gameclient.h>
+
+void CRanbiPracticeGuest::InitChatPaths()
+{
+	if(m_aChatA2B[0] != '\0')
+		return;
+	const int HostPid = g_Config.m_RcRanbiPracticeGuestChatPid;
+	if(HostPid <= 0)
+		return;
+	char aName[160];
+	str_format(aName, sizeof(aName), "ranbi_practice_chat_%d_a2b.txt", HostPid);
+	Storage()->GetCompletePath(IStorage::TYPE_SAVE, aName, m_aChatA2B, sizeof(m_aChatA2B));
+	str_format(aName, sizeof(aName), "ranbi_practice_chat_%d_b2a.txt", HostPid);
+	Storage()->GetCompletePath(IStorage::TYPE_SAVE, aName, m_aChatB2A, sizeof(m_aChatB2A));
+	dbg_msg("ranbi_practice_guest", "chat IPC paths: a2b='%s' b2a='%s'", m_aChatA2B, m_aChatB2A);
+}
+
+void CRanbiPracticeGuest::SendLineToHost(const char *pLine)
+{
+	if(pLine == nullptr || pLine[0] == '\0')
+		return;
+	InitChatPaths();
+	if(m_aChatB2A[0] == '\0')
+		return;
+	IOHANDLE File = Storage()->OpenFile(m_aChatB2A, IOFLAG_APPEND, IStorage::TYPE_ABSOLUTE);
+	if(!File)
+		return;
+	io_write(File, pLine, str_length(pLine));
+	io_write(File, "\n", 1);
+	io_close(File);
+	dbg_msg("ranbi_practice_guest", "chat -> host: %s", pLine);
+}
+
+void CRanbiPracticeGuest::PollHostChat()
+{
+	InitChatPaths();
+	if(m_aChatA2B[0] == '\0')
+		return;
+	const auto Now = time_get_nanoseconds();
+	if(Now < m_NextChatPoll)
+		return;
+	m_NextChatPoll = Now + std::chrono::milliseconds(200);
+	char *pData = const_cast<char *>(Storage()->ReadFileStr(m_aChatA2B, IStorage::TYPE_ABSOLUTE));
+	if(pData == nullptr)
+		return;
+	const int Len = str_length(pData);
+	if(Len < m_ChatReadOffset)
+		m_ChatReadOffset = 0;
+	char *pCursor = pData + m_ChatReadOffset;
+	while(pCursor != nullptr && *pCursor != '\0')
+	{
+		char *pEnd = const_cast<char *>(str_find(pCursor, "\n"));
+		if(pEnd != nullptr)
+			*pEnd = '\0';
+		if(*pCursor != '\0')
+			GameClient()->m_Chat.AddLine(-1, 0, pCursor);
+		pCursor = pEnd != nullptr ? pEnd + 1 : nullptr;
+	}
+	m_ChatReadOffset = Len;
+	free(pData);
+}
 
 void CRanbiPracticeGuest::TryEnterGame(int Conn, const char *pName)
 {
@@ -31,8 +93,12 @@ void CRanbiPracticeGuest::OnUpdate()
 		m_LoggedDummyEnter = false;
 		m_MainEnterAttempts = 0;
 		m_DummyEnterAttempts = 0;
+		m_aChatA2B[0] = '\0';
+		m_aChatB2A[0] = '\0';
+		m_ChatReadOffset = 0;
 		return;
 	}
+	PollHostChat();
 	if(Client()->State() != IClient::STATE_ONLINE || GameClient()->Map() == nullptr || !GameClient()->Map()->IsLoaded())
 		return;
 	if(!m_LoggedState)
