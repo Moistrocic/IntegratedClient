@@ -66,6 +66,7 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	IEngine *m_pEngine = nullptr;
 	IFavorites *m_pFavorites = nullptr;
 	IGameClient *m_pGameClient = nullptr;
+	class IUpdater *m_pUpdater = nullptr;
 	IEngineGraphics *m_pGraphics = nullptr;
 	IEngineHttp *m_pHttp = nullptr;
 	IEngineInput *m_pInput = nullptr;
@@ -85,6 +86,7 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	CServerBrowser m_ServerBrowser;
 	CFriends m_Friends;
 	CFriends m_Foes;
+	CUpdater m_Updater;
 
 	char m_aConnectAddressStr[MAX_SERVER_ADDRESSES * NETADDR_MAXSTRSIZE] = "";
 
@@ -299,6 +301,7 @@ public:
 	IEngine *Engine() { return m_pEngine; }
 	IGameClient *GameClient() { return m_pGameClient; }
 	const IGameClient *GameClient() const { return m_pGameClient; }
+	class IUpdater *Updater() override { return m_pUpdater; }
 	IEngineGraphics *Graphics() { return m_pGraphics; }
 	IEngineInput *Input() { return m_pInput; }
 	IEngineSound *Sound() { return m_pSound; }

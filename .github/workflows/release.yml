@@ -145,6 +145,10 @@ jobs:
             cmake -S . -B build-release ${{ matrix.cmake-args }}
         fi
         cmake --build build-release --config Release --target game-client
+        if [[ "${{ matrix.os }}" == windows-latest ]]; then
+          # Auto-updater must be part of the Windows release package.
+          cmake --build build-release --config Release --target integratedclient-updater
+        fi
 
     # Sign when secrets are present. Without a cert the build still ships unsigned —
     # Defender may false-positive until WINDOWS_CERT_BASE64 / WINDOWS_CERT_PASSWORD are set.
@@ -163,12 +167,14 @@ jobs:
           Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
         if(-not $SignTool) { throw "signtool.exe not found" }
         # Multi-config MSVC builds put binaries under a per-config subdirectory, so locate
-        # them instead of hardcoding the layout.
-        $Targets = @("DDNet.exe") | ForEach-Object {
+        # them instead of hardcoding the layout. The updater is shipped in the same zip and
+        # must be signed too, otherwise Windows SmartScreen/Defender treat the update package
+        # as unsigned even though the main client is signed.
+        $Targets = @("DDNet.exe", "integratedclient-updater.exe") | ForEach-Object {
           Get-ChildItem -Path build-release -Filter $_ -Recurse -File |
             Select-Object -First 1 -ExpandProperty FullName
         } | Where-Object { $_ }
-        if($Targets.Count -ne 1) { throw "expected 1 binary to sign, found $($Targets.Count)" }
+        if($Targets.Count -ne 2) { throw "expected 2 binaries to sign, found $($Targets.Count)" }
         foreach($Target in $Targets) {
           & $SignTool sign /f $CertPath /p $env:WINDOWS_CERT_PASSWORD `
             /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /v $Target
@@ -231,3 +237,67 @@ jobs:
           artifacts/${{ env.CLIENT_NAME }}-linux.tar.xz
           artifacts/${{ env.CLIENT_NAME }}-windows.zip
           artifacts/${{ env.CLIENT_NAME }}-macos.dmg
+
+    # IntegratedClient auto-update deployment template.
+    # Required repository secrets (never commit credentials):
+    #   UPDATE_SSH_HOST     static server host
+    #   UPDATE_SSH_USER     SSH user
+    #   UPDATE_SSH_KEY      private SSH key (PEM/OpenSSH), no passphrase
+    #   UPDATE_SSH_PORT     optional SSH port, defaults to 22
+    #   UPDATE_SSH_PATH     optional remote directory, defaults to
+    #                       /var/www/update.moiservice.top/IntegratedClient
+    # The updater checks https://update.moiservice.top/IntegratedClient/update.json.
+    - name: Checkout version metadata for updater deploy
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: src/game/version.h
+
+    - name: Upload update assets and update.json to static server
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      shell: bash
+      env:
+        UPDATE_SSH_HOST: ${{ secrets.UPDATE_SSH_HOST }}
+        UPDATE_SSH_USER: ${{ secrets.UPDATE_SSH_USER }}
+        UPDATE_SSH_KEY: ${{ secrets.UPDATE_SSH_KEY }}
+        UPDATE_SSH_PORT: ${{ secrets.UPDATE_SSH_PORT }}
+        UPDATE_SSH_PATH: ${{ secrets.UPDATE_SSH_PATH }}
+      run: |
+        set -euo pipefail
+        if [[ -z "${UPDATE_SSH_HOST:-}" || -z "${UPDATE_SSH_USER:-}" || -z "${UPDATE_SSH_KEY:-}" ]]; then
+          echo "Update deploy secrets are not configured; skipping static-server upload." >&2
+          exit 0
+        fi
+        VERSION=$(awk -F'"' '/^#define INTEGRATEDCLIENT_VERSION / {print $2}' src/game/version.h)
+        if [[ -z "$VERSION" ]]; then
+          echo "Could not parse INTEGRATEDCLIENT_VERSION" >&2
+          exit 1
+        fi
+        ASSET_NAME="IntegratedClient-windows.zip"
+        ASSET_URL="https://update.moiservice.top/IntegratedClient/${ASSET_NAME}"
+        SHA256=$(sha256sum "artifacts/${ASSET_NAME}" | awk '{print $1}')
+        REMOTE_PATH="${UPDATE_SSH_PATH:-/var/www/update.moiservice.top/IntegratedClient}"
+        SSH_PORT="${UPDATE_SSH_PORT:-22}"
+
+        umask 077
+        printf '%s\n' "$UPDATE_SSH_KEY" > "$RUNNER_TEMP/update_deploy_key"
+        chmod 600 "$RUNNER_TEMP/update_deploy_key"
+        mkdir -p "$RUNNER_TEMP/update_deploy"
+        cp "artifacts/${ASSET_NAME}" "$RUNNER_TEMP/update_deploy/${ASSET_NAME}"
+        cat > "$RUNNER_TEMP/update_deploy/update.json" <<EOF
+        {
+          "version": "${VERSION}",
+          "asset_name": "${ASSET_NAME}",
+          "asset_url": "${ASSET_URL}",
+          "sha256": "${SHA256}"
+        }
+        EOF
+        printf '%s\n' "$VERSION" > "$RUNNER_TEMP/update_deploy/version.txt"
+
+        SSH_OPTS=(-i "$RUNNER_TEMP/update_deploy_key" -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new)
+        ssh "${SSH_OPTS[@]}" "$UPDATE_SSH_USER@$UPDATE_SSH_HOST" "mkdir -p '$REMOTE_PATH'"
+        scp -P "$SSH_PORT" -i "$RUNNER_TEMP/update_deploy_key" -o StrictHostKeyChecking=accept-new \
+          "$RUNNER_TEMP/update_deploy/${ASSET_NAME}" \
+          "$RUNNER_TEMP/update_deploy/update.json" \
+          "$RUNNER_TEMP/update_deploy/version.txt" \
+          "$UPDATE_SSH_USER@$UPDATE_SSH_HOST:$REMOTE_PATH/"

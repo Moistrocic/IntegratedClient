@@ -3274,6 +3274,7 @@ void CClient::RegisterInterfaces()
 	Kernel()->RegisterInterface(static_cast<IGhostRecorder *>(&m_GhostRecorder), false);
 	Kernel()->RegisterInterface(static_cast<IGhostLoader *>(&m_GhostLoader), false);
 	Kernel()->RegisterInterface(static_cast<IServerBrowser *>(&m_ServerBrowser), false);
+	Kernel()->RegisterInterface(static_cast<IUpdater *>(&m_Updater), false);
 	Kernel()->RegisterInterface(static_cast<IFriends *>(&m_Friends), false);
 	Kernel()->ReregisterInterface(static_cast<IFriends *>(&m_Foes));
 }
@@ -3286,6 +3287,7 @@ void CClient::InitInterfaces()
 	m_pFavorites = Kernel()->RequestInterface<IFavorites>();
 	m_pSound = Kernel()->RequestInterface<IEngineSound>();
 	m_pGameClient = Kernel()->RequestInterface<IGameClient>();
+	m_pUpdater = Kernel()->RequestInterface<IUpdater>();
 	m_pHttp = Kernel()->RequestInterface<IEngineHttp>();
 	m_pInput = Kernel()->RequestInterface<IEngineInput>();
 	m_pConfigManager = Kernel()->RequestInterface<IConfigManager>();
@@ -3305,6 +3307,7 @@ void CClient::InitInterfaces()
 
 	m_GhostRecorder.Init();
 	m_GhostLoader.Init();
+	m_Updater.Init();
 }
 
 void CClient::Run()
@@ -3514,6 +3517,9 @@ void CClient::Run()
 
 		// update sound
 		Sound()->Update();
+
+		if(Updater() != nullptr)
+			Updater()->Update();
 
 		if(CtrlShiftKey(KEY_D, LastD))
 			g_Config.m_Debug ^= 1;

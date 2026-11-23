@@ -13,6 +13,10 @@ public:
 
 private:
 	bool CheckHotKey(int Key) const;
+	void RenderUpdatePopup(CUIRect MainView);
+	bool m_UpdatePopupCancelled = false;
+	bool m_UpdateStarted = false;
+	char m_aUpdateSeenVersion[64] = "";
 };
 
 #endif

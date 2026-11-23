@@ -6432,3 +6432,36 @@ You have probably only installed the TClient DDNet.exe which is not supported, p
 
 Changing name to %s near finish
 == 
+
+IntegratedClient Update
+== IntegratedClient 更新
+
+Version %s is available (current: %s).
+== 版本 %s 可用（目前：%s）。
+
+Update now? The client will download the package and restart.
+== 立即更新？用戶端將下載更新包並重新啟動。
+
+Update and restart
+== 更新並重新啟動
+
+Later
+== 稍後
+
+Never this version
+== 不再提醒此版本
+
+Downloading: %s (%d%%)
+== 下載中：%s（%d%%）
+
+Hide
+== 隱藏
+
+Update downloaded. Restart to apply.
+== 更新已下載，重新啟動後套用。
+
+Restart and apply
+== 重新啟動並套用
+
+Update check or download failed.
+== 更新檢查或下載失敗。

@@ -2919,6 +2919,7 @@ if(CLIENT)
     sqlite.cpp
     steam.cpp
     text.cpp
+    updater.cpp
     updater.h
     video.cpp
     video.h
@@ -3890,6 +3891,20 @@ if(CMAKE_GENERATOR MATCHES ".*Makefiles.*")
 endif()
 
 ########################################################################
+# INTEGRATEDCLIENT UPDATER (Windows)
+########################################################################
+
+if(TARGET_OS STREQUAL "windows")
+  add_executable(integratedclient-updater WIN32 src/tools/integratedclient_updater.cpp)
+  target_sources(integratedclient-updater PRIVATE $<TARGET_OBJECTS:zlib>)
+  target_link_libraries(integratedclient-updater PRIVATE shell32)
+  target_include_directories(integratedclient-updater SYSTEM PRIVATE ${ZLIB_INCLUDE_DIRS})
+  target_compile_definitions(integratedclient-updater PRIVATE NOMINMAX NTDDI_VERSION=0x06000000 _WIN32_WINNT=0x0600 UNICODE _UNICODE)
+  set_property(TARGET integratedclient-updater PROPERTY CXX_STANDARD 20)
+  set_property(TARGET integratedclient-updater PROPERTY CXX_STANDARD_REQUIRED ON)
+endif()
+
+########################################################################
 # VARIOUS TARGETS
 ########################################################################
 
@@ -4369,6 +4384,9 @@ endif()
 set(CPACK_TARGETS)
 if(TARGET game-client)
   list(APPEND CPACK_TARGETS game-client)
+endif()
+if(TARGET integratedclient-updater)
+  list(APPEND CPACK_TARGETS integratedclient-updater)
 endif()
 if(TARGET game-server)
   list(APPEND CPACK_TARGETS game-server)

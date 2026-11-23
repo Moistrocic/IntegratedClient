@@ -251,6 +251,7 @@ public:
 
 	//
 	virtual const NETADDR &ServerAddress() const = 0;
+	virtual class IUpdater *Updater() = 0;
 	virtual int ConnectNetTypes() const = 0;
 	virtual const char *ConnectAddressString() const = 0;
 	virtual const char *MapDownloadName() const = 0;

@@ -99,6 +99,8 @@ MACRO_CONFIG_STR(RcRanbiPracticeGuestDummyPos, rc_ranbi_practice_guest_dummy_pos
 MACRO_CONFIG_STR(RcRanbiPracticeGuestBodyState, rc_ranbi_practice_guest_body_state, 768, "", CFGFLAG_CLIENT, "Internal: body weapons/status state for the practice guest client")
 MACRO_CONFIG_STR(RcRanbiPracticeGuestDummyState, rc_ranbi_practice_guest_dummy_state, 768, "", CFGFLAG_CLIENT, "Internal: dummy weapons/status state for the practice guest client")
 MACRO_CONFIG_INT(RcRanbiPracticeGuestChatPid, rc_ranbi_practice_guest_chat_pid, 0, 0, 2147483647, CFGFLAG_CLIENT, "Internal: A process id used for practice chat IPC files")
+MACRO_CONFIG_INT(RcAutoUpdate, rc_auto_update, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Automatically download and apply IntegratedClient updates on the main menu")
+MACRO_CONFIG_STR(RcUpdateSkippedVersion, rc_update_skipped_version, 64, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "IntegratedClient version the user chose to skip")
 MACRO_CONFIG_INT(RcRanbiFastPractice, rc_ranbi_fast_practice, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Start a temporary local DDNet-Server with the current map for practice (M0)")
 MACRO_CONFIG_INT(RcFrozenTeeGray, rc_frozen_tee_gray, 100, 0, 100, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Frozen tee icon gray filter strength in percent (0 = original colors, 100 = fully gray)")
 

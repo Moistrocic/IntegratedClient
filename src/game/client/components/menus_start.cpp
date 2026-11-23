@@ -2,12 +2,14 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include "menus_start.h"
 
+#include <engine/client/updater.h>
 #include <engine/font_icons.h>
 #include <engine/graphics.h>
 #include <engine/keys.h>
 #include <engine/serverbrowser.h>
 #include <engine/shared/config.h>
 #include <engine/textrender.h>
+#include <engine/updater.h>
 
 #include <generated/client_data.h>
 
@@ -274,6 +276,158 @@ void CMenusStart::RenderStartMenu(CUIRect MainView)
 	{
 		GameClient()->m_Menus.SetShowStart(false);
 		GameClient()->m_Menus.SetMenuPage(NewPage);
+	}
+
+	RenderUpdatePopup(MainView);
+}
+
+void CMenusStart::RenderUpdatePopup(CUIRect MainView)
+{
+	(void)MainView;
+	IUpdater *pUpdater = Client()->Updater();
+	if(pUpdater == nullptr)
+		return;
+	const IUpdater::EUpdaterState State = pUpdater->GetCurrentState();
+	if(State == IUpdater::CLEAN || State == IUpdater::GETTING_MANIFEST)
+		return;
+	if(State == IUpdater::VERSION_AVAILABLE)
+	{
+		const char *pLatest = pUpdater->GetLatestVersionString();
+		if(pLatest[0] == '\0')
+			return;
+		if(g_Config.m_RcUpdateSkippedVersion[0] != '\0' && !RanbiVersionIsNewer(pLatest, g_Config.m_RcUpdateSkippedVersion))
+			return;
+		if(str_comp(m_aUpdateSeenVersion, pLatest) != 0)
+		{
+			str_copy(m_aUpdateSeenVersion, pLatest, sizeof(m_aUpdateSeenVersion));
+			m_UpdatePopupCancelled = false;
+		}
+		if(m_UpdatePopupCancelled)
+			return;
+	}
+	if(State == IUpdater::FAIL)
+	{
+		if(!m_UpdateStarted)
+			return;
+	}
+
+	if(State == IUpdater::NEED_RESTART && m_UpdateStarted)
+	{
+		pUpdater->ApplyUpdateAndRestart();
+		return;
+	}
+
+	CUIRect Screen = *Ui()->Screen();
+	Graphics()->DrawRect(0.0f, 0.0f, Screen.w, Screen.h, ColorRGBA(0.0f, 0.0f, 0.0f, 0.55f), IGraphics::CORNER_NONE, 0.0f);
+
+	CUIRect Box;
+	Box.w = std::min(560.0f, Screen.w - 40.0f);
+	Box.h = 270.0f;
+	Box.x = (Screen.w - Box.w) / 2.0f;
+	Box.y = (Screen.h - Box.h) / 2.0f;
+	Graphics()->DrawRect(Box.x, Box.y, Box.w, Box.h, ColorRGBA(0.08f, 0.09f, 0.08f, 1.0f), IGraphics::CORNER_ALL, 10.0f);
+	Graphics()->DrawRect(Box.x, Box.y, Box.w, 4.0f, ColorRGBA(0.68f, 0.82f, 0.28f, 1.0f), IGraphics::CORNER_ALL, 2.0f);
+
+	CUIRect Label = Box;
+	Label.x += 20.0f;
+	Label.w -= 40.0f;
+	Label.y += 20.0f;
+	Label.h = 30.0f;
+	Ui()->DoLabel(&Label, Localize("IntegratedClient Update"), 24.0f, TEXTALIGN_ML);
+
+	char aBuf[512];
+	if(State == IUpdater::VERSION_AVAILABLE)
+	{
+		str_format(aBuf, sizeof(aBuf), Localize("Version %s is available (current: %s)."), pUpdater->GetLatestVersionString(), INTEGRATEDCLIENT_VERSION);
+		Label.y += 42.0f;
+		Label.h = 60.0f;
+		Ui()->DoLabel(&Label, aBuf, 14.0f, TEXTALIGN_ML);
+		Label.y += 52.0f;
+		Label.h = 28.0f;
+		Ui()->DoLabel(&Label, Localize("Update now? The client will download the package and restart."), 13.0f, TEXTALIGN_ML);
+
+		CUIRect Buttons = Label;
+		Buttons.y = Box.y + Box.h - 62.0f;
+		Buttons.h = 40.0f;
+		const float Gap = 12.0f;
+		CUIRect B1, B2, B3;
+		Buttons.VSplitLeft((Buttons.w - 2.0f * Gap) / 3.0f, &B1, &Buttons);
+		Buttons.VSplitLeft(Gap, nullptr, &Buttons);
+		Buttons.VSplitLeft((Buttons.w - Gap) / 2.0f, &B2, &Buttons);
+		Buttons.VSplitLeft(Gap, nullptr, &Buttons);
+		B3 = Buttons;
+		static CButtonContainer s_ConfirmButton;
+		static CButtonContainer s_LaterButton;
+		static CButtonContainer s_NeverButton;
+		if(GameClient()->m_Menus.DoButton_Menu(&s_ConfirmButton, Localize("Update and restart"), 0, &B1))
+		{
+			m_UpdateStarted = true;
+			pUpdater->InitiateUpdate();
+		}
+		if(GameClient()->m_Menus.DoButton_Menu(&s_LaterButton, Localize("Later"), 0, &B2))
+			m_UpdatePopupCancelled = true;
+		if(GameClient()->m_Menus.DoButton_Menu(&s_NeverButton, Localize("Never this version"), 0, &B3))
+		{
+			str_copy(g_Config.m_RcUpdateSkippedVersion, pUpdater->GetLatestVersionString(), sizeof(g_Config.m_RcUpdateSkippedVersion));
+			m_UpdatePopupCancelled = true;
+		}
+		return;
+	}
+
+	if(State == IUpdater::DOWNLOADING)
+	{
+		char aFile[256];
+		pUpdater->GetCurrentFile(aFile, sizeof(aFile));
+		str_format(aBuf, sizeof(aBuf), Localize("Downloading: %s (%d%%)"), aFile, pUpdater->GetCurrentPercent());
+		Label.y += 50.0f;
+		Label.h = 30.0f;
+		Ui()->DoLabel(&Label, aBuf, 15.0f, TEXTALIGN_ML);
+		CUIRect Bar = Label;
+		Bar.y += 44.0f;
+		Bar.h = 18.0f;
+		Graphics()->DrawRect(Bar.x, Bar.y, Bar.w, Bar.h, ColorRGBA(0.18f, 0.18f, 0.18f, 1.0f), IGraphics::CORNER_ALL, 4.0f);
+		Graphics()->DrawRect(Bar.x, Bar.y, Bar.w * pUpdater->GetCurrentPercent() / 100.0f, Bar.h, ColorRGBA(0.68f, 0.82f, 0.28f, 1.0f), IGraphics::CORNER_ALL, 4.0f);
+		CUIRect Cancel = Bar;
+		Cancel.y = Box.y + Box.h - 62.0f;
+		Cancel.h = 40.0f;
+		Cancel.w = 180.0f;
+		Cancel.x = Box.x + (Box.w - Cancel.w) / 2.0f;
+		static CButtonContainer s_DownloadLaterButton;
+		if(GameClient()->m_Menus.DoButton_Menu(&s_DownloadLaterButton, Localize("Hide"), 0, &Cancel))
+			m_UpdatePopupCancelled = true;
+		return;
+	}
+
+	if(State == IUpdater::NEED_RESTART)
+	{
+		Label.y += 50.0f;
+		Label.h = 40.0f;
+		Ui()->DoLabel(&Label, Localize("Update downloaded. Restart to apply."), 16.0f, TEXTALIGN_ML);
+		CUIRect B = Label;
+		B.y = Box.y + Box.h - 62.0f;
+		B.h = 40.0f;
+		B.w = 220.0f;
+		static CButtonContainer s_RestartButton;
+		if(GameClient()->m_Menus.DoButton_Menu(&s_RestartButton, Localize("Restart and apply"), 0, &B))
+		{
+			m_UpdateStarted = true;
+			pUpdater->ApplyUpdateAndRestart();
+		}
+		return;
+	}
+
+	if(State == IUpdater::FAIL)
+	{
+		Label.y += 50.0f;
+		Label.h = 40.0f;
+		Ui()->DoLabel(&Label, Localize("Update check or download failed."), 16.0f, TEXTALIGN_ML);
+		CUIRect B = Label;
+		B.y = Box.y + Box.h - 62.0f;
+		B.h = 40.0f;
+		B.w = 180.0f;
+		static CButtonContainer s_CloseButton;
+		if(GameClient()->m_Menus.DoButton_Menu(&s_CloseButton, Localize("Close"), 0, &B))
+			m_UpdatePopupCancelled = true;
 	}
 }
 
