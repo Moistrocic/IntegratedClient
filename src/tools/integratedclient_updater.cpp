@@ -393,6 +393,7 @@ static int CountFiles(const wchar_t *pDir)
 
 static void CopyTree(const wchar_t *pSrc, const wchar_t *pDst, std::function<void()> PerFile = nullptr)
 {
+	zip::EnsureDirectories(pDst);
 	CreateDirectoryW(pDst, NULL);
 	std::wstring Search(pSrc);
 	Search += L"\\*";
@@ -586,6 +587,15 @@ static DWORD WINAPI WorkerThread(LPVOID pParam)
 	}
 	SetPercent(8);
 
+	wchar_t aUpdateDir[MAX_PATH];
+	_snwprintf_s(aUpdateDir, _TRUNCATE, L"%ls\\update", pA->aInstallDir);
+	if(!CreateDirectoryW(aUpdateDir, NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
+	{
+		Fail(L"Failed to create update directory.");
+		delete pA;
+		return 1;
+	}
+
 	wchar_t aExtract[MAX_PATH];
 	_snwprintf_s(aExtract, _TRUNCATE, L"%ls\\update\\extract", pA->aInstallDir);
 	DeleteTree(aExtract);
@@ -689,11 +699,19 @@ static DWORD WINAPI WorkerThread(LPVOID pParam)
 
 	SHELLEXECUTEINFOW Sei = {};
 	Sei.cbSize = sizeof(Sei);
+	Sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_NO_UI;
 	Sei.lpVerb = L"open";
 	Sei.lpFile = pA->aExePath;
 	Sei.lpDirectory = pA->aInstallDir;
 	Sei.nShow = SW_SHOWNORMAL;
-	ShellExecuteExW(&Sei);
+	if(!ShellExecuteExW(&Sei))
+	{
+		Fail(L"Failed to launch IntegratedClient.");
+		delete pA;
+		return 1;
+	}
+	if(Sei.hProcess != NULL)
+		CloseHandle(Sei.hProcess);
 
 	Sleep(300);
 	delete pA;

@@ -2285,13 +2285,10 @@ Play the selected demo
 Are you sure that you want to disconnect and play this demo?
 == 
 
-Fast practice
-== 
-
-Ranbi fast practice is under development
-== 
-
 Stop practice
+== 
+
+Fast practice
 == 
 
 Save all changes before turning off the editor?
@@ -2908,6 +2905,48 @@ No skins match your filter criteria
 == 
 
 Telegram
+== 
+
+IntegratedClient Update
+== 
+
+Version %s is available (current: %s).
+== 
+
+Update now? The client will download the package and restart.
+== 
+
+Update and restart
+== 
+
+Later
+== 
+
+Never this version
+== 
+
+Downloading from %s: %s (%d%%)
+== 
+
+Keep the client open until the update finishes.
+== 
+
+Switch to GitHub download
+== 
+
+Switch to backup server download
+== 
+
+Update downloaded. Restart to apply.
+== 
+
+Restart and apply
+== 
+
+Update check or download failed.
+== 
+
+Retry
 == 
 
 Points
@@ -5236,7 +5275,7 @@ Map finishes refresh automatically about one second after changing this setting.
 Replace BestClient fast practice button
 == 
 
-When enabled, the BestClient Fast practice button is replaced by a Ranbi placeholder button that only shows a development notice.
+When enabled, the BestClient Fast practice button starts the Ranbi fast practice flow: local practice server plus an automatically joined practice client.
 == 
 
 Use practice ghost coordinates

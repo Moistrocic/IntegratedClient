@@ -66,6 +66,7 @@ class CUpdater : public IUpdater
 	bool m_AutoCheckPending = false;
 	bool m_FallbackJsonTried = false;
 	bool m_UsingFallbackDownload = false;
+	bool m_DownloadFailed = false;
 	long long m_ArchiveExpectedSize = 0;
 
 	char m_aLatestVersion[64];
@@ -73,6 +74,10 @@ class CUpdater : public IUpdater
 	char m_aArchiveUrl[2048];
 	char m_aArchiveSha256[65];
 	char m_aArchivePath[IO_MAX_PATH_LENGTH];
+	char m_aGithubArchiveName[128];
+	char m_aGithubArchiveUrl[2048];
+	char m_aGithubArchiveSha256[65];
+	long long m_GithubArchiveExpectedSize = 0;
 
 	void ResetTask();
 	void StartReleaseFetch();
@@ -81,6 +86,7 @@ class CUpdater : public IUpdater
 	void ParseFallbackTask();
 	void StartArchiveDownload();
 	void StartFallbackArchiveDownload();
+	void SetDownloadSource(bool Fallback);
 	bool ValidateArchive();
 	bool LaunchApplyScriptAndQuit();
 	void SetCurrentState(EUpdaterState NewState);
@@ -93,6 +99,12 @@ public:
 
 	EUpdaterState GetCurrentState() override;
 	void GetCurrentFile(char *pBuf, int BufSize) override;
+	const char *GetDownloadSource() override;
+	bool IsUsingFallbackDownload() override;
+	bool IsDownloadFailed() override;
+	bool CanSwitchDownloadSource() override;
+	void RetryDownload() override;
+	void SwitchDownloadSource() override;
 	int GetCurrentPercent() override;
 	const char *GetLatestVersionString() override;
 

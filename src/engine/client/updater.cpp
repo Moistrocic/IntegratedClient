@@ -1,5 +1,7 @@
 #include "updater.h"
 
+#include <base/dbg.h>
+#include <base/fs.h>
 #include <base/hash.h>
 #include <base/io.h>
 #include <base/process.h>
@@ -148,7 +150,7 @@ static const char *JsonString(const json_value *pJson, const char *pKey)
 	return json_string_get(json_object_get(pJson, pKey));
 }
 
-static bool ParseRelease(const json_value *pJson, char *pVersion, int VersionSize, char *pName, int NameSize, char *pUrl, int UrlSize, long long *pSize)
+static bool ParseRelease(const json_value *pJson, char *pVersion, int VersionSize, char *pName, int NameSize, char *pUrl, int UrlSize, char *pSha, int ShaSize, long long *pSize)
 {
 	if(pJson == nullptr)
 		return false;
@@ -192,6 +194,7 @@ static bool ParseRelease(const json_value *pJson, char *pVersion, int VersionSiz
 	int Best = -1;
 	char aBestName[128] = "";
 	char aBestUrl[2048] = "";
+	char aBestSha[65] = "";
 	long long BestSize = 0;
 	for(int i = 0; i < json_array_length(pAssets); i++)
 	{
@@ -204,6 +207,10 @@ static bool ParseRelease(const json_value *pJson, char *pVersion, int VersionSiz
 			Best = Score;
 			str_copy(aBestName, pAssetName, sizeof(aBestName));
 			str_copy(aBestUrl, pAssetUrl, sizeof(aBestUrl));
+			aBestSha[0] = '\0';
+			const char *pDigest = JsonString(pAsset, "digest");
+			if(pDigest != nullptr && str_startswith(pDigest, "sha256:"))
+				str_copy(aBestSha, pDigest + str_length("sha256:"), sizeof(aBestSha));
 			const json_value *pSize = json_object_get(pAsset, "size");
 			BestSize = pSize != nullptr && pSize->type == json_integer ? (long long)json_int_get(pSize) : 0;
 		}
@@ -213,6 +220,8 @@ static bool ParseRelease(const json_value *pJson, char *pVersion, int VersionSiz
 	NormalizeVersion(pTag, pVersion, VersionSize);
 	str_copy(pName, aBestName, NameSize);
 	str_copy(pUrl, aBestUrl, UrlSize);
+	if(pSha != nullptr)
+		str_copy(pSha, aBestSha, ShaSize);
 	if(pSize != nullptr)
 		*pSize = BestSize;
 	return true;
@@ -230,6 +239,9 @@ CUpdater::CUpdater()
 	m_aArchiveName[0] = '\0';
 	m_aArchiveUrl[0] = '\0';
 	m_aArchiveSha256[0] = '\0';
+	m_aGithubArchiveName[0] = '\0';
+	m_aGithubArchiveUrl[0] = '\0';
+	m_aGithubArchiveSha256[0] = '\0';
 	str_copy(m_aArchivePath, UPDATE_ARCHIVE_PATH, sizeof(m_aArchivePath));
 }
 
@@ -271,6 +283,54 @@ void CUpdater::GetCurrentFile(char *pBuf, int BufSize)
 {
 	const CLockScope Lock(m_Lock);
 	str_copy(pBuf, m_aStatus, BufSize);
+}
+
+const char *CUpdater::GetDownloadSource()
+{
+	return m_UsingFallbackDownload ? "update.moiservice.top" : "GitHub";
+}
+
+bool CUpdater::IsUsingFallbackDownload()
+{
+	return m_UsingFallbackDownload;
+}
+
+bool CUpdater::IsDownloadFailed()
+{
+	return m_DownloadFailed;
+}
+
+bool CUpdater::CanSwitchDownloadSource()
+{
+	return m_aGithubArchiveUrl[0] != '\0' && (GetCurrentState() == DOWNLOADING || GetCurrentState() == FAIL);
+}
+
+void CUpdater::RetryDownload()
+{
+	const EUpdaterState State = GetCurrentState();
+	if(State != FAIL || !m_DownloadFailed)
+		return;
+	m_DownloadFailed = false;
+	ResetTask();
+	if(m_aArchiveUrl[0] == '\0')
+	{
+		CheckForUpdate();
+		return;
+	}
+	StartArchiveDownload();
+}
+
+void CUpdater::SwitchDownloadSource()
+{
+	const EUpdaterState State = GetCurrentState();
+	if(State != DOWNLOADING && State != FAIL)
+		return;
+	if(m_aGithubArchiveUrl[0] == '\0')
+		return;
+	ResetTask();
+	SetDownloadSource(!m_UsingFallbackDownload);
+	SetStatus(m_UsingFallbackDownload ? "Trying fallback download" : "Downloading from GitHub");
+	StartArchiveDownload();
 }
 
 int CUpdater::GetCurrentPercent()
@@ -343,8 +403,9 @@ void CUpdater::ParseReleaseTask()
 	char aVersion[64] = "";
 	char aName[128] = "";
 	char aUrl[2048] = "";
+	char aSha[65] = "";
 	long long AssetSize = 0;
-	const bool Parsed = pJson != nullptr && ParseRelease(pJson, aVersion, sizeof(aVersion), aName, sizeof(aName), aUrl, sizeof(aUrl), &AssetSize);
+	const bool Parsed = pJson != nullptr && ParseRelease(pJson, aVersion, sizeof(aVersion), aName, sizeof(aName), aUrl, sizeof(aUrl), aSha, sizeof(aSha), &AssetSize);
 	if(pJson != nullptr)
 		json_value_free(pJson);
 	if(!Parsed)
@@ -362,10 +423,11 @@ void CUpdater::ParseReleaseTask()
 		return;
 	}
 	str_copy(m_aLatestVersion, aVersion, sizeof(m_aLatestVersion));
-	str_copy(m_aArchiveName, aName, sizeof(m_aArchiveName));
-	str_copy(m_aArchiveUrl, aUrl, sizeof(m_aArchiveUrl));
-	m_ArchiveExpectedSize = AssetSize;
-	m_UsingFallbackDownload = false;
+	str_copy(m_aGithubArchiveName, aName, sizeof(m_aGithubArchiveName));
+	str_copy(m_aGithubArchiveUrl, aUrl, sizeof(m_aGithubArchiveUrl));
+	str_copy(m_aGithubArchiveSha256, aSha, sizeof(m_aGithubArchiveSha256));
+	m_GithubArchiveExpectedSize = AssetSize;
+	SetDownloadSource(false);
 	SetStatus("Update available");
 	SetCurrentState(VERSION_AVAILABLE);
 }
@@ -455,38 +517,57 @@ void CUpdater::ParseFallbackTask()
 	str_copy(m_aArchiveUrl, aUrl, sizeof(m_aArchiveUrl));
 	str_copy(m_aArchiveSha256, aSha, sizeof(m_aArchiveSha256));
 	m_UsingFallbackDownload = true;
+	m_DownloadFailed = false;
 	SetStatus("Update available (fallback)");
 	SetCurrentState(VERSION_AVAILABLE);
+}
+
+void CUpdater::SetDownloadSource(bool Fallback)
+{
+	m_UsingFallbackDownload = Fallback;
+	m_DownloadFailed = false;
+	if(Fallback)
+	{
+		str_copy(m_aArchiveName, "IntegratedClient-windows.zip", sizeof(m_aArchiveName));
+		str_format(m_aArchiveUrl, sizeof(m_aArchiveUrl), "%s%s", FALLBACK_BASE_URL, "IntegratedClient-windows.zip");
+		m_ArchiveExpectedSize = 0;
+		m_aArchiveSha256[0] = '\0';
+	}
+	else
+	{
+		str_copy(m_aArchiveName, m_aGithubArchiveName, sizeof(m_aArchiveName));
+		str_copy(m_aArchiveUrl, m_aGithubArchiveUrl, sizeof(m_aArchiveUrl));
+		str_copy(m_aArchiveSha256, m_aGithubArchiveSha256, sizeof(m_aArchiveSha256));
+		m_ArchiveExpectedSize = m_GithubArchiveExpectedSize;
+	}
 }
 
 void CUpdater::StartFallbackArchiveDownload()
 {
 	if(m_UsingFallbackDownload)
 		return;
-	m_UsingFallbackDownload = true;
-	if(m_aArchiveName[0] == '\0')
-		str_copy(m_aArchiveName, "IntegratedClient-windows.zip", sizeof(m_aArchiveName));
-	str_format(m_aArchiveUrl, sizeof(m_aArchiveUrl), "%s%s", FALLBACK_BASE_URL, m_aArchiveName);
-	m_ArchiveExpectedSize = 0;
-	m_aArchiveSha256[0] = '\0';
+	SetDownloadSource(true);
 	SetStatus("Trying fallback download");
 	StartArchiveDownload();
 }
 
 bool CUpdater::ValidateArchive()
 {
-	char aArchivePath[IO_MAX_PATH_LENGTH];
-	m_pStorage->GetBinaryPath(m_aArchivePath, aArchivePath, sizeof(aArchivePath));
-	IOHANDLE File = io_open(aArchivePath, IOFLAG_READ);
+	IOHANDLE File = io_open(m_aArchivePath, IOFLAG_READ);
 	if(!File)
 	{
+		dbg_msg("updater", "validate: archive missing: %s", m_aArchivePath);
 		SetStatus("Downloaded archive missing");
 		return false;
 	}
-	const long long Size = io_seek(File, 0, EIoSeekOrigin::END);
+	const long long Size = io_length(File);
 	io_close(File);
-	if(Size <= 0 || (m_ArchiveExpectedSize > 0 && Size != m_ArchiveExpectedSize))
+	dbg_msg("updater", "validate: archive=%s size=%lld expected=%lld sha=%s fallback=%d", m_aArchivePath, Size, m_ArchiveExpectedSize, m_aArchiveSha256[0] ? m_aArchiveSha256 : "-", m_UsingFallbackDownload ? 1 : 0);
+	// GitHub reports both digest and size. Prefer the digest: release assets can be
+	// replaced under the same name while the API's size metadata is cached for a while.
+	if(Size <= 0 || (m_aArchiveSha256[0] == '\0' && m_ArchiveExpectedSize > 0 && Size != m_ArchiveExpectedSize))
 	{
+		dbg_msg("updater", "validate: size mismatch actual=%lld expected=%lld sha=%s", Size, m_ArchiveExpectedSize, m_aArchiveSha256[0] ? m_aArchiveSha256 : "-");
 		SetStatus("Downloaded archive size mismatch");
 		return false;
 	}
@@ -495,7 +576,7 @@ bool CUpdater::ValidateArchive()
 		SHA256_DIGEST Sha;
 		SHA256_CTX Ctx;
 		sha256_init(&Ctx);
-		File = io_open(aArchivePath, IOFLAG_READ);
+		File = io_open(m_aArchivePath, IOFLAG_READ);
 		if(!File)
 			return false;
 		unsigned char aBuffer[64 * 1024];
@@ -512,6 +593,7 @@ bool CUpdater::ValidateArchive()
 		sha256_str(Sha, aSha, sizeof(aSha));
 		if(str_comp_nocase(aSha, m_aArchiveSha256) != 0)
 		{
+			dbg_msg("updater", "validate: sha256 mismatch actual=%s expected=%s", aSha, m_aArchiveSha256);
 			SetStatus("Downloaded archive sha256 mismatch");
 			return false;
 		}
@@ -522,13 +604,38 @@ bool CUpdater::ValidateArchive()
 void CUpdater::StartArchiveDownload()
 {
 	ResetTask();
-	str_copy(m_aArchivePath, UPDATE_ARCHIVE_PATH, sizeof(m_aArchivePath));
-	m_pStorage->RemoveBinaryFile(m_aArchivePath);
+	// Resolve the archive against the executable directory (not the process CWD)
+	// and make sure the update folder exists before the HTTP writer opens it.
+	// Include the process ID: quick-practice/dummy clients share the same install
+	// directory, and a shared archive path lets them delete/truncate each other's
+	// downloads (observed as a 0-byte archive after a successful HTTP request).
+	char aRelativeArchive[IO_MAX_PATH_LENGTH];
+#if defined(CONF_PLATFORM_LINUX)
+	str_format(aRelativeArchive, sizeof(aRelativeArchive), "update/integratedclient-release.%d.tar.xz", (int)process_id());
+#else
+	str_format(aRelativeArchive, sizeof(aRelativeArchive), "update/integratedclient-release.%d.zip", (int)process_id());
+#endif
+	m_pStorage->GetBinaryPath(aRelativeArchive, m_aArchivePath, sizeof(m_aArchivePath));
+	char aUpdateDir[IO_MAX_PATH_LENGTH];
+	m_pStorage->GetBinaryPath("update", aUpdateDir, sizeof(aUpdateDir));
+	if(fs_makedir(aUpdateDir) != 0)
+	{
+		// Directory likely already exists; HTTP open reports any real failure.
+	}
+	if(fs_remove(m_aArchivePath) != 0)
+	{
+		// No previous archive to remove.
+	}
 	SetStatus(m_aArchiveName[0] != '\0' ? m_aArchiveName : "update");
 	SetPercent(0);
+	m_DownloadFailed = false;
 	SetCurrentState(DOWNLOADING);
 	m_TaskKind = ETaskKind::DOWNLOAD_ARCHIVE;
-	m_pCurrentTask = HttpGetFile(m_aArchiveUrl, m_pStorage, m_aArchivePath, IStorage::TYPE_ABSOLUTE);
+	dbg_msg("updater", "download: url=%s path=%s fallback=%d", m_aArchiveUrl, m_aArchivePath, m_UsingFallbackDownload ? 1 : 0);
+	// TYPE_ABSOLUTE (-2) makes the HTTP writer resolve the path against the binary
+	// directory, so it must receive the relative archive path even though
+	// m_aArchivePath is stored as an absolute path for validation/apply.
+	m_pCurrentTask = HttpGetFile(m_aArchiveUrl, m_pStorage, aRelativeArchive, IStorage::TYPE_ABSOLUTE);
 	m_pCurrentTask->HeaderString("User-Agent", INTEGRATEDCLIENT_NAME);
 	m_pCurrentTask->Timeout(CTimeout{10000, 0, 500, 10});
 	m_pCurrentTask->IpResolve(IPRESOLVE::V4);
@@ -538,13 +645,11 @@ void CUpdater::StartArchiveDownload()
 bool CUpdater::LaunchApplyScriptAndQuit()
 {
 #if defined(CONF_FAMILY_WINDOWS) || defined(CONF_PLATFORM_LINUX)
-	char aArchivePath[IO_MAX_PATH_LENGTH];
 	char aUpdaterPath[IO_MAX_PATH_LENGTH];
 	char aInstallDir[IO_MAX_PATH_LENGTH];
 	char aExePath[IO_MAX_PATH_LENGTH];
 	char aPid[32];
-	m_pStorage->GetBinaryPath(m_aArchivePath, aArchivePath, sizeof(aArchivePath));
-	if(!m_pStorage->FileExists(aArchivePath, IStorage::TYPE_ABSOLUTE))
+	if(!m_pStorage->FileExists(m_aArchivePath, IStorage::TYPE_ABSOLUTE))
 	{
 		SetStatus("Downloaded archive missing");
 		return false;
@@ -565,9 +670,11 @@ bool CUpdater::LaunchApplyScriptAndQuit()
 		}
 	}
 	str_format(aPid, sizeof(aPid), "%d", process_id());
-	const char *apArgs[] = {aPid, aArchivePath, aInstallDir, aExePath};
+	const char *apArgs[] = {aPid, m_aArchivePath, aInstallDir, aExePath};
+	dbg_msg("updater", "apply: updater=%s archive=%s install=%s exe=%s", aUpdaterPath, m_aArchivePath, aInstallDir, aExePath);
 	if(process_execute(aUpdaterPath, EShellExecuteWindowState::FOREGROUND, apArgs, 4) == INVALID_PROCESS)
 	{
+		dbg_msg("updater", "apply: process_execute failed for %s", aUpdaterPath);
 		SetStatus("Failed to launch updater");
 		return false;
 	}
@@ -588,8 +695,13 @@ void CUpdater::CheckForUpdate()
 	m_aArchiveName[0] = '\0';
 	m_aArchiveUrl[0] = '\0';
 	m_aArchiveSha256[0] = '\0';
+	m_aGithubArchiveName[0] = '\0';
+	m_aGithubArchiveUrl[0] = '\0';
+	m_aGithubArchiveSha256[0] = '\0';
+	m_GithubArchiveExpectedSize = 0;
 	m_ArchiveExpectedSize = 0;
 	m_UsingFallbackDownload = false;
+	m_DownloadFailed = false;
 	StartReleaseFetch();
 }
 
@@ -645,21 +757,26 @@ void CUpdater::Update()
 	}
 	if(m_pCurrentTask->State() != EHttpState::DONE || m_pCurrentTask->StatusCode() >= 400)
 	{
+		const ETaskKind TaskKind = m_TaskKind;
 		ResetTask();
-		if(m_TaskKind == ETaskKind::FETCH_RELEASE)
+		if(TaskKind == ETaskKind::FETCH_RELEASE)
 		{
 			StartFallbackFetch();
 			return;
 		}
-		if(m_TaskKind == ETaskKind::FETCH_FALLBACK && !m_FallbackJsonTried)
+		if(TaskKind == ETaskKind::FETCH_FALLBACK && !m_FallbackJsonTried)
 		{
 			m_FallbackJsonTried = true;
 			StartFallbackFetch();
 			return;
 		}
-		if(m_TaskKind == ETaskKind::DOWNLOAD_ARCHIVE && !m_UsingFallbackDownload)
+		if(TaskKind == ETaskKind::DOWNLOAD_ARCHIVE)
 		{
-			StartFallbackArchiveDownload();
+			// Do not silently switch sources: the user can retry or choose the
+			// fallback server from the update dialog.
+			m_DownloadFailed = true;
+			SetStatus("Download failed. Retry or switch download source.");
+			SetCurrentState(FAIL);
 			return;
 		}
 		SetStatus("Update check failed");
@@ -683,16 +800,13 @@ void CUpdater::Update()
 		if(!ValidateArchive())
 		{
 			ResetTask();
-			if(!m_UsingFallbackDownload)
-			{
-				StartFallbackArchiveDownload();
-				return;
-			}
-			SetStatus("Downloaded update package is invalid");
+			m_DownloadFailed = true;
+			SetStatus("Downloaded update package is invalid. Retry or switch download source.");
 			SetCurrentState(FAIL);
 			return;
 		}
 		ResetTask();
+		m_DownloadFailed = false;
 		SetPercent(100);
 		SetStatus(m_aArchiveName[0] != '\0' ? m_aArchiveName : "update");
 		SetCurrentState(NEED_RESTART);

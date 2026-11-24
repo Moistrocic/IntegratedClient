@@ -25,6 +25,12 @@ public:
 
 	virtual EUpdaterState GetCurrentState() = 0;
 	virtual void GetCurrentFile(char *pBuf, int BufSize) = 0;
+	virtual const char *GetDownloadSource() = 0;
+	virtual bool IsUsingFallbackDownload() = 0;
+	virtual bool IsDownloadFailed() = 0;
+	virtual bool CanSwitchDownloadSource() = 0;
+	virtual void RetryDownload() = 0;
+	virtual void SwitchDownloadSource() = 0;
 	virtual int GetCurrentPercent() = 0;
 	virtual const char *GetLatestVersionString() = 0;
 	// bestclient

@@ -1635,13 +1635,10 @@ Unable to delete the folder '%s'. Make sure it's empty first.
 Dummy is not allowed on this server
 == 
 
-Fast practice
-== 
-
-Ranbi fast practice is under development
-== 
-
 Stop practice
+== 
+
+Fast practice
 == 
 
 Edit touch controls
@@ -2825,6 +2822,48 @@ Stop server
 == 
 
 Run server
+== 
+
+IntegratedClient Update
+== 
+
+Version %s is available (current: %s).
+== 
+
+Update now? The client will download the package and restart.
+== 
+
+Update and restart
+== 
+
+Later
+== 
+
+Never this version
+== 
+
+Downloading from %s: %s (%d%%)
+== 
+
+Keep the client open until the update finishes.
+== 
+
+Switch to GitHub download
+== 
+
+Switch to backup server download
+== 
+
+Update downloaded. Restart to apply.
+== 
+
+Restart and apply
+== 
+
+Update check or download failed.
+== 
+
+Retry
 == 
 
 Loading race demo files
@@ -5230,7 +5269,7 @@ Map finishes refresh automatically about one second after changing this setting.
 Replace BestClient fast practice button
 == 
 
-When enabled, the BestClient Fast practice button is replaced by a Ranbi placeholder button that only shows a development notice.
+When enabled, the BestClient Fast practice button starts the Ranbi fast practice flow: local practice server plus an automatically joined practice client.
 == 
 
 Use practice ghost coordinates

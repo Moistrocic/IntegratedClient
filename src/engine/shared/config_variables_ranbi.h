@@ -90,7 +90,7 @@ MACRO_CONFIG_INT(RcReplaceBcPoints, rc_replace_bc_points, 0, 0, 1, CFGFLAG_CLIEN
 MACRO_CONFIG_INT(RcLockFinishedName, rc_lock_finished_name, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Use a fixed player name for the official server list map completion query")
 MACRO_CONFIG_STR(RcLockFinishedNameId, rc_lock_finished_name_id, 128, "", CFGFLAG_CLIENT | CFGFLAG_SAVE, "Player name/ID used for the locked map completion query")
 MACRO_CONFIG_INT(RcFastPracticeGhostCoords, rc_fast_practice_ghost_coords, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "In BestClient fast practice, show the controlled practice character's position in the HUD movement info")
-MACRO_CONFIG_INT(RcFastPracticeReplace, rc_fast_practice_replace, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Replace the BestClient fast practice button with a Ranbi placeholder button")
+MACRO_CONFIG_INT(RcFastPracticeReplace, rc_fast_practice_replace, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Replace the BestClient fast practice button with the Ranbi fast practice implementation")
 MACRO_CONFIG_STR(SvRanbiPracticeSyncFile, sv_ranbi_practice_sync_file, 260, "", CFGFLAG_SERVER, "Internal: local practice server sync file (body/dummy position, weapons and states)")
 MACRO_CONFIG_INT(RcRanbiPracticeGuest, rc_ranbi_practice_guest, 0, 0, 1, CFGFLAG_CLIENT, "Internal: second client process launched into the local practice server")
 MACRO_CONFIG_STR(RcRanbiPracticeGuestBodyPos, rc_ranbi_practice_guest_body_pos, 64, "", CFGFLAG_CLIENT, "Internal: body tpxy position for the practice guest client (x,y)")

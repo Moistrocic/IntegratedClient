@@ -307,7 +307,7 @@ void CMenusStart::RenderUpdatePopup(CUIRect MainView)
 	}
 	if(State == IUpdater::FAIL)
 	{
-		if(!m_UpdateStarted)
+		if(!m_UpdateStarted || m_UpdatePopupCancelled)
 			return;
 	}
 
@@ -378,7 +378,7 @@ void CMenusStart::RenderUpdatePopup(CUIRect MainView)
 	{
 		char aFile[256];
 		pUpdater->GetCurrentFile(aFile, sizeof(aFile));
-		str_format(aBuf, sizeof(aBuf), Localize("Downloading: %s (%d%%)"), aFile, pUpdater->GetCurrentPercent());
+		str_format(aBuf, sizeof(aBuf), Localize("Downloading from %s: %s (%d%%)"), pUpdater->GetDownloadSource(), aFile, pUpdater->GetCurrentPercent());
 		Label.y += 50.0f;
 		Label.h = 30.0f;
 		Ui()->DoLabel(&Label, aBuf, 15.0f, TEXTALIGN_ML);
@@ -387,14 +387,19 @@ void CMenusStart::RenderUpdatePopup(CUIRect MainView)
 		Bar.h = 18.0f;
 		Graphics()->DrawRect(Bar.x, Bar.y, Bar.w, Bar.h, ColorRGBA(0.18f, 0.18f, 0.18f, 1.0f), IGraphics::CORNER_ALL, 4.0f);
 		Graphics()->DrawRect(Bar.x, Bar.y, Bar.w * pUpdater->GetCurrentPercent() / 100.0f, Bar.h, ColorRGBA(0.68f, 0.82f, 0.28f, 1.0f), IGraphics::CORNER_ALL, 4.0f);
-		CUIRect Cancel = Bar;
-		Cancel.y = Box.y + Box.h - 62.0f;
-		Cancel.h = 40.0f;
-		Cancel.w = 180.0f;
-		Cancel.x = Box.x + (Box.w - Cancel.w) / 2.0f;
-		static CButtonContainer s_DownloadLaterButton;
-		if(GameClient()->m_Menus.DoButton_Menu(&s_DownloadLaterButton, Localize("Hide"), 0, &Cancel))
-			m_UpdatePopupCancelled = true;
+		CUIRect Hint = Bar;
+		Hint.y = Box.y + Box.h - 94.0f;
+		Hint.h = 24.0f;
+		Ui()->DoLabel(&Hint, Localize("Keep the client open until the update finishes."), 12.0f, TEXTALIGN_MC);
+		CUIRect Switch = Bar;
+		Switch.y = Box.y + Box.h - 58.0f;
+		Switch.h = 36.0f;
+		Switch.w = 300.0f;
+		Switch.x = Box.x + (Box.w - Switch.w) / 2.0f;
+		static CButtonContainer s_SwitchSourceButton;
+		const char *pSwitchLabel = pUpdater->IsUsingFallbackDownload() ? Localize("Switch to GitHub download") : Localize("Switch to backup server download");
+		if(GameClient()->m_Menus.DoButton_Menu(&s_SwitchSourceButton, pSwitchLabel, 0, &Switch))
+			pUpdater->SwitchDownloadSource();
 		return;
 	}
 
@@ -421,12 +426,41 @@ void CMenusStart::RenderUpdatePopup(CUIRect MainView)
 		Label.y += 50.0f;
 		Label.h = 40.0f;
 		Ui()->DoLabel(&Label, Localize("Update check or download failed."), 16.0f, TEXTALIGN_ML);
-		CUIRect B = Label;
-		B.y = Box.y + Box.h - 62.0f;
-		B.h = 40.0f;
-		B.w = 180.0f;
+
+		const bool DownloadFailed = pUpdater->IsDownloadFailed();
+		const bool CanSwitch = pUpdater->CanSwitchDownloadSource();
+		const int NumButtons = 1 + (DownloadFailed ? 1 : 0) + (CanSwitch ? 1 : 0);
+		CUIRect Buttons = Label;
+		Buttons.y = Box.y + Box.h - 62.0f;
+		Buttons.h = 40.0f;
+		const float Gap = 12.0f;
+		const float ButtonWidth = (Buttons.w - (NumButtons - 1) * Gap) / NumButtons;
+		CUIRect Slots[3];
+		for(int i = 0; i < NumButtons; i++)
+		{
+			Buttons.VSplitLeft(ButtonWidth, &Slots[i], &Buttons);
+			if(i + 1 < NumButtons)
+				Buttons.VSplitLeft(Gap, nullptr, &Buttons);
+		}
+		int Slot = 0;
+		CUIRect RetryButton, SwitchButton, CloseButton;
+		if(DownloadFailed)
+			RetryButton = Slots[Slot++];
+		if(CanSwitch)
+			SwitchButton = Slots[Slot++];
+		CloseButton = Slots[Slot++];
+		static CButtonContainer s_RetryButton;
 		static CButtonContainer s_CloseButton;
-		if(GameClient()->m_Menus.DoButton_Menu(&s_CloseButton, Localize("Close"), 0, &B))
+		static CButtonContainer s_SwitchSourceButton;
+		if(DownloadFailed && GameClient()->m_Menus.DoButton_Menu(&s_RetryButton, Localize("Retry"), 0, &RetryButton))
+			pUpdater->RetryDownload();
+		if(DownloadFailed && CanSwitch)
+		{
+			const char *pSwitchLabel = pUpdater->IsUsingFallbackDownload() ? Localize("Switch to GitHub download") : Localize("Switch to backup server download");
+			if(GameClient()->m_Menus.DoButton_Menu(&s_SwitchSourceButton, pSwitchLabel, 0, &SwitchButton))
+				pUpdater->SwitchDownloadSource();
+		}
+		if(GameClient()->m_Menus.DoButton_Menu(&s_CloseButton, Localize("Close"), 0, &CloseButton))
 			m_UpdatePopupCancelled = true;
 	}
 }
